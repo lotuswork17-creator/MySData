@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>TipsCompare Viewer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+:root{--bg:#0f1117;--surface:#181c27;--surface2:#1f2536;--border:#2b3048;--accent:#4ade80;--accent2:#60a5fa;--warn:#fb923c;--text:#e8eaf0;--muted:#64748b;--mono:'IBM Plex Mono',monospace;--sans:'Outfit',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;display:flex;flex-direction:column;height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 7px var(--accent);flex-shrink:0}
+.logo h1{font-size:15px;font-weight:800}
+.logo span{color:var(--muted);font-weight:400}
+.hstats{display:flex;gap:5px;flex-wrap:wrap}
+.hstat{padding:3px 8px;border-radius:5px;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;white-space:nowrap}
+.hstat b{color:var(--text)}
+.updated{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.filters{display:flex;flex-wrap:wrap;gap:7px}
+.fg{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px}
+.fl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+input,select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;width:100%;transition:border-color .15s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--accent2)}
+input::placeholder{color:var(--muted)}
+.btn-clear{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s;white-space:nowrap;align-self:flex-end;min-height:34px}
+.btn-clear:active{color:var(--text)}
+.results-bar{padding:5px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:2px}
+.results-bar b{color:var(--accent)}
+.table-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+
+/* Desktop table */
+@media(min-width:600px){
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:580px}
+  thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:2px solid var(--border);background:var(--surface);font-family:var(--sans);transition:color .15s}
+  thead th:hover{color:var(--text)}
+  thead th.sort-asc,thead th.sort-desc{color:var(--accent2)}
+  thead th .si{font-size:9px;margin-left:2px;opacity:.3}
+  thead th.sort-asc .si,thead th.sort-desc .si{opacity:1}
+  tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+  tbody tr:hover{background:var(--surface2)}
+  tbody tr.selected{background:#1a2640;border-left:3px solid var(--accent2)}
+  td{padding:8px 10px;white-space:nowrap;overflow:hidden;max-width:150px;text-overflow:ellipsis;color:#c0c8d8;font-family:var(--mono);font-size:11px}
+  td.tcell{font-family:var(--sans);font-size:12px;color:var(--text);font-weight:500}
+  td.ccell{font-family:var(--sans);font-size:11px;color:var(--muted)}
+  .oc{color:#94a3b8}
+}
+
+/* Mobile cards */
+@media(max-width:599px){
+  table,thead,tbody,tr,th,td{display:block;width:100%}
+  thead{display:none}
+  tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 10px;padding:12px;cursor:pointer;position:relative}
+  tbody tr:active{background:var(--surface2)}
+  tbody tr.selected{border-color:var(--accent2);background:#1a2640}
+  td{padding:0;border:none;white-space:normal;max-width:100%;overflow:visible}
+}
+
+.score{font-weight:700;color:var(--text)}
+.status-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--sans);white-space:nowrap}
+.s-result{background:rgba(74,222,128,.1);color:var(--accent);border:1px solid rgba(74,222,128,.2)}
+.s-preeve{background:rgba(96,165,250,.1);color:var(--accent2);border:1px solid rgba(96,165,250,.2)}
+.s-cancel{background:rgba(148,163,184,.08);color:var(--muted);border:1px solid rgba(148,163,184,.15)}
+mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;padding:0 1px}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty span{font-size:28px;display:block;margin-bottom:8px}
+.pagination{padding:8px 14px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.pg-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pg-btn:active{border-color:var(--accent2);color:var(--accent2)}
+.pg-btn.active{background:var(--accent2);color:#0f1117;border-color:var(--accent2);font-weight:700}
+.pg-btn[disabled]{opacity:.3;cursor:default;pointer-events:none}
+.pg-info{color:var(--muted);margin:0 6px}
+
+/* Detail panel */
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:flex-end;justify-content:center}
+.panel-overlay.open{display:flex}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:860px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:slideUp .2s ease}
+.ph{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;position:sticky;top:0;background:var(--surface);z-index:1;border-radius:16px 16px 0 0}
+.ph::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;background:var(--border);border-radius:2px}
+.ph-title{font-size:16px;font-weight:700;margin-bottom:3px;line-height:1.3;padding-top:8px}
+.ph-meta{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.pc-btn{width:28px;height:28px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
+.pb{padding:14px 16px 32px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.pb{grid-template-columns:1fr}.dc.full{grid-column:1}}
+.dc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.dc.full{grid-column:1/-1}
+.dc h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:8px}
+.dr:last-child{margin-bottom:0}
+.dk{color:var(--muted);font-size:11px;flex-shrink:0}
+.dv{color:var(--text);font-family:var(--mono);font-weight:600;font-size:11px;text-align:right}
+.sd{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0}
+.st{text-align:center;flex:1}
+.st .stn{font-size:11px;color:var(--muted);margin-bottom:3px}
+.st .ssc{font-size:30px;font-weight:800;font-family:var(--mono);line-height:1}
+.sdiv{font-size:16px;color:var(--border);font-weight:700}
+.hts{text-align:center;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+.pl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px;font-family:var(--mono)}
+.pbar{height:7px;border-radius:4px;background:var(--border);display:flex;overflow:hidden}
+.ph2{background:var(--accent2)}.pd2{background:#a78bfa}.pa2{background:var(--warn)}
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.ti{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+.tl{font-size:9px;color:var(--muted);margin-bottom:2px;text-transform:uppercase}
+.tv{font-size:18px;font-weight:700;color:var(--accent);font-family:var(--mono)}
+.ot{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-top:4px}
+.ot th{font-size:9px;color:var(--muted);text-align:center;padding:3px 4px;text-transform:uppercase;font-weight:600}
+.ot td{text-align:center;padding:5px 4px;color:var(--text);font-weight:600;border-top:1px solid var(--border);font-size:11px}
+.ot .ol{text-align:left;color:var(--muted);font-weight:400}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <h1>TipsCompare <span>Viewer</span></h1>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <span class="updated" id="updatedAt"></span>
+      <div class="hstats">
+        <div class="hstat">Total <b id="hTotal">—</b></div>
+        <div class="hstat" style="border-color:rgba(74,222,128,.3)">Results <b id="hResult" style="color:var(--accent)">—</b></div>
+        <div class="hstat" style="border-color:rgba(96,165,250,.3)">Upcoming <b id="hPreeve" style="color:var(--accent2)">—</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="filters">
+    <div class="fg"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Home or Away team…"/></div>
+    <div class="fg"><div class="fl">League</div><select id="catSelect"><option value="">All Leagues</option></select></div>
+    <div class="fg" style="min-width:100px;max-width:120px"><div class="fl">Status</div>
+      <select id="statusSelect">
+        <option value="">All</option>
+        <option value="Result">Result</option>
+        <option value="PREEVE">Upcoming</option>
+        <option value="Cancel">Cancelled</option>
+      </select>
+    </div>
+    <div class="fg" style="min-width:130px;max-width:150px"><div class="fl">Date</div><input type="date" id="dateInput"/></div>
+    <button class="btn-clear" onclick="clearFilters()">✕</button>
+  </div>
+</header>
+
+<div class="results-bar" id="resultsBar">
+  <span>Showing <b id="showCount">0</b> of <b id="totalCount">0</b></span>
+  <span id="sortInfo" style="font-size:10px"></span>
+</div>
+
+<div class="table-scroll" id="tableArea">
+  <table id="mainTable">
+    <thead><tr>
+      <th onclick="sortBy('DATE')" id="th-DATE">Date <span class="si">⇅</span></th>
+      <th onclick="sortBy('TIME')" id="th-TIME">Time <span class="si">⇅</span></th>
+      <th onclick="sortBy('CATEGORY')" id="th-CATEGORY">League <span class="si">⇅</span></th>
+      <th onclick="sortBy('TEAMH')" id="th-TEAMH">Home <span class="si">⇅</span></th>
+      <th onclick="sortBy('TEAMA')" id="th-TEAMA">Away <span class="si">⇅</span></th>
+      <th onclick="sortBy('ASIALINE')" id="th-ASIALINE">Line <span class="si">⇅</span></th>
+      <th onclick="sortBy('ASIAH')" id="th-ASIAH">Asia H <span class="si">⇅</span></th>
+      <th onclick="sortBy('ASIAA')" id="th-ASIAA">Asia A <span class="si">⇅</span></th>
+      <th>Score</th>
+      <th>Status</th>
+    </tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty" id="emptyState" style="display:none"><span>🔎</span>No matches found.</div>
+</div>
+
+<div class="pagination" id="pagination"></div>
+
+<div class="panel-overlay" id="panelOverlay" onclick="closePanelBg(event)">
+  <div class="panel">
+    <div class="ph">
+      <div><div class="ph-title" id="panelTitle"></div><div class="ph-meta" id="panelMeta"></div></div>
+      <button class="pc-btn" onclick="closePanel()">✕</button>
+    </div>
+    <div class="pb" id="panelBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Data injected by Apps Script — no fetch needed ────────────────────────────
+var RAW = <?!= jsonData ?>;
+var ALL = RAW.records || [];
+// ─────────────────────────────────────────────────────────────────────────────
+
+var filtered=[],sortCol='DATE',sortDir=-1,pg=1,PG=30,selIdx=null;
+var isMobile=window.innerWidth<600;
+if(isMobile) PG=20;
+
+function $(id){return document.getElementById(id);}
+
+// Init on page load
+(function init(){
+  var m=RAW.meta||{};
+  $('hTotal').textContent=ALL.length.toLocaleString();
+  $('hResult').textContent=ALL.filter(function(r){return r.STATUS==='Result';}).length.toLocaleString();
+  $('hPreeve').textContent=ALL.filter(function(r){return r.STATUS==='PREEVE';}).length.toLocaleString();
+  if(m.generated_at){
+    var dt=new Date(m.generated_at);
+    $('updatedAt').textContent='Updated '+dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+  var cats=Array.from(new Set(ALL.map(function(r){return r.CATEGORY;}).filter(Boolean))).sort();
+  var sel=$('catSelect');
+  cats.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+  $('th-DATE').classList.add('sort-desc');
+  $('sortInfo').textContent='Sorted by DATE ↓';
+  applyFilters();
+  var t;
+  $('searchInput').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){pg=1;applyFilters();},300);});
+  $('catSelect').addEventListener('change',function(){pg=1;applyFilters();});
+  $('statusSelect').addEventListener('change',function(){pg=1;applyFilters();});
+  $('dateInput').addEventListener('change',function(){pg=1;applyFilters();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
+})();
+
+function applyFilters(){
+  var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value,dt=$('dateInput').value;
+  filtered=ALL.filter(function(r){
+    if(s&&!((r.TEAMH||'').toLowerCase().includes(s)||(r.TEAMA||'').toLowerCase().includes(s)))return false;
+    if(cat&&r.CATEGORY!==cat)return false;
+    if(st&&r.STATUS!==st)return false;
+    if(dt&&r.DATE!==dt)return false;
+    return true;
+  });
+  filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
+  $('showCount').textContent=filtered.length.toLocaleString();
+  $('totalCount').textContent=ALL.length.toLocaleString();
+  renderTable();renderPagination();
+}
+
+function sortBy(col){
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=-1;}
+  pg=1;
+  document.querySelectorAll('thead th').forEach(function(th){th.classList.remove('sort-asc','sort-desc');});
+  var th=$('th-'+col);if(th)th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  $('sortInfo').textContent='Sorted by '+col+(sortDir===1?' ↑':' ↓');
+  applyFilters();
+}
+
+function clearFilters(){
+  $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('dateInput').value='';
+  pg=1;applyFilters();
+}
+
+function renderTable(){
+  var body=$('tableBody'),start=(pg-1)*PG,rows=filtered.slice(start,start+PG),s=$('searchInput').value;
+  $('emptyState').style.display=rows.length?'none':'block';
+  $('mainTable').style.display=rows.length?'':'none';
+  if(isMobile){
+    body.innerHTML=rows.map(function(r,i){
+      var gi=start+i;
+      var sc=r.STATUS==='Result'?'s-result':r.STATUS==='PREEVE'?'s-preeve':'s-cancel';
+      var sl=r.STATUS==='PREEVE'?'Upcoming':(r.STATUS||'—');
+      var score=r.STATUS==='Result'?r.RESULTH+' – '+r.RESULTA:'vs';
+      var time=r.TIME?fmtTime(r.TIME):'';
+      return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
+        +'<td colspan="10">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div style="flex:1;margin-right:60px">'
+        +'<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:3px">'+esc(r.DATE||'')+(time?' · '+time:'')+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-bottom:5px">'+hl(esc(r.CATEGORY||''),s)+'</div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMH||'?'),s)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin:2px 0">vs</div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMA||'?'),s)+'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
+        +'<span class="status-badge '+sc+'">'+sl+'</span>'
+        +'<div style="font-family:var(--mono);font-size:18px;font-weight:800;color:'+(r.STATUS==='Result'?'var(--accent)':'var(--muted)')+'">'+score+'</div>'
+        +'</div></div>'
+        +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
+        +'<span>Line: '+(r.ASIALINE??'—')+'</span><span>AH: '+(r.ASIAH??'—')+'</span><span>AA: '+(r.ASIAA??'—')+'</span>'
+        +'</div></td></tr>';
+    }).join('');
+  } else {
+    body.innerHTML=rows.map(function(r,i){
+      var gi=start+i;
+      var sc=r.STATUS==='Result'?'s-result':r.STATUS==='PREEVE'?'s-preeve':'s-cancel';
+      var sl=r.STATUS==='PREEVE'?'Upcoming':(r.STATUS||'—');
+      var score=r.STATUS==='Result'?'<span class="score">'+r.RESULTH+' – '+r.RESULTA+'</span>':'<span style="color:var(--muted)">—</span>';
+      return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
+        +'<td>'+esc(r.DATE||'—')+'</td><td>'+(r.TIME?fmtTime(r.TIME):'—')+'</td>'
+        +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
+        +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
+        +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
+        +'<td class="oc">'+(r.ASIALINE??'—')+'</td><td class="oc">'+(r.ASIAH??'—')+'</td><td class="oc">'+(r.ASIAA??'—')+'</td>'
+        +'<td>'+score+'</td><td><span class="status-badge '+sc+'">'+sl+'</span></td></tr>';
+    }).join('');
+  }
+}
+
+function fmtTime(t){var s=String(t).padStart(4,'0');return s.slice(0,-2)+':'+s.slice(-2);}
+function hl(text,q){if(!q)return text;var i=text.toLowerCase().indexOf(q.toLowerCase());if(i===-1)return text;return text.slice(0,i)+'<mark>'+text.slice(i,i+q.length)+'</mark>'+text.slice(i+q.length);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderPagination(){
+  var total=Math.ceil(filtered.length/PG),el=$('pagination');
+  if(total<=1){el.innerHTML='';return;}
+  var range=[];for(var p=1;p<=total;p++)if(p===1||p===total||Math.abs(p-pg)<=2)range.push(p);
+  var html='<button class="pg-btn" '+(pg<=1?'disabled':'')+' onclick="goPage('+(pg-1)+')">‹</button>';
+  var prev=0;
+  range.forEach(function(p){if(p-prev>1)html+='<span style="color:var(--muted);padding:0 2px">…</span>';html+='<button class="pg-btn '+(p===pg?'active':'')+'" onclick="goPage('+p+')">'+p+'</button>';prev=p;});
+  html+='<button class="pg-btn" '+(pg>=total?'disabled':'')+' onclick="goPage('+(pg+1)+')">›</button><span class="pg-info">'+pg+' / '+total+'</span>';
+  el.innerHTML=html;
+}
+function goPage(p){pg=p;renderTable();renderPagination();$('tableArea').scrollTop=0;}
+
+function openDetail(idx){
+  selIdx=idx;var r=filtered[idx];
+  document.querySelectorAll('tbody tr').forEach(function(tr,i){tr.classList.toggle('selected',(pg-1)*PG+i===idx);});
+  $('panelTitle').textContent=(r.TEAMH||'?')+' vs '+(r.TEAMA||'?');
+  $('panelMeta').textContent=(r.DATE||'')+(r.TIME?' '+fmtTime(r.TIME):'')+' · '+(r.CATEGORY||'')+' · '+(r.STATUS||'');
+  var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
+  var res='';
+  if(r.STATUS==='Result'){
+    var hw=r.RESULTH>r.RESULTA,aw=r.RESULTA>r.RESULTH;
+    res='<div class="dc full"><h3>⚽ Match Result</h3>'
+      +'<div class="sd"><div class="st"><div class="stn">'+esc(r.TEAMH||'Home')+'</div><div class="ssc" style="color:'+(hw?'var(--accent)':'var(--text)')+'">'+r.RESULTH+'</div></div>'
+      +'<div class="sdiv">—</div>'
+      +'<div class="st"><div class="stn">'+esc(r.TEAMA||'Away')+'</div><div class="ssc" style="color:'+(aw?'var(--accent)':'var(--text)')+'">'+r.RESULTA+'</div></div></div>'
+      +(r.RESULTFH!=null?'<div class="hts">Half-time: '+r.RESULTFH+' – '+r.RESULTFA+'</div>':'')+'</div>';
+  }
+  $('panelBody').innerHTML=res
+    +'<div class="dc"><h3>💡 Tips</h3><div class="tg">'
+    +'<div class="ti"><div class="tl">JC Tips Sum</div><div class="tv">'+(r.JCTIPSUM||'—')+'</div></div>'
+    +'<div class="ti"><div class="tl">JC Tips SID</div><div class="tv">'+(r.JCTIPSID||'—')+'</div></div>'
+    +'<div class="ti"><div class="tl">Tips SID MAC</div><div class="tv">'+(r.TIPSIDMAC||'—')+'</div></div>'
+    +'<div class="ti"><div class="tl">Tips ON ID</div><div class="tv">'+(r.TIPSONID||'—')+'</div></div>'
+    +'</div></div>'
+    +'<div class="dc"><h3>📊 Prediction %</h3>'
+    +'<div class="pl"><span style="color:var(--accent2)">H '+ph+'%</span><span style="color:#a78bfa">D '+pd+'%</span><span style="color:var(--warn)">A '+pa+'%</span></div>'
+    +'<div class="pbar"><div class="ph2" style="width:'+(ph/pt*100).toFixed(1)+'%"></div><div class="pd2" style="width:'+(pd/pt*100).toFixed(1)+'%"></div><div class="pa2" style="width:'+(pa/pt*100).toFixed(1)+'%"></div></div>'
+    +'<div style="margin-top:10px">'
+    +'<div class="dr"><span class="dk">Recent H/D/A</span><span class="dv">'+r.RECENTH+' / '+r.RECENTD+' / '+r.RECENTA+'</span></div>'
+    +'<div class="dr"><span class="dk">1-Year H/D/A</span><span class="dv">'+r.REC1YRH+' / '+r.REC1YRD+' / '+r.REC1YRA+'</span></div>'
+    +'<div class="dr"><span class="dk">3M Home W/D/L</span><span class="dv">'+r.REC3MHH+' / '+r.REC3MHD+' / '+r.REC3MHA+'</span></div>'
+    +'<div class="dr"><span class="dk">3M Away W/D/L</span><span class="dv">'+r.REC3MAH+' / '+r.REC3MAD+' / '+r.REC3MAA+'</span></div>'
+    +'</div></div>'
+    +'<div class="dc full"><h3>📈 Odds — Opening vs Latest</h3>'
+    +'<table class="ot"><thead><tr><th></th><th>Home</th><th>Draw</th><th>Away</th><th>Line</th><th>AH</th><th>AA</th></tr></thead><tbody>'
+    +'<tr><td class="ol">Open</td><td>'+(r.ODDSH??'—')+'</td><td>'+(r.ODDSD??'—')+'</td><td>'+(r.ODDSA??'—')+'</td><td>'+(r.ASIALINE??'—')+'</td><td>'+(r.ASIAH??'—')+'</td><td>'+(r.ASIAA??'—')+'</td></tr>'
+    +'<tr><td class="ol">Latest</td><td>'+(r.ODDSHLN??'—')+'</td><td>'+(r.ODDSDLN??'—')+'</td><td>'+(r.ODDSALN??'—')+'</td><td>'+(r.ASIALINELN??'—')+'</td><td>'+(r.ASIAHLN??'—')+'</td><td>'+(r.ASIAALN??'—')+'</td></tr>'
+    +'</tbody></table></div>'
+    +'<div class="dc"><h3>🏆 Goals</h3>'
+    +'<div class="dr"><span class="dk">GEM H/D/A</span><span class="dv">'+r.GEMH+' / '+r.GEMD+' / '+r.GEMA+'</span></div>'
+    +'<div class="dr"><span class="dk">GPT H/D/A</span><span class="dv">'+r.GPTH+' / '+r.GPTD+' / '+r.GPTA+'</span></div>'
+    +'</div>'
+    +'<div class="dc"><h3>ℹ️ Info</h3>'
+    +'<div class="dr"><span class="dk">Match No.</span><span class="dv">'+(r.MATCHNO||'—')+'</span></div>'
+    +'<div class="dr"><span class="dk">Match ID</span><span class="dv" style="font-size:10px">'+(r.MATCHID||'—')+'</span></div>'
+    +'</div>';
+  $('panelOverlay').classList.add('open');
+}
+function closePanelBg(e){if(e.target===$('panelOverlay'))closePanel();}
+function closePanel(){$('panelOverlay').classList.remove('open');}
+</script>
+</body>
+</html>
