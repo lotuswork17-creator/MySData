@@ -343,10 +343,30 @@ function renderTable(){
       var gi=start+i;
       var sc=r.STATUS==='Result'?'s-result':r.STATUS==='PREEVE'?'s-preeve':'s-cancel';
       var sl=r.STATUS==='PREEVE'?'Upcoming':(r.STATUS||'—');
-      var score=r.STATUS==='Result'?'<span class="score">'+r.RESULTH+' – '+r.RESULTA+'</span>':'<span style="color:var(--muted)">—</span>';
+
+      // Score colour: red=home win, green=draw, blue=away win
+      var scoreHtml;
+      if(r.STATUS==='Result'){
+        var rh=Number(r.RESULTH),ra=Number(r.RESULTA);
+        var scoreColor=rh>ra?'#f87171':rh===ra?'#4ade80':'#60a5fa';
+        scoreHtml='<span style="font-weight:700;color:'+scoreColor+'">'+rh+' – '+ra+'</span>';
+      } else {
+        scoreHtml='<span style="color:var(--muted)">—</span>';
+      }
+
+      // League cell colour based on: (HomeScore - AwayScore + AsiaLine) vs ±0.25
+      var leagueCellStyle='';
+      if(r.STATUS==='Result' && r.ASIALINE!=null){
+        var margin=Number(r.RESULTH)-Number(r.RESULTA)+Number(r.ASIALINE);
+        if(margin>0.25)       leagueCellStyle='background:rgba(248,113,113,0.18);color:#fca5a5;';
+        else if(margin===0.25) leagueCellStyle='color:#f87171;';
+        else if(margin===-0.25)leagueCellStyle='color:#60a5fa;';
+        else if(margin<-0.25)  leagueCellStyle='background:rgba(96,165,250,0.18);color:#93c5fd;';
+      }
+
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td><div>'+esc(r.DATE||'—')+'</div><div style="color:var(--muted);font-size:10px">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
-        +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
+        +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
         +'<td class="oc">'+(r.ASIALINE??'—')+'</td>'
@@ -362,7 +382,7 @@ function renderTable(){
         +'<td class="oc">'+(r.GPTH??'—')+'</td>'
         +'<td class="oc">'+(r.GPTD??'—')+'</td>'
         +'<td class="oc">'+(r.GPTA??'—')+'</td>'
-        +'<td>'+score+'</td>'
+        +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
     }).join('');
