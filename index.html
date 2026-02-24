@@ -161,6 +161,10 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="Cancel">Cancelled</option>
       </select>
     </div>
+    <div class="fg" style="min-width:100px;max-width:130px">
+      <div class="fl">Asia Line</div>
+      <select id="asialineSelect"><option value="">All Lines</option></select>
+    </div>
     <div class="fg" style="min-width:130px;max-width:150px"><div class="fl">Date</div><input type="date" id="dateInput"/></div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
   </div>
@@ -183,14 +187,23 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 <div class="table-scroll" id="tableArea" style="display:none">
   <table id="mainTable">
     <thead><tr>
-      <th onclick="sortBy('DATE')" id="th-DATE">Date <span class="si">⇅</span></th>
-      <th onclick="sortBy('TIME')" id="th-TIME">Time <span class="si">⇅</span></th>
+      <th onclick="sortBy('DATE')" id="th-DATE">Date / Time <span class="si">⇅</span></th>
       <th onclick="sortBy('CATEGORY')" id="th-CATEGORY">League <span class="si">⇅</span></th>
       <th onclick="sortBy('TEAMH')" id="th-TEAMH">Home <span class="si">⇅</span></th>
       <th onclick="sortBy('TEAMA')" id="th-TEAMA">Away <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIALINE')" id="th-ASIALINE">Line <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIAH')" id="th-ASIAH">Asia H <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIAA')" id="th-ASIAA">Asia A <span class="si">⇅</span></th>
+      <th onclick="sortBy('JCTIPSUM')" id="th-JCTIPSUM">JC Sum <span class="si">⇅</span></th>
+      <th onclick="sortBy('JCTIPSID')" id="th-JCTIPSID">JC SID <span class="si">⇅</span></th>
+      <th onclick="sortBy('TIPSIDMAC')" id="th-TIPSIDMAC">SID Mac <span class="si">⇅</span></th>
+      <th onclick="sortBy('TIPSONID')" id="th-TIPSONID">ON ID <span class="si">⇅</span></th>
+      <th onclick="sortBy('GEMH')" id="th-GEMH">GemH <span class="si">⇅</span></th>
+      <th onclick="sortBy('GEMD')" id="th-GEMD">GemD <span class="si">⇅</span></th>
+      <th onclick="sortBy('GEMA')" id="th-GEMA">GemA <span class="si">⇅</span></th>
+      <th onclick="sortBy('GPTH')" id="th-GPTH">GptH <span class="si">⇅</span></th>
+      <th onclick="sortBy('GPTD')" id="th-GPTD">GptD <span class="si">⇅</span></th>
+      <th onclick="sortBy('GPTA')" id="th-GPTA">GptA <span class="si">⇅</span></th>
       <th>Score</th>
       <th>Status</th>
     </tr></thead>
@@ -249,8 +262,13 @@ function loadData(){
 
       var t;
       $('searchInput').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){pg=1;applyFilters();},300);});
+      // Populate asialine dropdown
+      var lines=Array.from(new Set(ALL.map(function(r){return r.ASIALINE;}).filter(function(v){return v!=null;}))).sort(function(a,b){return a-b;});
+      var alsel=$('asialineSelect');
+      lines.forEach(function(l){var o=document.createElement('option');o.value=String(l);o.textContent=l;alsel.appendChild(o);});
       $('catSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('statusSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('asialineSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('dateInput').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
@@ -262,12 +280,13 @@ function loadData(){
 }
 
 function applyFilters(){
-  var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value,dt=$('dateInput').value;
+  var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value,dt=$('dateInput').value,al=$('asialineSelect').value;
   filtered=ALL.filter(function(r){
     if(s&&!((r.TEAMH||'').toLowerCase().includes(s)||(r.TEAMA||'').toLowerCase().includes(s)))return false;
     if(cat&&r.CATEGORY!==cat)return false;
     if(st&&r.STATUS!==st)return false;
     if(dt&&r.DATE!==dt)return false;
+    if(al&&String(r.ASIALINE)!==al)return false;
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
@@ -286,7 +305,7 @@ function sortBy(col){
 }
 
 function clearFilters(){
-  $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('dateInput').value='';
+  $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';$('dateInput').value='';
   pg=1;applyFilters();
 }
 
@@ -326,14 +345,23 @@ function renderTable(){
       var sl=r.STATUS==='PREEVE'?'Upcoming':(r.STATUS||'—');
       var score=r.STATUS==='Result'?'<span class="score">'+r.RESULTH+' – '+r.RESULTA+'</span>':'<span style="color:var(--muted)">—</span>';
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
-        +'<td>'+esc(r.DATE||'—')+'</td>'
-        +'<td>'+(r.TIME?fmtTime(r.TIME):'—')+'</td>'
+        +'<td><div>'+esc(r.DATE||'—')+'</div><div style="color:var(--muted);font-size:10px">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
         +'<td class="oc">'+(r.ASIALINE??'—')+'</td>'
         +'<td class="oc">'+(r.ASIAH??'—')+'</td>'
         +'<td class="oc">'+(r.ASIAA??'—')+'</td>'
+        +'<td class="oc">'+(r.JCTIPSUM??'—')+'</td>'
+        +'<td class="oc">'+(r.JCTIPSID??'—')+'</td>'
+        +'<td class="oc">'+(r.TIPSIDMAC??'—')+'</td>'
+        +'<td class="oc">'+(r.TIPSONID??'—')+'</td>'
+        +'<td class="oc">'+(r.GEMH??'—')+'</td>'
+        +'<td class="oc">'+(r.GEMD??'—')+'</td>'
+        +'<td class="oc">'+(r.GEMA??'—')+'</td>'
+        +'<td class="oc">'+(r.GPTH??'—')+'</td>'
+        +'<td class="oc">'+(r.GPTD??'—')+'</td>'
+        +'<td class="oc">'+(r.GPTA??'—')+'</td>'
         +'<td>'+score+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
