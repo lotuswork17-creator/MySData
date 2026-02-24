@@ -318,21 +318,41 @@ function renderTable(){
       var gi=start+i;
       var sc=r.STATUS==='Result'?'s-result':r.STATUS==='PREEVE'?'s-preeve':'s-cancel';
       var sl=r.STATUS==='PREEVE'?'Upcoming':(r.STATUS||'—');
-      var score=r.STATUS==='Result'?r.RESULTH+' – '+r.RESULTA:'vs';
       var time=r.TIME?fmtTime(r.TIME):'';
+
+      // Score colour: red=home win, green=draw, blue=away win
+      var scoreHtml;
+      if(r.STATUS==='Result'){
+        var rh=Number(r.RESULTH),ra=Number(r.RESULTA);
+        var scoreColor=rh>ra?'#f87171':rh===ra?'#4ade80':'#60a5fa';
+        scoreHtml='<span style="font-family:var(--mono);font-size:18px;font-weight:800;color:'+scoreColor+'">'+rh+' – '+ra+'</span>';
+      } else {
+        scoreHtml='<span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--muted)">vs</span>';
+      }
+
+      // League cell colour: (HomeScore - AwayScore + AsiaLine) vs ±0.25
+      var catStyle='font-size:11px;margin-bottom:5px;';
+      if(r.STATUS==='Result' && r.ASIALINE!=null){
+        var margin=Number(r.RESULTH)-Number(r.RESULTA)+Number(r.ASIALINE);
+        if(margin>0.25)        catStyle+='background:rgba(248,113,113,0.18);color:#fca5a5;padding:1px 5px;border-radius:4px;';
+        else if(margin===0.25) catStyle+='color:#f87171;';
+        else if(margin===-0.25)catStyle+='color:#60a5fa;';
+        else if(margin<-0.25)  catStyle+='background:rgba(96,165,250,0.18);color:#93c5fd;padding:1px 5px;border-radius:4px;';
+      }
+
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td colspan="10">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-        +'<div style="flex:1;margin-right:60px">'
+        +'<div style="flex:1;margin-right:70px">'
         +'<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:3px">'+esc(r.DATE||'')+(time?' · '+time:'')+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-bottom:5px">'+hl(esc(r.CATEGORY||''),s)+'</div>'
+        +'<div style="'+catStyle+'">'+hl(esc(r.CATEGORY||''),s)+'</div>'
         +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMH||'?'),s)+'</div>'
         +'<div style="font-size:11px;color:var(--muted);margin:2px 0">vs</div>'
         +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMA||'?'),s)+'</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
         +'<span class="status-badge '+sc+'">'+sl+'</span>'
-        +'<div style="font-family:var(--mono);font-size:18px;font-weight:800;color:'+(r.STATUS==='Result'?'var(--accent)':'var(--muted)')+'">'+score+'</div>'
+        +scoreHtml
         +'</div></div>'
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
         +'<span>Line: '+(r.ASIALINE??'—')+'</span><span>H: '+(r.ASIAH??'—')+'</span><span>A: '+(r.ASIAA??'—')+'</span>'
@@ -436,9 +456,11 @@ function openDetail(idx){
     +'<div class="dr"><span class="dk">3M Home W/D/L</span><span class="dv">'+r.REC3MHH+' / '+r.REC3MHD+' / '+r.REC3MHA+'</span></div>'
     +'<div class="dr"><span class="dk">3M Away W/D/L</span><span class="dv">'+r.REC3MAH+' / '+r.REC3MAD+' / '+r.REC3MAA+'</span></div>'
     +'</div></div>'
-    +'<div class="dc full"><h3>📈 Odds — Opening vs Latest</h3>'
+    +'<div class="dc full"><h3>📈 Odds — Opening / Macau / SBO / Latest</h3>'
     +'<table class="ot"><thead><tr><th></th><th>Home</th><th>Draw</th><th>Away</th><th>Line</th><th>Asia H</th><th>Asia A</th></tr></thead><tbody>'
     +'<tr><td class="ol">Opening</td><td>'+(r.ODDSH??'—')+'</td><td>'+(r.ODDSD??'—')+'</td><td>'+(r.ODDSA??'—')+'</td><td>'+(r.ASIALINE??'—')+'</td><td>'+(r.ASIAH??'—')+'</td><td>'+(r.ASIAA??'—')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#a78bfa">Macau</td><td>—</td><td>—</td><td>—</td><td>'+(r.ASIALINEMA??'—')+'</td><td>'+(r.ASIAHMAC??'—')+'</td><td>'+(r.ASIAAMAC??'—')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#fb923c">SBO</td><td>—</td><td>—</td><td>—</td><td>'+(r.ASIALINESB??'—')+'</td><td>'+(r.ASIAHSBO??'—')+'</td><td>'+(r.ASIAASBO??'—')+'</td></tr>'
     +'<tr><td class="ol">Latest</td><td>'+(r.ODDSHLN??'—')+'</td><td>'+(r.ODDSDLN??'—')+'</td><td>'+(r.ODDSALN??'—')+'</td><td>'+(r.ASIALINELN??'—')+'</td><td>'+(r.ASIAHLN??'—')+'</td><td>'+(r.ASIAALN??'—')+'</td></tr>'
     +'</tbody></table></div>'
     +'<div class="dc"><h3>🏆 Goals</h3>'
