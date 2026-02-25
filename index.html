@@ -68,6 +68,8 @@ input::placeholder{color:var(--muted)}
 /* MOBILE CARDS */
 @media(max-width:599px){
   table,thead,tbody,tr,th,td{display:block;width:100%}
+  /* Override for odds tables — keep as real tables on mobile */
+  table.ot,table.ot thead,table.ot tbody,table.ot tr,table.ot th,table.ot td{display:revert;width:auto}
   thead{display:none}
   tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 10px;padding:12px;cursor:pointer;position:relative}
   tbody tr:active{background:var(--surface2)}
