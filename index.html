@@ -161,6 +161,8 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="Result">Result</option>
         <option value="PREEVE">Upcoming</option>
         <option value="Cancel">Cancelled</option>
+        <option value="Closed">Closed</option>
+        <option value="Suspen">Suspended</option>
       </select>
     </div>
     <div class="fg" style="min-width:100px;max-width:130px">
@@ -206,6 +208,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <th onclick="sortBy('GPTH')" id="th-GPTH">GptH <span class="si">⇅</span></th>
       <th onclick="sortBy('GPTD')" id="th-GPTD">GptD <span class="si">⇅</span></th>
       <th onclick="sortBy('GPTA')" id="th-GPTA">GptA <span class="si">⇅</span></th>
+      <th id="th-PREDICT">H% / D% / A%</th>
       <th>Score</th>
       <th>Status</th>
     </tr></thead>
@@ -358,7 +361,16 @@ function renderTable(){
         +'</div></div>'
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
         +'<span>Line: '+(r.ASIALINE??'—')+'</span><span>H: '+(r.ASIAH??'—')+'</span><span>A: '+(r.ASIAA??'—')+'</span>'
-        +'</div></td></tr>';
+        +'</div>'
+        +(r.PREDICTH||r.PREDICTD||r.PREDICTA?'<div style="margin-top:8px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px">'
+          +'<span style="color:#f87171">H '+(r.PREDICTH||0)+'%</span><span style="color:#4ade80">D '+(r.PREDICTD||0)+'%</span><span style="color:#60a5fa">A '+(r.PREDICTA||0)+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
+          +'<div style="width:'+(r.PREDICTH||0)+'%;background:#f87171"></div>'
+          +'<div style="width:'+(r.PREDICTD||0)+'%;background:#4ade80"></div>'
+          +'<div style="width:'+(r.PREDICTA||0)+'%;background:#60a5fa"></div>'
+          +'</div></div>':'')
+        +'</td></tr>';
     }).join('');
   } else {
     body.innerHTML=rows.map(function(r,i){
@@ -404,7 +416,19 @@ function renderTable(){
         +'<td class="oc">'+(r.GPTH??'—')+'</td>'
         +'<td class="oc">'+(r.GPTD??'—')+'</td>'
         +'<td class="oc">'+(r.GPTA??'—')+'</td>'
-        +'<td>'+scoreHtml+'</td>'
+        +'<td>'+(function(){
+          if(!r.PREDICTH&&!r.PREDICTD&&!r.PREDICTA)return '<span style="color:var(--muted)">—</span>';
+          var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
+          return '<div style="min-width:90px">'  
+            +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
+            +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
+            +'<div style="height:5px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
+            +'<div style="width:'+ph+'%;background:#f87171"></div>'
+            +'<div style="width:'+pd+'%;background:#4ade80"></div>'
+            +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
+            +'</div></div>';
+        })()
+        )+'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
     }).join('');
@@ -443,12 +467,19 @@ function openDetail(idx){
       +(r.RESULTFH!=null?'<div class="hts">Half-time: '+r.RESULTFH+' – '+r.RESULTFA+'</div>':'')+'</div>';
   }
   $('panelBody').innerHTML=res
-    +'<div class="dc"><h3>💡 Tips</h3><div class="tg">'
+    +'<div class="dc full"><h3>💡 Tips Summary</h3><div class="tg">'
     +'<div class="ti"><div class="tl">JC Tips Sum</div><div class="tv">'+(r.JCTIPSUM||'—')+'</div></div>'
     +'<div class="ti"><div class="tl">JC Tips SID</div><div class="tv">'+(r.JCTIPSID||'—')+'</div></div>'
     +'<div class="ti"><div class="tl">Tips SID MAC</div><div class="tv">'+(r.TIPSIDMAC||'—')+'</div></div>'
     +'<div class="ti"><div class="tl">Tips ON ID</div><div class="tv">'+(r.TIPSONID||'—')+'</div></div>'
-    +'</div></div>'
+    +'</div>'
+    +(r.JCTIPS1?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">JC Tips Analysis</div>'
+      +(r.JCTIPS1?'<div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px">'+r.JCTIPS1+'</div>':'')
+      +(r.JCTIPS2?'<div style="font-size:11px;color:var(--text);line-height:1.6;margin-bottom:6px">'+r.JCTIPS2+'</div>':'')
+      +(r.JCTIPS3?'<div style="font-size:11px;color:var(--muted);line-height:1.6">'+r.JCTIPS3+'</div>':'')
+      +'</div>':'')
+    +'</div>'
     +'<div class="dc"><h3>📊 Prediction %</h3>'
     +'<div class="pl"><span style="color:var(--accent2)">H '+ph+'%</span><span style="color:#a78bfa">D '+pd+'%</span><span style="color:var(--warn)">A '+pa+'%</span></div>'
     +'<div class="pbar"><div class="ph2" style="width:'+(ph/pt*100).toFixed(1)+'%"></div><div class="pd2" style="width:'+(pd/pt*100).toFixed(1)+'%"></div><div class="pa2" style="width:'+(pa/pt*100).toFixed(1)+'%"></div></div>'
