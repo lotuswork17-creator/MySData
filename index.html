@@ -75,6 +75,10 @@ input::placeholder{color:var(--muted)}
   tbody tr:active{background:var(--surface2)}
   tbody tr.selected{border-color:var(--accent2);background:#1a2640}
   td{padding:0;border:none;white-space:normal;max-width:100%;overflow:visible}
+  /* Pagination fix for mobile */
+  .pagination{display:flex!important;flex-wrap:wrap;justify-content:center;padding:10px 8px;gap:6px}
+  .pg-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
+  .pg-info{width:100%;text-align:center;margin:4px 0 0}
 }
 
 .score{font-weight:700;color:var(--text)}
@@ -236,6 +240,19 @@ if(isMobile) PG=20;
 
 function $(id){return document.getElementById(id);}
 
+function expertScore(r){
+  function ts(v){if(!v)return null;var u=String(v).toUpperCase();
+    if(u==='H'||u==='1H'||u==='AH')return'H';
+    if(u==='D'||u==='1D'||u==='AD')return'D';
+    if(u==='A'||u==='1A'||u==='AA')return'A';
+    return null;}
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  var tt=th+td+ta;
+  if(!tt)return null;
+  return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
+}
 function loadData(){
   var controller=new AbortController();
   var timer=setTimeout(function(){controller.abort();},10000);
@@ -383,6 +400,7 @@ function renderTable(){
           +'<div style="width:'+(r.PREDICTD||0)+'%;background:#4ade80"></div>'
           +'<div style="width:'+(r.PREDICTA||0)+'%;background:#60a5fa"></div>'
           +'</div></div>':'')
+        +(function(){var e=expertScore(r);if(!e)return'';return'<div style="margin-top:6px">'  +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px">'+'<span style="color:#f87171">Expert H '+e.h+'%</span>'+'<span style="color:#4ade80">D '+e.d+'%</span>'+'<span style="color:#60a5fa">A '+e.a+'%</span></div>'+'<div style="height:5px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'+'<div style="width:'+e.h+'%;background:#f87171"></div>'+'<div style="width:'+e.d+'%;background:#4ade80"></div>'+'<div style="width:'+e.a+'%;background:#60a5fa"></div>'+'</div></div>';})()
         +'</td></tr>';
     }).join('');
   } else {
@@ -417,16 +435,28 @@ function renderTable(){
         +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
         +'<td>'+(function(){
-          if(!r.PREDICTH&&!r.PREDICTD&&!r.PREDICTA)return '<span style="color:var(--muted)">—</span>';
           var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
-          return '<div style="min-width:90px">'  
-            +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
-            +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
-            +'<div style="height:5px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
-            +'<div style="width:'+ph+'%;background:#f87171"></div>'
-            +'<div style="width:'+pd+'%;background:#4ade80"></div>'
-            +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
-            +'</div></div>';
+          var e=expertScore(r);
+          var html='';
+          if(ph||pd||pa){
+            html+='<div style="min-width:100px">'
+              +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
+              +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
+              +'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden">'
+              +'<div style="width:'+ph+'%;background:#f87171"></div>'
+              +'<div style="width:'+pd+'%;background:#4ade80"></div>'
+              +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
+              +'</div></div>';}
+          if(e){
+            html+='<div style="min-width:100px;margin-top:3px">'
+              +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
+              +'<span style="color:#f87171;opacity:.7">E'+e.h+'%</span><span style="color:#4ade80;opacity:.7">'+e.d+'%</span><span style="color:#60a5fa;opacity:.7">'+e.a+'%</span></div>'
+              +'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden">'
+              +'<div style="width:'+e.h+'%;background:rgba(248,113,113,.6)"></div>'
+              +'<div style="width:'+e.d+'%;background:rgba(74,222,128,.6)"></div>'
+              +'<div style="width:'+e.a+'%;background:rgba(96,165,250,.6)"></div>'
+              +'</div></div>';}
+          return html||'<span style="color:var(--muted)">—</span>';
         })()
         +'<td class="oc">'+(r.ASIALINE??'—')+'</td>'
         +'<td class="oc">'+(r.ASIAH??'—')+'</td>'
