@@ -195,6 +195,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <th onclick="sortBy('CATEGORY')" id="th-CATEGORY">League <span class="si">⇅</span></th>
       <th onclick="sortBy('TEAMH')" id="th-TEAMH">Home <span class="si">⇅</span></th>
       <th onclick="sortBy('TEAMA')" id="th-TEAMA">Away <span class="si">⇅</span></th>
+      <th id="th-PREDICT">H% / D% / A%</th>
       <th onclick="sortBy('ASIALINE')" id="th-ASIALINE">Line <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIAH')" id="th-ASIAH">Asia H <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIAA')" id="th-ASIAA">Asia A <span class="si">⇅</span></th>
@@ -208,7 +209,6 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <th onclick="sortBy('GPTH')" id="th-GPTH">GptH <span class="si">⇅</span></th>
       <th onclick="sortBy('GPTD')" id="th-GPTD">GptD <span class="si">⇅</span></th>
       <th onclick="sortBy('GPTA')" id="th-GPTA">GptA <span class="si">⇅</span></th>
-      <th id="th-PREDICT">H% / D% / A%</th>
       <th>Score</th>
       <th>Status</th>
     </tr></thead>
@@ -406,6 +406,18 @@ function renderTable(){
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
         +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
+        +'<td>'+(function(){
+          if(!r.PREDICTH&&!r.PREDICTD&&!r.PREDICTA)return '<span style="color:var(--muted)">—</span>';
+          var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
+          return '<div style="min-width:90px">'  
+            +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
+            +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
+            +'<div style="height:5px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
+            +'<div style="width:'+ph+'%;background:#f87171"></div>'
+            +'<div style="width:'+pd+'%;background:#4ade80"></div>'
+            +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
+            +'</div></div>';
+        })()
         +'<td class="oc">'+(r.ASIALINE??'—')+'</td>'
         +'<td class="oc">'+(r.ASIAH??'—')+'</td>'
         +'<td class="oc">'+(r.ASIAA??'—')+'</td>'
@@ -419,18 +431,7 @@ function renderTable(){
         +'<td class="oc">'+(r.GPTH??'—')+'</td>'
         +'<td class="oc">'+(r.GPTD??'—')+'</td>'
         +'<td class="oc">'+(r.GPTA??'—')+'</td>'
-        +'<td>'+(function(){
-          if(!r.PREDICTH&&!r.PREDICTD&&!r.PREDICTA)return '<span style="color:var(--muted)">—</span>';
-          var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
-          return '<div style="min-width:90px">'  
-            +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
-            +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
-            +'<div style="height:5px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
-            +'<div style="width:'+ph+'%;background:#f87171"></div>'
-            +'<div style="width:'+pd+'%;background:#4ade80"></div>'
-            +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
-            +'</div></div>';
-        })()+'<td>'+scoreHtml+'</td>'
+        +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
     }).join('');
