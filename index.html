@@ -365,6 +365,16 @@ function renderTable(){
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
         +'<span>Line: '+(r.ASIALINE??'—')+'</span><span>H: '+(r.ASIAH??'—')+'</span><span>A: '+(r.ASIAA??'—')+'</span>'
         +'</div>'
+        +'<div style="display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">'
+        +'<span style="color:var(--muted)">Sum:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)
+        +' <span style="color:var(--muted)">SID:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)
+        +' <span style="color:var(--muted)">Mac:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)
+        +' <span style="color:var(--muted)">ON:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)
+        +'</div>'
+        +'<div style="display:flex;gap:10px;margin-top:4px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
+        +'<span>Gem: '+(r.GEMH??'—')+' / '+(r.GEMD??'—')+' / '+(r.GEMA??'—')+'</span>'
+        +'<span style="margin-left:8px">Gpt: '+(r.GPTH??'—')+' / '+(r.GPTD??'—')+' / '+(r.GPTA??'—')+'</span>'
+        +'</div>'
         +(r.PREDICTH||r.PREDICTD||r.PREDICTA?'<div style="margin-top:8px">'
           +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px">'
           +'<span style="color:#f87171">H '+(r.PREDICTH||0)+'%</span><span style="color:#4ade80">D '+(r.PREDICTD||0)+'%</span><span style="color:#60a5fa">A '+(r.PREDICTA||0)+'%</span></div>'
