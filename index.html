@@ -237,8 +237,11 @@ if(isMobile) PG=20;
 function $(id){return document.getElementById(id);}
 
 function loadData(){
-  fetch('https://lotuswork17-creator.github.io/MySData/data.json')
+  var controller=new AbortController();
+  var timer=setTimeout(function(){controller.abort();},10000);
+  fetch('https://lotuswork17-creator.github.io/MySData/data.json',{signal:controller.signal})
     .then(function(r){
+      clearTimeout(timer);
       if(!r.ok) throw new Error('HTTP '+r.status+' — make sure data.json is in the same folder as index.html');
       return r.json();
     })
@@ -280,7 +283,7 @@ function loadData(){
     .catch(function(e){
       $('loadingState').style.display='none';
       $('errorState').style.display='flex';
-      $('errorMsg').textContent=e.message;
+      $('errorMsg').textContent=e.name==='AbortError'?'Request timed out after 10s — check your internet connection and that data.json exists on GitHub.':e.message;
     });
 }
 
@@ -427,8 +430,7 @@ function renderTable(){
             +'<div style="width:'+pd+'%;background:#4ade80"></div>'
             +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
             +'</div></div>';
-        })()
-        )+'<td>'+scoreHtml+'</td>'
+        })()+'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
     }).join('');
