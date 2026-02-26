@@ -234,12 +234,18 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <div class="fl">Expert Signal</div>
       <select id="expertSelect">
         <option value="">Any</option>
-        <option value="H-dom">H Consensus (Expert H dom.)</option>
-        <option value="A-dom">A Consensus (Expert A dom.)</option>
+        <option value="H-dom">H Consensus</option>
+        <option value="A-dom">A Consensus</option>
         <option value="agree">Agrees with Predict</option>
         <option value="disagree">Disagrees with Predict</option>
+        <option disabled>──────────</option>
         <option value="high-conf">High Confidence</option>
+        <option value="high-conf-H">High Confidence + H Consensus</option>
+        <option value="high-conf-A">High Confidence + A Consensus</option>
+        <option disabled>──────────</option>
         <option value="low-conf">Low Confidence ⚠</option>
+        <option value="low-conf-H">Low Confidence ⚠ + H Consensus</option>
+        <option value="low-conf-A">Low Confidence ⚠ + A Consensus</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -476,7 +482,11 @@ function applyFilters(){
       if(ef==='agree'){if(!e||predictLead(r)!==el)return false;}
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
       if(ef==='high-conf'&&lc)return false;
+      if(ef==='high-conf-H'){if(lc||!e||el!=='H')return false;}
+      if(ef==='high-conf-A'){if(lc||!e||el!=='A')return false;}
       if(ef==='low-conf'&&!lc)return false;
+      if(ef==='low-conf-H'){if(!lc||!e||el!=='H')return false;}
+      if(ef==='low-conf-A'){if(!lc||!e||el!=='A')return false;}
     }
     return true;
   });
