@@ -88,6 +88,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 
 /* PAGINATION */
 .pagination{padding:8px 14px;display:none;align-items:center;gap:4px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.pagination.pg-visible{display:flex}
 .pg-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
 .pg-btn:active{border-color:var(--accent2);color:var(--accent2)}
 .pg-btn.active{background:var(--accent2);color:#0f1117;border-color:var(--accent2);font-weight:700}
@@ -95,10 +96,8 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 .pg-info{color:var(--muted);margin:0 6px}
 .pg-input{width:46px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:12px;text-align:center;outline:none;padding:0 4px}
 .pg-input:focus{border-color:var(--accent2)}
-.pg-visible{display:flex!important}
 @media(max-width:599px){
-  .pagination{display:none;flex-wrap:wrap;justify-content:center;padding:10px 8px;gap:6px}
-  .pagination.pg-visible{display:flex!important}
+  .pagination{flex-wrap:wrap;justify-content:center;padding:10px 8px;gap:6px}
   .pg-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
   .pg-info{width:100%;text-align:center;margin:4px 0 0}
   .pg-input{width:50px;height:36px;font-size:13px}
@@ -259,8 +258,8 @@ function expertScore(r){
   if(!tt)return null;
   return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
 }
+
 function lowConfidence(r){
-  // Count valid (non-null, non-empty) Tips column choices
   function ts(v){if(!v)return null;var u=String(v).toUpperCase();
     if(u==='H'||u==='1H'||u==='AH')return'H';
     if(u==='D'||u==='1D'||u==='AD')return'D';
@@ -270,6 +269,8 @@ function lowConfidence(r){
   var gemGptTotal=(r.GEMH||0)+(r.GEMD||0)+(r.GEMA||0)+(r.GPTH||0)+(r.GPTD||0)+(r.GPTA||0);
   return tipCount<2||gemGptTotal<3;
 }
+
+function loadData(){
   var controller=new AbortController();
   var timer=setTimeout(function(){controller.abort();},10000);
   fetch('https://lotuswork17-creator.github.io/MySData/data.json',{signal:controller.signal})
@@ -295,7 +296,7 @@ function lowConfidence(r){
       $('loadingState').style.display='none';
       $('tableArea').style.display='block';
       $('resultsBar').style.display='flex';
-      $('pagination').removeAttribute('style');$('pagination').classList.add('pg-visible');
+      $('pagination').classList.add('pg-visible');
 
       $('th-DATE').classList.add('sort-desc');
       $('sortInfo').textContent='Sorted by DATE ↓';
@@ -396,7 +397,7 @@ function renderTable(){
         +scoreHtml
         +'</div></div>'
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Line: '+(r.ASIALINE??'—')+'</span><span>H: '+(r.ASIAH??'—')+'</span><span>A: '+(r.ASIAA??'—')+'</span>'
+        +'<span>Line: '+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</span><span>H: '+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</span><span>A: '+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</span>'
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">'
         +'<span style="color:var(--muted)">Sum:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)
@@ -405,36 +406,44 @@ function renderTable(){
         +' <span style="color:var(--muted)">ON:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:4px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Gem: '+(r.GEMH??'—')+' / '+(r.GEMD??'—')+' / '+(r.GEMA??'—')+'</span>'
-        +'<span style="margin-left:8px">Gpt: '+(r.GPTH??'—')+' / '+(r.GPTD??'—')+' / '+(r.GPTA??'—')+'</span>'
+        +'<span>Gem: '+(r.GEMH!=null?r.GEMH:'\u2014')+' / '+(r.GEMD!=null?r.GEMD:'\u2014')+' / '+(r.GEMA!=null?r.GEMA:'\u2014')+'</span>'
+        +'<span style="margin-left:8px">Gpt: '+(r.GPTH!=null?r.GPTH:'\u2014')+' / '+(r.GPTD!=null?r.GPTD:'\u2014')+' / '+(r.GPTA!=null?r.GPTA:'\u2014')+'</span>'
         +'</div>'
         +(r.PREDICTH||r.PREDICTD||r.PREDICTA?'<div style="margin-top:8px">'
-          +(lowConfidence(r)?'<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px"><span style="font-size:9px;color:var(--warn);opacity:.7;font-family:var(--mono)">⚠ Low confidence</span></div>':'')
+          +(lowConfidence(r)?'<div style="font-size:9px;color:var(--warn);opacity:.8;font-family:var(--mono);margin-bottom:4px">⚠ Low confidence</div>':'')
           +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px'+(lowConfidence(r)?';opacity:.5':'')+'">'
           +'<span style="color:#f87171">H '+(r.PREDICTH||0)+'%</span><span style="color:#4ade80">D '+(r.PREDICTD||0)+'%</span><span style="color:#60a5fa">A '+(r.PREDICTA||0)+'%</span></div>'
-          +'<div style="height:6px;border-radius:3px;background:var(--border);display:flex;overflow:hidden'+(lowConfidence(r)?';opacity:.4':'')+'">'
           +(lowConfidence(r)
-            ?'<div style="width:'+(r.PREDICTH||0)+'%;background:repeating-linear-gradient(90deg,#f87171 0 3px,transparent 3px 6px)"></div>'
-            +'<div style="width:'+(r.PREDICTD||0)+'%;background:repeating-linear-gradient(90deg,#4ade80 0 3px,transparent 3px 6px)"></div>'
-            +'<div style="width:'+(r.PREDICTA||0)+'%;background:repeating-linear-gradient(90deg,#60a5fa 0 3px,transparent 3px 6px)"></div>'
-            :'<div style="width:'+(r.PREDICTH||0)+'%;background:#f87171"></div>'
-            +'<div style="width:'+(r.PREDICTD||0)+'%;background:#4ade80"></div>'
-            +'<div style="width:'+(r.PREDICTA||0)+'%;background:#60a5fa"></div>')
-          +'</div></div>':'')
-        +(function(){var e=expertScore(r);if(!e)return'';var lc=lowConfidence(r);return'<div style="margin-top:6px">'
-          +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px'+(lc?';opacity:.5':'')+'">'
-          +'<span style="color:#f87171">Expert H '+e.h+'%</span>'
-          +'<span style="color:#4ade80">D '+e.d+'%</span>'
-          +'<span style="color:#60a5fa">A '+e.a+'%</span></div>'
-          +'<div style="height:12px;border-radius:4px;background:var(--border);display:flex;overflow:hidden'+(lc?';opacity:.4':'')+'">'
-          +(lc
-            ?'<div style="width:'+e.h+'%;background:repeating-linear-gradient(90deg,rgba(248,113,113,.8) 0 4px,transparent 4px 8px)"></div>'
-            +'<div style="width:'+e.d+'%;background:repeating-linear-gradient(90deg,rgba(74,222,128,.8) 0 4px,transparent 4px 8px)"></div>'
-            +'<div style="width:'+e.a+'%;background:repeating-linear-gradient(90deg,rgba(96,165,250,.8) 0 4px,transparent 4px 8px)"></div>'
-            :'<div style="width:'+e.h+'%;background:#f87171"></div>'
-            +'<div style="width:'+e.d+'%;background:#4ade80"></div>'
-            +'<div style="width:'+e.a+'%;background:#60a5fa"></div>')
-          +'</div></div>';})()
+            ?'<div style="height:6px;border-radius:3px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
+              +'<div style="width:'+(r.PREDICTH||0)+'%;background:repeating-linear-gradient(90deg,#f87171 0 3px,transparent 3px 6px)"></div>'
+              +'<div style="width:'+(r.PREDICTD||0)+'%;background:repeating-linear-gradient(90deg,#4ade80 0 3px,transparent 3px 6px)"></div>'
+              +'<div style="width:'+(r.PREDICTA||0)+'%;background:repeating-linear-gradient(90deg,#60a5fa 0 3px,transparent 3px 6px)"></div>'
+              +'</div>'
+            :'<div style="height:6px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
+              +'<div style="width:'+(r.PREDICTH||0)+'%;background:#f87171"></div>'
+              +'<div style="width:'+(r.PREDICTD||0)+'%;background:#4ade80"></div>'
+              +'<div style="width:'+(r.PREDICTA||0)+'%;background:#60a5fa"></div>'
+              +'</div>')
+          +'</div>':'')
+        +(function(){
+          var e=expertScore(r);if(!e)return'';
+          var lc=lowConfidence(r);
+          return'<div style="margin-top:6px">'
+            +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px'+(lc?';opacity:.5':'')+'">'
+            +'<span style="color:#f87171">Expert H '+e.h+'%</span><span style="color:#4ade80">D '+e.d+'%</span><span style="color:#60a5fa">A '+e.a+'%</span></div>'
+            +(lc
+              ?'<div style="height:12px;border-radius:4px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
+                +'<div style="width:'+e.h+'%;background:repeating-linear-gradient(90deg,rgba(248,113,113,.9) 0 4px,transparent 4px 8px)"></div>'
+                +'<div style="width:'+e.d+'%;background:repeating-linear-gradient(90deg,rgba(74,222,128,.9) 0 4px,transparent 4px 8px)"></div>'
+                +'<div style="width:'+e.a+'%;background:repeating-linear-gradient(90deg,rgba(96,165,250,.9) 0 4px,transparent 4px 8px)"></div>'
+                +'</div>'
+              :'<div style="height:12px;border-radius:4px;background:var(--border);display:flex;overflow:hidden">'
+                +'<div style="width:'+e.h+'%;background:#f87171"></div>'
+                +'<div style="width:'+e.d+'%;background:#4ade80"></div>'
+                +'<div style="width:'+e.a+'%;background:#60a5fa"></div>'
+                +'</div>')
+            +'</div>';
+        })()
         +'</td></tr>';
     }).join('');
   } else {
@@ -474,62 +483,54 @@ function renderTable(){
           var lc=lowConfidence(r);
           var html='';
           if(ph||pd||pa){
-            if(lc){
-              html+='<div style="min-width:100px">'
-                +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px;opacity:.45">'
-                +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
-                +'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
-                +'<div style="width:'+ph+'%;background:repeating-linear-gradient(90deg,#f87171 0 3px,transparent 3px 6px)"></div>'
-                +'<div style="width:'+pd+'%;background:repeating-linear-gradient(90deg,#4ade80 0 3px,transparent 3px 6px)"></div>'
-                +'<div style="width:'+pa+'%;background:repeating-linear-gradient(90deg,#60a5fa 0 3px,transparent 3px 6px)"></div>'
-                +'</div></div>';
-            } else {
-              html+='<div style="min-width:100px">'
-                +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
-                +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
-                +'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden">'
-                +'<div style="width:'+ph+'%;background:#f87171"></div>'
-                +'<div style="width:'+pd+'%;background:#4ade80"></div>'
-                +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
-                +'</div></div>';
-            }
+            html+='<div style="min-width:100px">'
+              +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px'+(lc?';opacity:.5':'')+'">'
+              +'<span style="color:#f87171">'+ph+'%</span><span style="color:#4ade80">'+pd+'%</span><span style="color:#60a5fa">'+pa+'%</span></div>'
+              +(lc
+                ?'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
+                  +'<div style="width:'+ph+'%;background:repeating-linear-gradient(90deg,#f87171 0 3px,transparent 3px 6px)"></div>'
+                  +'<div style="width:'+pd+'%;background:repeating-linear-gradient(90deg,#4ade80 0 3px,transparent 3px 6px)"></div>'
+                  +'<div style="width:'+pa+'%;background:repeating-linear-gradient(90deg,#60a5fa 0 3px,transparent 3px 6px)"></div>'
+                  +'</div>'
+                :'<div style="height:4px;border-radius:2px;background:var(--border);display:flex;overflow:hidden">'
+                  +'<div style="width:'+ph+'%;background:#f87171"></div>'
+                  +'<div style="width:'+pd+'%;background:#4ade80"></div>'
+                  +'<div style="width:'+pa+'%;background:#60a5fa"></div>'
+                  +'</div>')
+              +'</div>';
           }
           if(e){
-            if(lc){
-              html+='<div style="min-width:100px;margin-top:3px">'
-                +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px;opacity:.45">'
-                +'<span style="color:#f87171">E'+e.h+'%</span><span style="color:#4ade80">'+e.d+'%</span><span style="color:#60a5fa">'+e.a+'%</span></div>'
-                +'<div style="height:8px;border-radius:3px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
-                +'<div style="width:'+e.h+'%;background:repeating-linear-gradient(90deg,rgba(248,113,113,.8) 0 4px,transparent 4px 8px)"></div>'
-                +'<div style="width:'+e.d+'%;background:repeating-linear-gradient(90deg,rgba(74,222,128,.8) 0 4px,transparent 4px 8px)"></div>'
-                +'<div style="width:'+e.a+'%;background:repeating-linear-gradient(90deg,rgba(96,165,250,.8) 0 4px,transparent 4px 8px)"></div>'
-                +'</div></div>';
-            } else {
-              html+='<div style="min-width:100px;margin-top:3px">'
-                +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px">'
-                +'<span style="color:#f87171;opacity:.7">E'+e.h+'%</span><span style="color:#4ade80;opacity:.7">'+e.d+'%</span><span style="color:#60a5fa;opacity:.7">'+e.a+'%</span></div>'
-                +'<div style="height:8px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
-                +'<div style="width:'+e.h+'%;background:rgba(248,113,113,.6)"></div>'
-                +'<div style="width:'+e.d+'%;background:rgba(74,222,128,.6)"></div>'
-                +'<div style="width:'+e.a+'%;background:rgba(96,165,250,.6)"></div>'
-                +'</div></div>';
-            }
+            html+='<div style="min-width:100px;margin-top:3px">'
+              +'<div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);margin-bottom:2px'+(lc?';opacity:.5':'')+'">'
+              +'<span style="color:#f87171;opacity:.7">E'+e.h+'%</span><span style="color:#4ade80;opacity:.7">'+e.d+'%</span><span style="color:#60a5fa;opacity:.7">'+e.a+'%</span></div>'
+              +(lc
+                ?'<div style="height:8px;border-radius:3px;background:var(--border);display:flex;overflow:hidden;opacity:.4">'
+                  +'<div style="width:'+e.h+'%;background:repeating-linear-gradient(90deg,rgba(248,113,113,.9) 0 4px,transparent 4px 8px)"></div>'
+                  +'<div style="width:'+e.d+'%;background:repeating-linear-gradient(90deg,rgba(74,222,128,.9) 0 4px,transparent 4px 8px)"></div>'
+                  +'<div style="width:'+e.a+'%;background:repeating-linear-gradient(90deg,rgba(96,165,250,.9) 0 4px,transparent 4px 8px)"></div>'
+                  +'</div>'
+                :'<div style="height:8px;border-radius:3px;background:var(--border);display:flex;overflow:hidden">'
+                  +'<div style="width:'+e.h+'%;background:rgba(248,113,113,.6)"></div>'
+                  +'<div style="width:'+e.d+'%;background:rgba(74,222,128,.6)"></div>'
+                  +'<div style="width:'+e.a+'%;background:rgba(96,165,250,.6)"></div>'
+                  +'</div>')
+              +'</div>';
           }
           return html||'<span style="color:var(--muted)">—</span>';
         })()
-        +'<td class="oc">'+(r.ASIALINE??'—')+'</td>'
-        +'<td class="oc">'+(r.ASIAH??'—')+'</td>'
-        +'<td class="oc">'+(r.ASIAA??'—')+'</td>'
+        +'<td class="oc">'+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
-        +'<td class="oc">'+(r.GEMH??'—')+'</td>'
-        +'<td class="oc">'+(r.GEMD??'—')+'</td>'
-        +'<td class="oc">'+(r.GEMA??'—')+'</td>'
-        +'<td class="oc">'+(r.GPTH??'—')+'</td>'
-        +'<td class="oc">'+(r.GPTD??'—')+'</td>'
-        +'<td class="oc">'+(r.GPTA??'—')+'</td>'
+        +'<td class="oc">'+(r.GEMH!=null?r.GEMH:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GEMD!=null?r.GEMD:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GEMA!=null?r.GEMA:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTH!=null?r.GPTH:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTD!=null?r.GPTD:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTA!=null?r.GPTA:'\u2014')+'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
@@ -551,7 +552,7 @@ function renderPagination(){
   range.forEach(function(p){if(p-prev>1)html+='<span style="color:var(--muted);padding:0 2px">…</span>';html+='<button class="pg-btn '+(p===pg?'active':'')+'" onclick="goPage('+p+')">'+p+'</button>';prev=p;});
   html+='<button class="pg-btn" '+(pg>=total?'disabled':'')+' onclick="goPage('+(pg+1)+')">›</button>';
   html+='<span class="pg-info">'+pg+' / '+total+'</span>';
-  html+='<input class="pg-input" type="number" min="1" max="'+total+'" value="'+pg+'" onchange="goPage(Math.min('+total+',Math.max(1,parseInt(this.value)||1)))" title="Go to page"/>';
+  html+='<input class="pg-input" type="number" min="1" max="'+total+'" value="'+pg+'" onchange="goPage(Math.min('+total+',Math.max(1,parseInt(this.value)||1)))" title="Jump to page"/>';
   el.innerHTML=html;
 }
 function goPage(p){pg=p;renderTable();renderPagination();$('tableArea').scrollTop=0;}
@@ -596,22 +597,24 @@ function openDetail(idx){
     +'</div></div>'
     +'<div class="dc full"><h3>📈 1X2 Odds</h3>'
     +'<table class="ot"><thead><tr><th></th><th>Home</th><th>Draw</th><th>Away</th></tr></thead><tbody>'
-    +'<tr><td class="ol">Opening</td><td>'+(r.ODDSHLN??'—')+'</td><td>'+(r.ODDSDLN??'—')+'</td><td>'+(r.ODDSALN??'—')+'</td></tr>'
-    +'<tr><td class="ol">Latest</td><td>'+(r.ODDSH??'—')+'</td><td>'+(r.ODDSD??'—')+'</td><td>'+(r.ODDSA??'—')+'</td></tr>'
+    +'<tr><td class="ol">Opening</td><td>'+(r.ODDSHLN!=null?r.ODDSHLN:'\u2014')+'</td><td>'+(r.ODDSDLN!=null?r.ODDSDLN:'\u2014')+'</td><td>'+(r.ODDSALN!=null?r.ODDSALN:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol">Latest</td><td>'+(r.ODDSH!=null?r.ODDSH:'\u2014')+'</td><td>'+(r.ODDSD!=null?r.ODDSD:'\u2014')+'</td><td>'+(r.ODDSA!=null?r.ODDSA:'\u2014')+'</td></tr>'
     +'</tbody></table></div>'
     +'<div class="dc full"><h3>📈 Asian Handicap</h3>'
     +'<table class="ot"><thead><tr><th></th><th>Line</th><th>Asia H</th><th>Asia A</th></tr></thead><tbody>'
-    +'<tr><td class="ol">Opening</td><td>'+(r.ASIALINELN??'—')+'</td><td>'+(r.ASIAHLN??'—')+'</td><td>'+(r.ASIAALN??'—')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#a78bfa">Macau</td><td>'+(r.ASIALINEMA??'—')+'</td><td>'+(r.ASIAHMAC??'—')+'</td><td>'+(r.ASIAAMAC??'—')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#fb923c">SBO</td><td>'+(r.ASIALINESB??'—')+'</td><td>'+(r.ASIAHSBO??'—')+'</td><td>'+(r.ASIAASBO??'—')+'</td></tr>'
-    +'<tr><td class="ol">Latest</td><td>'+(r.ASIALINE??'—')+'</td><td>'+(r.ASIAH??'—')+'</td><td>'+(r.ASIAA??'—')+'</td></tr>'
+    +'<tr><td class="ol">Opening</td><td>'+(r.ASIALINELN!=null?r.ASIALINELN:'\u2014')+'</td><td>'+(r.ASIAHLN!=null?r.ASIAHLN:'\u2014')+'</td><td>'+(r.ASIAALN!=null?r.ASIAALN:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#a78bfa">Macau Open</td><td>'+(r.ASIALINEM2!=null?r.ASIALINEM2:'\u2014')+'</td><td>'+(r.ASIAHMACLN!=null?r.ASIAHMACLN:'\u2014')+'</td><td>'+(r.ASIAAMACLN!=null?r.ASIAAMACLN:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#a78bfa">Macau Latest</td><td>'+(r.ASIALINEMA!=null?r.ASIALINEMA:'\u2014')+'</td><td>'+(r.ASIAHMAC!=null?r.ASIAHMAC:'\u2014')+'</td><td>'+(r.ASIAAMAC!=null?r.ASIAAMAC:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#fb923c">SBO Open</td><td>'+(r.ASIALINES2!=null?r.ASIALINES2:'\u2014')+'</td><td>'+(r.ASIAHSBOLN!=null?r.ASIAHSBOLN:'\u2014')+'</td><td>'+(r.ASIAASBOLN!=null?r.ASIAASBOLN:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol" style="color:#fb923c">SBO Latest</td><td>'+(r.ASIALINESB!=null?r.ASIALINESB:'\u2014')+'</td><td>'+(r.ASIAHSBO!=null?r.ASIAHSBO:'\u2014')+'</td><td>'+(r.ASIAASBO!=null?r.ASIAASBO:'\u2014')+'</td></tr>'
+    +'<tr><td class="ol">Latest</td><td>'+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</td><td>'+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</td><td>'+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</td></tr>'
     +'</tbody></table></div>'
     +'<div class="dc"><h3>🏆 Goals</h3>'
     +'<div class="dr"><span class="dk">GEM H/D/A</span><span class="dv">'+r.GEMH+' / '+r.GEMD+' / '+r.GEMA+'</span></div>'
     +'<div class="dr"><span class="dk">GPT H/D/A</span><span class="dv">'+r.GPTH+' / '+r.GPTD+' / '+r.GPTA+'</span></div>'
     +'</div>'
     +'<div class="dc"><h3>ℹ️ Info</h3>'
-    +'<div class="dr"><span class="dk">Match No.</span><span class="dv">'+(r.MATCHNO||'—')+'</span></div>'
+    
     +'<div class="dr"><span class="dk">Match ID</span><span class="dv" style="font-size:10px">'+(r.MATCHID||'—')+'</span></div>'
     +'</div>';
   $('panelOverlay').classList.add('open');
