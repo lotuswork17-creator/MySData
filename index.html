@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>TipsCompare Viewer 2602261621</title>
+<title>TipsCompare Viewer</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@400;500;600;700;800&display=swap');
 :root{--bg:#0f1117;--surface:#181c27;--surface2:#1f2536;--border:#2b3048;--accent:#4ade80;--accent2:#60a5fa;--warn:#fb923c;--text:#e8eaf0;--muted:#64748b;--mono:'IBM Plex Mono',monospace;--sans:'Outfit',sans-serif}
@@ -36,6 +36,36 @@ input::placeholder{color:var(--muted)}
 /* RESULTS BAR */
 .results-bar{padding:5px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:2px}
 .results-bar b{color:var(--accent)}
+
+/* ASIA STATS PANEL */
+#asiaStats{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0;display:none}
+.as-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-family:var(--sans)}
+.as-row{display:flex;gap:6px;align-items:stretch;margin-bottom:7px;flex-wrap:wrap}
+.as-card{flex:1;min-width:56px;background:var(--surface2);border-radius:8px;padding:7px 10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.as-card.ww{border-color:rgba(74,222,128,.35)}
+.as-card.wh{border-color:rgba(134,239,172,.2)}
+.as-card.dd{border-color:rgba(148,163,184,.2)}
+.as-card.lh{border-color:rgba(147,197,253,.2)}
+.as-card.lw{border-color:rgba(96,165,250,.35)}
+.as-card-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.as-card-count{font-size:18px;font-weight:800;font-family:var(--mono);line-height:1}
+.as-card-pct{font-size:10px;font-family:var(--mono);color:var(--muted)}
+.as-card.ww .as-card-count{color:#4ade80}
+.as-card.wh .as-card-count{color:#86efac}
+.as-card.dd .as-card-count{color:#94a3b8}
+.as-card.lh .as-card-count{color:#93c5fd}
+.as-card.lw .as-card-count{color:#60a5fa}
+.as-bar-wrap{height:8px;border-radius:4px;background:var(--border);display:flex;overflow:hidden;gap:1px}
+.as-bar-ww{background:#4ade80}
+.as-bar-wh{background:#86efac}
+.as-bar-dd{background:#475569}
+.as-bar-lh{background:#93c5fd}
+.as-bar-lw{background:#60a5fa}
+@media(max-width:480px){
+  .as-card{padding:6px 8px}
+  .as-card-count{font-size:15px}
+  .as-card-label{font-size:8px}
+}
 
 /* LOADING / ERROR */
 #loadingState{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;color:var(--muted)}
@@ -188,6 +218,17 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   <span id="sortInfo" style="font-size:10px"></span>
 </div>
 
+<div id="asiaStats">
+  <div class="as-title">Asia Handicap Results — Home Perspective</div>
+  <div class="as-row">
+    <div class="as-card ww"><div class="as-card-label">Win Whole</div><div class="as-card-count" id="as-ww">—</div><div class="as-card-pct" id="as-ww-p">—</div></div>
+    <div class="as-card wh"><div class="as-card-label">Win Half</div><div class="as-card-count" id="as-wh">—</div><div class="as-card-pct" id="as-wh-p">—</div></div>
+    <div class="as-card dd"><div class="as-card-label">Draw</div><div class="as-card-count" id="as-dd">—</div><div class="as-card-pct" id="as-dd-p">—</div></div>
+    <div class="as-card lh"><div class="as-card-label">Loss Half</div><div class="as-card-count" id="as-lh">—</div><div class="as-card-pct" id="as-lh-p">—</div></div>
+    <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-count" id="as-lw">—</div><div class="as-card-pct" id="as-lw-p">—</div></div>
+  </div>
+  <div class="as-bar-wrap" id="as-bar"></div>
+</div>
 <div id="loadingState"><div class="spinner"></div><span>Loading match data…</span></div>
 
 <div id="errorState">
@@ -270,6 +311,35 @@ function lowConfidence(r){
   return tipCount<2||gemGptTotal<3;
 }
 
+function asiaOutcome(r){
+  if(r.STATUS!=='Result'||r.ASIALINE==null||r.RESULTH==null||r.RESULTA==null)return null;
+  var margin=Math.round((r.RESULTH-r.RESULTA+r.ASIALINE)*4)/4;
+  if(margin>=0.5)return'ww';
+  if(margin===0.25)return'wh';
+  if(margin===0)return'dd';
+  if(margin===-0.25)return'lh';
+  return'lw';
+}
+
+function renderAsiaStats(data){
+  var counts={ww:0,wh:0,dd:0,lh:0,lw:0};
+  data.forEach(function(r){var o=asiaOutcome(r);if(o)counts[o]++;});
+  var total=counts.ww+counts.wh+counts.dd+counts.lh+counts.lw;
+  if(!total){document.getElementById('asiaStats').style.display='none';return;}
+  document.getElementById('asiaStats').style.display='block';
+  var keys=['ww','wh','dd','lh','lw'];
+  keys.forEach(function(k){
+    var pct=(counts[k]/total*100).toFixed(1);
+    document.getElementById('as-'+k).textContent=counts[k].toLocaleString();
+    document.getElementById('as-'+k+'-p').textContent=pct+'%';
+  });
+  var bar=document.getElementById('as-bar');
+  bar.innerHTML=keys.map(function(k){
+    var w=(counts[k]/total*100).toFixed(2);
+    return'<div class="as-bar-'+k+'" style="width:'+w+'%;transition:width .4s ease" title="'+k+': '+counts[k]+'"></div>';
+  }).join('');
+}
+
 function loadData(){
   var controller=new AbortController();
   var timer=setTimeout(function(){controller.abort();},10000);
@@ -298,6 +368,7 @@ function loadData(){
       $('resultsBar').style.display='flex';
       $('pagination').classList.add('pg-visible');
 
+      renderAsiaStats(ALL);
       $('th-DATE').classList.add('sort-desc');
       $('sortInfo').textContent='Sorted by DATE ↓';
       applyFilters();
@@ -334,6 +405,7 @@ function applyFilters(){
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
   $('showCount').textContent=filtered.length.toLocaleString();
   $('totalCount').textContent=ALL.length.toLocaleString();
+  renderAsiaStats(filtered);
   renderTable();renderPagination();
 }
 
