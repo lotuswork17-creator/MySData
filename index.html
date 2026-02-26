@@ -48,13 +48,13 @@ input::placeholder{color:var(--muted)}
 .as-card.lh{border-color:rgba(147,197,253,.2)}
 .as-card.lw{border-color:rgba(96,165,250,.35)}
 .as-card-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.as-card-count{font-size:18px;font-weight:800;font-family:var(--mono);line-height:1}
-.as-card-pct{font-size:10px;font-family:var(--mono);color:var(--muted)}
-.as-card.ww .as-card-count{color:#4ade80}
-.as-card.wh .as-card-count{color:#86efac}
-.as-card.dd .as-card-count{color:#94a3b8}
-.as-card.lh .as-card-count{color:#93c5fd}
-.as-card.lw .as-card-count{color:#60a5fa}
+.as-card-pct{font-size:20px;font-weight:800;font-family:var(--mono);line-height:1}
+.as-card-count{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.as-card.ww .as-card-pct{color:#4ade80}
+.as-card.wh .as-card-pct{color:#86efac}
+.as-card.dd .as-card-pct{color:#94a3b8}
+.as-card.lh .as-card-pct{color:#93c5fd}
+.as-card.lw .as-card-pct{color:#60a5fa}
 .as-bar-wrap{height:8px;border-radius:4px;background:var(--border);display:flex;overflow:hidden;gap:1px}
 .as-bar-ww{background:#4ade80}
 .as-bar-wh{background:#86efac}
@@ -260,11 +260,11 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 <div id="asiaStats">
   <div class="as-title">Asia Handicap Results — Home Perspective</div>
   <div class="as-row">
-    <div class="as-card ww"><div class="as-card-label">Win Whole</div><div class="as-card-count" id="as-ww">—</div><div class="as-card-pct" id="as-ww-p">—</div></div>
-    <div class="as-card wh"><div class="as-card-label">Win Half</div><div class="as-card-count" id="as-wh">—</div><div class="as-card-pct" id="as-wh-p">—</div></div>
-    <div class="as-card dd"><div class="as-card-label">Draw</div><div class="as-card-count" id="as-dd">—</div><div class="as-card-pct" id="as-dd-p">—</div></div>
-    <div class="as-card lh"><div class="as-card-label">Loss Half</div><div class="as-card-count" id="as-lh">—</div><div class="as-card-pct" id="as-lh-p">—</div></div>
-    <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-count" id="as-lw">—</div><div class="as-card-pct" id="as-lw-p">—</div></div>
+    <div class="as-card ww"><div class="as-card-label">Win Whole</div><div class="as-card-pct" id="as-ww-p">—</div><div class="as-card-count" id="as-ww">—</div></div>
+    <div class="as-card wh"><div class="as-card-label">Win Half</div><div class="as-card-pct" id="as-wh-p">—</div><div class="as-card-count" id="as-wh">—</div></div>
+    <div class="as-card dd"><div class="as-card-label">Draw</div><div class="as-card-pct" id="as-dd-p">—</div><div class="as-card-count" id="as-dd">—</div></div>
+    <div class="as-card lh"><div class="as-card-label">Loss Half</div><div class="as-card-pct" id="as-lh-p">—</div><div class="as-card-count" id="as-lh">—</div></div>
+    <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-pct" id="as-lw-p">—</div><div class="as-card-count" id="as-lw">—</div></div>
   </div>
   <div class="as-bar-wrap" id="as-bar"></div>
 </div>
@@ -417,6 +417,11 @@ function loadData(){
       // Populate asialine dropdown
       var lines=Array.from(new Set(ALL.map(function(r){return r.ASIALINE;}).filter(function(v){return v!=null;}))).sort(function(a,b){return a-b;});
       var alsel=$('asialineSelect');
+      // Add group options first
+      var grpSep=document.createElement('option');grpSep.disabled=true;grpSep.textContent='──────────';alsel.appendChild(grpSep);
+      var grpA=document.createElement('option');grpA.value='away-quarter';grpA.textContent='Away Quarter (-0.25 & -0.75)';alsel.appendChild(grpA);
+      var grpH=document.createElement('option');grpH.value='home-quarter';grpH.textContent='Home Quarter (+0.25 & +0.75)';alsel.appendChild(grpH);
+      var grpSep2=document.createElement('option');grpSep2.disabled=true;grpSep2.textContent='──────────';alsel.appendChild(grpSep2);
       lines.forEach(function(l){var o=document.createElement('option');o.value=String(l);o.textContent=l;alsel.appendChild(o);});
       $('catSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('statusSelect').addEventListener('change',function(){pg=1;applyFilters();});
@@ -461,7 +466,11 @@ function applyFilters(){
     if(cat&&r.CATEGORY!==cat)return false;
     if(st&&r.STATUS!==st)return false;
     if(cutoff&&r.DATE&&r.DATE<cutoff)return false;
-    if(al&&String(r.ASIALINE)!==al)return false;
+    if(al){
+      if(al==='away-quarter'){if(r.ASIALINE!=-0.25&&r.ASIALINE!=-0.75)return false;}
+      else if(al==='home-quarter'){if(r.ASIALINE!=0.25&&r.ASIALINE!=0.75)return false;}
+      else if(String(r.ASIALINE)!==al)return false;
+    }
     // Predict filter
     if(pf){
       var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
