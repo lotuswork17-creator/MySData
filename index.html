@@ -382,7 +382,7 @@ function renderAsiaStats(data){
 function loadData(){
   var controller=new AbortController();
   var timer=setTimeout(function(){controller.abort();},10000);
-  fetch('https://lotuswork17-creator.github.io/MySData/data.json',{signal:controller.signal})
+  fetch('https://lotuswork17-creator.github.io/MySData/data.json?v='+Date.now(),{signal:controller.signal})
     .then(function(r){
       clearTimeout(timer);
       if(!r.ok) throw new Error('HTTP '+r.status+' — make sure data.json is in the same folder as index.html');
