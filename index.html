@@ -562,7 +562,7 @@ function clearFilters(){
 function asiaLineArrows(val,ln){
   if(val==null)return'—';
   var s=String(val);
-  if(ln==null)return s;
+  if(ln==null||ln===0)return s;
   var diff=Math.round((val-ln)*100)/100;
   if(diff===0)return s;
   var abs=Math.abs(diff);
@@ -823,14 +823,31 @@ function openDetail(idx){
     +'<div class="dc full"><h3>📈 Asian Handicap</h3>'
     +(function(){
       function ahVal(v){return v!=null?String(v):'—';}
+      // Line diff: absolute movement, skip if open==0
       function ahDiff(latest,open){
-        if(latest==null||open==null)return'';
+        if(latest==null||open==null||open===0)return'';
         var d=Math.round((latest-open)*100)/100;
         if(d===0)return'';
         var abs=Math.abs(d);
         var n=abs>=1.0?3:abs>=0.5?2:1;
         var arr=d>0?'▲':'▼';
         var col=d>0?'#60a5fa':'#f87171';
+        return '<span style="color:'+col+';font-size:9px;margin-left:3px">'+arr.repeat(n)+'</span>';
+      }
+      // Odds diff: percentage-based for Asia H / Asia A
+      function ahOddsDiff(lat,opn){
+        if(lat==null||opn==null||opn===0||lat===0)return'';
+        if(lat===opn)return'';
+        var n,arr,col;
+        if(lat<opn){
+          // dropped
+          n=lat<opn*0.9?3:lat<opn*0.95?2:1;
+          arr='▼';col='#f87171';
+        } else {
+          // rose
+          n=lat>opn*1.1?3:lat>opn*1.05?2:1;
+          arr='▲';col='#60a5fa';
+        }
         return '<span style="color:'+col+';font-size:9px;margin-left:3px">'+arr.repeat(n)+'</span>';
       }
       function ahRow(label,color,openLine,openH,openA,latLine,latH,latA){
@@ -844,10 +861,10 @@ function openDetail(idx){
           +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latLine)+ahDiff(latLine,openLine)+'</div></div>'
           +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">ASIA H</div>'
           +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openH)+'</div>'
-          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latH)+ahDiff(latH,openH)+'</div></div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latH)+ahOddsDiff(latH,openH)+'</div></div>'
           +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">ASIA A</div>'
           +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openA)+'</div>'
-          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latA)+ahDiff(latA,openA)+'</div></div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latA)+ahOddsDiff(latA,openA)+'</div></div>'
           +'</div></div>';
       }
       return ahRow('General','var(--muted)',r.ASIALINELN,r.ASIAHLN,r.ASIAALN,r.ASIALINE,r.ASIAH,r.ASIAA)
