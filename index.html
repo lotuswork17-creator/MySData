@@ -24,7 +24,13 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .updated{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
 
 /* FILTERS */
+.filter-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.filter-toggle{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:11px;font-family:var(--sans);font-weight:600;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
+.filter-toggle.active{color:var(--accent2);border-color:rgba(96,165,250,.4)}
+.ft-arrow{font-size:9px;transition:transform .2s;display:inline-block}
+.filter-toggle.collapsed .ft-arrow{transform:rotate(-90deg)}
 .filters{display:flex;flex-wrap:wrap;gap:7px}
+.filters.collapsed{display:none}
 .fg{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px}
 .fl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 input,select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;width:100%;transition:border-color .15s;appearance:none;-webkit-appearance:none}
@@ -190,7 +196,11 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       </div>
     </div>
   </div>
-  <div class="filters">
+  <div class="filter-header">
+    <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Filters</span>
+    <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
+  </div>
+  <div class="filters" id="filtersPanel">
     <div class="fg"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Home or Away team…"/></div>
     <div class="fg"><div class="fl">League</div><select id="catSelect"><option value="">All Leagues</option></select></div>
     <div class="fg" style="min-width:100px;max-width:120px">
@@ -223,29 +233,40 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <div class="fl">Predict Trend</div>
       <select id="predictSelect">
         <option value="">Any</option>
-        <option value="H-lead">H Favoured (H highest)</option>
-        <option value="D-lead">D Favoured (D highest)</option>
-        <option value="A-lead">A Favoured (A highest)</option>
-        <option value="H-strong">H Strong (H ≥ 50%)</option>
-        <option value="A-strong">A Strong (A ≥ 50%)</option>
+        <option value="H-lead">H Leaning (H highest)</option>
+        <option value="D-lead">D Leaning (D highest)</option>
+        <option value="A-lead">A Leaning (A highest)</option>
+        <option disabled>── H Side ──</option>
+        <option value="H-weak">H Mild (H &lt; 50%)</option>
+        <option value="H-strong">H Backed (H ≥ 50%)</option>
+        <option value="H-vstrong">H Dominant (H ≥ 70%)</option>
+        <option disabled>── A Side ──</option>
+        <option value="A-weak">A Mild (A &lt; 50%)</option>
+        <option value="A-strong">A Backed (A ≥ 50%)</option>
+        <option value="A-vstrong">A Dominant (A ≥ 70%)</option>
       </select>
     </div>
     <div class="fg" style="min-width:130px;max-width:160px">
       <div class="fl">Expert Signal</div>
       <select id="expertSelect">
         <option value="">Any</option>
-        <option value="H-dom">H Consensus</option>
-        <option value="A-dom">A Consensus</option>
+        <option disabled>── Direction ──</option>
+        <option value="H-dom">H Leaning (Expert H highest)</option>
+        <option value="H-strong-e">H Backed (Expert H ≥ 50%)</option>
+        <option value="H-vstrong-e">H Dominant (Expert H ≥ 70%)</option>
+        <option value="A-dom">A Leaning (Expert A highest)</option>
+        <option value="A-strong-e">A Backed (Expert A ≥ 50%)</option>
+        <option value="A-vstrong-e">A Dominant (Expert A ≥ 70%)</option>
+        <option disabled>── vs Predict ──</option>
         <option value="agree">Agrees with Predict</option>
         <option value="disagree">Disagrees with Predict</option>
-        <option disabled>──────────</option>
+        <option disabled>── Confidence ──</option>
         <option value="high-conf">High Confidence</option>
-        <option value="high-conf-H">High Confidence + H Consensus</option>
-        <option value="high-conf-A">High Confidence + A Consensus</option>
-        <option disabled>──────────</option>
+        <option value="high-conf-H">High Conf + H Leaning</option>
+        <option value="high-conf-A">High Conf + A Leaning</option>
         <option value="low-conf">Low Confidence ⚠</option>
-        <option value="low-conf-H">Low Confidence ⚠ + H Consensus</option>
-        <option value="low-conf-A">Low Confidence ⚠ + A Consensus</option>
+        <option value="low-conf-H">Low Conf ⚠ + H Leaning</option>
+        <option value="low-conf-A">Low Conf ⚠ + A Leaning</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -282,8 +303,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
     <thead><tr>
       <th onclick="sortBy('DATE')" id="th-DATE">Date / Time <span class="si">⇅</span></th>
       <th onclick="sortBy('CATEGORY')" id="th-CATEGORY">League <span class="si">⇅</span></th>
-      <th onclick="sortBy('TEAMH')" id="th-TEAMH">Home <span class="si">⇅</span></th>
-      <th onclick="sortBy('TEAMA')" id="th-TEAMA">Away <span class="si">⇅</span></th>
+      <th onclick="sortBy('TEAMH')" id="th-TEAMH">Match <span class="si">⇅</span></th>
       <th id="th-PREDICT">H% / D% / A%</th>
       <th onclick="sortBy('ASIALINE')" id="th-ASIALINE">Line <span class="si">⇅</span></th>
       <th onclick="sortBy('ASIAH')" id="th-ASIAH">Asia H <span class="si">⇅</span></th>
@@ -478,8 +498,12 @@ function applyFilters(){
       if(pf==='H-lead'&&pl!=='H')return false;
       if(pf==='D-lead'&&pl!=='D')return false;
       if(pf==='A-lead'&&pl!=='A')return false;
+      if(pf==='H-weak'&&(pl!=='H'||ph>=50))return false;
       if(pf==='H-strong'&&ph<50)return false;
+      if(pf==='H-vstrong'&&ph<70)return false;
+      if(pf==='A-weak'&&(pl!=='A'||pa>=50))return false;
       if(pf==='A-strong'&&pa<50)return false;
+      if(pf==='A-vstrong'&&pa<70)return false;
     }
     // Expert filter
     if(ef){
@@ -487,7 +511,11 @@ function applyFilters(){
       var el=expertLead(r);
       var lc=lowConfidence(r);
       if(ef==='H-dom'){if(!e||el!=='H')return false;}
+      if(ef==='H-strong-e'){if(!e||e.h<50)return false;}
+      if(ef==='H-vstrong-e'){if(!e||e.h<70)return false;}
       if(ef==='A-dom'){if(!e||el!=='A')return false;}
+      if(ef==='A-strong-e'){if(!e||e.a<50)return false;}
+      if(ef==='A-vstrong-e'){if(!e||e.a<70)return false;}
       if(ef==='agree'){if(!e||predictLead(r)!==el)return false;}
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
       if(ef==='high-conf'&&lc)return false;
@@ -515,12 +543,37 @@ function sortBy(col){
   applyFilters();
 }
 
+function toggleFilters(){
+  var panel=document.getElementById('filtersPanel');
+  var btn=document.getElementById('filterToggle');
+  var lbl=document.getElementById('filterToggleLabel');
+  var collapsed=panel.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed',collapsed);
+  btn.classList.toggle('active',!collapsed);
+  lbl.textContent=collapsed?'Show Filters':'Hide Filters';
+}
+
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
   $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';
   pg=1;applyFilters();
 }
 
+function asiaLineArrows(val,ln){
+  if(val==null)return'—';
+  var s=String(val);
+  if(ln==null)return s;
+  var diff=Math.round((val-ln)*100)/100;
+  if(diff===0)return s;
+  if(diff<0){
+    var abs=Math.abs(diff);
+    var arrows=abs>=0.5?'▼▼▼':abs>=0.25?'▼▼':'▼';
+    return s+'<span style="color:#f87171;font-size:10px;margin-left:2px">'+arrows+'</span>';
+  }
+  var abs2=Math.abs(diff);
+  var uarrows=abs2>=0.5?'▲▲▲':abs2>=0.25?'▲▲':'▲';
+  return s+'<span style="color:#60a5fa;font-size:10px;margin-left:2px">'+uarrows+'</span>';
+}
 function renderTable(){
   var body=$('tableBody'),start=(pg-1)*PG,rows=filtered.slice(start,start+PG),s=$('searchInput').value;
   $('emptyState').style.display=rows.length?'none':'block';
@@ -567,7 +620,7 @@ function renderTable(){
         +scoreHtml
         +'</div></div>'
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Line: '+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</span><span>H: '+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</span><span>A: '+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</span>'
+        +'<span>Line: '+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+'</span><span>H: '+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</span><span>A: '+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</span>'
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">'
         +'<span style="color:var(--muted)">Sum:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)
@@ -645,8 +698,7 @@ function renderTable(){
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td><div>'+esc(r.DATE||'—')+'</div><div style="color:var(--muted);font-size:10px">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
-        +'<td class="tcell">'+hl(esc(r.TEAMH||'—'),s)+'</td>'
-        +'<td class="tcell">'+hl(esc(r.TEAMA||'—'),s)+'</td>'
+        +'<td class="tcell" style="white-space:normal;max-width:180px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span><span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span></td>'
         +'<td>'+(function(){
           var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
           var e=expertScore(r);
@@ -688,7 +740,7 @@ function renderTable(){
           }
           return html||'<span style="color:var(--muted)">—</span>';
         })()
-        +'<td class="oc">'+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</td>'
+        +'<td class="oc">'+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+'</td>'
         +'<td class="oc">'+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</td>'
         +'<td class="oc">'+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)+'</td>'
