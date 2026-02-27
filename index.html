@@ -565,14 +565,12 @@ function asiaLineArrows(val,ln){
   if(ln==null)return s;
   var diff=Math.round((val-ln)*100)/100;
   if(diff===0)return s;
-  if(diff<0){
-    var abs=Math.abs(diff);
-    var arrows=abs>=0.5?'▼▼▼':abs>=0.25?'▼▼':'▼';
-    return s+'<span style="color:#f87171;font-size:10px;margin-left:2px">'+arrows+'</span>';
-  }
-  var abs2=Math.abs(diff);
-  var uarrows=abs2>=0.5?'▲▲▲':abs2>=0.25?'▲▲':'▲';
-  return s+'<span style="color:#60a5fa;font-size:10px;margin-left:2px">'+uarrows+'</span>';
+  var abs=Math.abs(diff);
+  var n=abs>=1.0?3:abs>=0.5?2:1;
+  var arrow=diff<0?'▼':'▲';
+  var color=diff<0?'#f87171':'#60a5fa';
+  var arrows=arrow.repeat(n);
+  return s+'<span style="color:'+color+';font-size:10px;margin-left:2px">'+arrows+'</span>';
 }
 function renderTable(){
   var body=$('tableBody'),start=(pg-1)*PG,rows=filtered.slice(start,start+PG),s=$('searchInput').value;
@@ -822,15 +820,41 @@ function openDetail(idx){
     +'<tr><td class="ol">Opening</td><td>'+(r.ODDSHLN!=null?r.ODDSHLN:'\u2014')+'</td><td>'+(r.ODDSDLN!=null?r.ODDSDLN:'\u2014')+'</td><td>'+(r.ODDSALN!=null?r.ODDSALN:'\u2014')+'</td></tr>'
     +'<tr><td class="ol">Latest</td><td>'+(r.ODDSH!=null?r.ODDSH:'\u2014')+'</td><td>'+(r.ODDSD!=null?r.ODDSD:'\u2014')+'</td><td>'+(r.ODDSA!=null?r.ODDSA:'\u2014')+'</td></tr>'
     +'</tbody></table></div>'
-    +'<div class="dc full"><h3>📈 Asian Handicap</h3>'
-    +'<table class="ot"><thead><tr><th></th><th>Line</th><th>Asia H</th><th>Asia A</th></tr></thead><tbody>'
-    +'<tr><td class="ol">Opening</td><td>'+(r.ASIALINELN!=null?r.ASIALINELN:'\u2014')+'</td><td>'+(r.ASIAHLN!=null?r.ASIAHLN:'\u2014')+'</td><td>'+(r.ASIAALN!=null?r.ASIAALN:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#a78bfa">Macau Open</td><td>'+(r.ASIALINEM2!=null?r.ASIALINEM2:'\u2014')+'</td><td>'+(r.ASIAHMACLN!=null?r.ASIAHMACLN:'\u2014')+'</td><td>'+(r.ASIAAMACLN!=null?r.ASIAAMACLN:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#a78bfa">Macau Latest</td><td>'+(r.ASIALINEMA!=null?r.ASIALINEMA:'\u2014')+'</td><td>'+(r.ASIAHMAC!=null?r.ASIAHMAC:'\u2014')+'</td><td>'+(r.ASIAAMAC!=null?r.ASIAAMAC:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#fb923c">SBO Open</td><td>'+(r.ASIALINES2!=null?r.ASIALINES2:'\u2014')+'</td><td>'+(r.ASIAHSBOLN!=null?r.ASIAHSBOLN:'\u2014')+'</td><td>'+(r.ASIAASBOLN!=null?r.ASIAASBOLN:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol" style="color:#fb923c">SBO Latest</td><td>'+(r.ASIALINESB!=null?r.ASIALINESB:'\u2014')+'</td><td>'+(r.ASIAHSBO!=null?r.ASIAHSBO:'\u2014')+'</td><td>'+(r.ASIAASBO!=null?r.ASIAASBO:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol">Latest</td><td>'+(r.ASIALINE!=null?r.ASIALINE:'\u2014')+'</td><td>'+(r.ASIAH!=null?r.ASIAH:'\u2014')+'</td><td>'+(r.ASIAA!=null?r.ASIAA:'\u2014')+'</td></tr>'
-    +'</tbody></table></div>'
+    '<div class="dc full"><h3>📈 Asian Handicap</h3>'
+    +(function(){
+      function ahVal(v){return v!=null?String(v):'—';}
+      function ahDiff(latest,open){
+        if(latest==null||open==null)return'';
+        var d=Math.round((latest-open)*100)/100;
+        if(d===0)return'';
+        var abs=Math.abs(d);
+        var n=abs>=1.0?3:abs>=0.5?2:1;
+        var arr=d>0?'▲':'▼';
+        var col=d>0?'#60a5fa':'#f87171';
+        return '<span style="color:'+col+';font-size:9px;margin-left:3px">'+arr.repeat(n)+'</span>';
+      }
+      function ahRow(label,color,openLine,openH,openA,latLine,latH,latA){
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:7px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+          +'<span style="font-size:10px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.05em">'+label+'</span>'
+          +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">Open → Latest</span></div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">'
+          +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">LINE</div>'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openLine)+'</div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latLine)+ahDiff(latLine,openLine)+'</div></div>'
+          +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">ASIA H</div>'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openH)+'</div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latH)+ahDiff(latH,openH)+'</div></div>'
+          +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">ASIA A</div>'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openA)+'</div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latA)+ahDiff(latA,openA)+'</div></div>'
+          +'</div></div>';
+      }
+      return ahRow('General','var(--muted)',r.ASIALINELN,r.ASIAHLN,r.ASIAALN,r.ASIALINE,r.ASIAH,r.ASIAA)
+        +ahRow('Macau','#a78bfa',r.ASIALINEM2,r.ASIAHMACLN,r.ASIAAMACLN,r.ASIALINEMA,r.ASIAHMAC,r.ASIAAMAC)
+        +ahRow('SBO','#fb923c',r.ASIALINES2,r.ASIAHSBOLN,r.ASIAASBOLN,r.ASIALINESB,r.ASIAHSBO,r.ASIAASBO);
+    })()
+    +'</div>'
     +'<div class="dc"><h3>🏆 Goals</h3>'
     +'<div class="dr"><span class="dk">GEM H/D/A</span><span class="dv">'+r.GEMH+' / '+r.GEMD+' / '+r.GEMA+'</span></div>'
     +'<div class="dr"><span class="dk">GPT H/D/A</span><span class="dv">'+r.GPTH+' / '+r.GPTD+' / '+r.GPTA+'</span></div>'
