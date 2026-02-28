@@ -24,7 +24,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .updated{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
 
 /* FILTERS */
-.filter-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.filter-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .filter-toggle{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:11px;font-family:var(--sans);font-weight:600;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
 .filter-toggle.active{color:var(--accent2);border-color:rgba(96,165,250,.4)}
 .ft-arrow{font-size:9px;transition:transform .2s;display:inline-block}
@@ -44,7 +44,7 @@ input::placeholder{color:var(--muted)}
 .results-bar b{color:var(--accent)}
 
 /* ASIA STATS PANEL */
-#asiaStats{display:none}
+#asiaStats{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0;display:none}
 .as-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-family:var(--sans)}
 .as-row{display:flex;gap:6px;align-items:stretch;margin-bottom:7px;flex-wrap:wrap}
 .as-card{flex:1;min-width:56px;background:var(--surface2);border-radius:8px;padding:7px 10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
@@ -198,16 +198,6 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   </div>
   <div class="filter-header">
     <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
-    <div id="asiaStats" style="display:none;flex:1;min-width:0;overflow:hidden">
-      <div class="as-row">
-        <div class="as-card ww"><div class="as-card-label">Win Whole</div><div class="as-card-pct" id="as-ww-p">—</div><div class="as-card-count" id="as-ww">—</div></div>
-        <div class="as-card wh"><div class="as-card-label">Win Half</div><div class="as-card-pct" id="as-wh-p">—</div><div class="as-card-count" id="as-wh">—</div></div>
-        <div class="as-card dd"><div class="as-card-label">Draw</div><div class="as-card-pct" id="as-dd-p">—</div><div class="as-card-count" id="as-dd">—</div></div>
-        <div class="as-card lh"><div class="as-card-label">Loss Half</div><div class="as-card-pct" id="as-lh-p">—</div><div class="as-card-count" id="as-lh">—</div></div>
-        <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-pct" id="as-lw-p">—</div><div class="as-card-count" id="as-lw">—</div></div>
-      </div>
-      <div class="as-bar-wrap" id="as-bar"></div>
-    </div>
   </div>
   <div class="filters" id="filtersPanel">
     <div class="fg"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Home or Away team…"/></div>
@@ -284,6 +274,18 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 
 <div class="results-bar" id="resultsBar" style="display:none">
   <span>Showing <b id="showCount">0</b> of <b id="totalCount">0</b></span>
+</div>
+
+<div id="asiaStats">
+  <div class="as-title">Asia Handicap Results — Home Perspective</div>
+  <div class="as-row">
+    <div class="as-card ww"><div class="as-card-label">Win Whole</div><div class="as-card-pct" id="as-ww-p">—</div><div class="as-card-count" id="as-ww">—</div></div>
+    <div class="as-card wh"><div class="as-card-label">Win Half</div><div class="as-card-pct" id="as-wh-p">—</div><div class="as-card-count" id="as-wh">—</div></div>
+    <div class="as-card dd"><div class="as-card-label">Draw</div><div class="as-card-pct" id="as-dd-p">—</div><div class="as-card-count" id="as-dd">—</div></div>
+    <div class="as-card lh"><div class="as-card-label">Loss Half</div><div class="as-card-pct" id="as-lh-p">—</div><div class="as-card-count" id="as-lh">—</div></div>
+    <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-pct" id="as-lw-p">—</div><div class="as-card-count" id="as-lw">—</div></div>
+  </div>
+  <div class="as-bar-wrap" id="as-bar"></div>
 </div>
 
 <div id="loadingState"><div class="spinner"></div><span>Loading match data…</span></div>
@@ -382,7 +384,7 @@ function renderAsiaStats(data){
   data.forEach(function(r){var o=asiaOutcome(r);if(o)counts[o]++;});
   var total=counts.ww+counts.wh+counts.dd+counts.lh+counts.lw;
   if(!total){document.getElementById('asiaStats').style.display='none';return;}
-  document.getElementById('asiaStats').style.display='flex';document.getElementById('asiaStats').style.flexDirection='column';
+  document.getElementById('asiaStats').style.display='block';
   var keys=['ww','wh','dd','lh','lw'];
   keys.forEach(function(k){
     var pct=(counts[k]/total*100).toFixed(1);
