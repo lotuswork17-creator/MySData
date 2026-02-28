@@ -254,9 +254,11 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="H-dom">H Leaning (Expert H highest)</option>
         <option value="H-strong-e">H Backed (Expert H ≥ 50%)</option>
         <option value="H-vstrong-e">H Dominant (Expert H ≥ 70%)</option>
+        <option value="H-ultra-e">H Overwhelming (Expert H ≥ 90%)</option>
         <option value="A-dom">A Leaning (Expert A highest)</option>
         <option value="A-strong-e">A Backed (Expert A ≥ 50%)</option>
         <option value="A-vstrong-e">A Dominant (Expert A ≥ 70%)</option>
+        <option value="A-ultra-e">A Overwhelming (Expert A ≥ 90%)</option>
         <option disabled>── vs Predict ──</option>
         <option value="agree">Agrees with Predict</option>
         <option value="disagree">Disagrees with Predict</option>
@@ -265,16 +267,20 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="high-conf-H">High Conf + H Leaning</option>
         <option value="high-conf-H50">High Conf + H ≥ 50%</option>
         <option value="high-conf-H70">High Conf + H ≥ 70%</option>
+        <option value="high-conf-H90">High Conf + H ≥ 90%</option>
         <option value="high-conf-A">High Conf + A Leaning</option>
         <option value="high-conf-A50">High Conf + A ≥ 50%</option>
         <option value="high-conf-A70">High Conf + A ≥ 70%</option>
+        <option value="high-conf-A90">High Conf + A ≥ 90%</option>
         <option value="low-conf">Low Confidence ⚠</option>
         <option value="low-conf-H">Low Conf ⚠ + H Leaning</option>
         <option value="low-conf-H50">Low Conf ⚠ + H ≥ 50%</option>
         <option value="low-conf-H70">Low Conf ⚠ + H ≥ 70%</option>
+        <option value="low-conf-H90">Low Conf ⚠ + H ≥ 90%</option>
         <option value="low-conf-A">Low Conf ⚠ + A Leaning</option>
         <option value="low-conf-A50">Low Conf ⚠ + A ≥ 50%</option>
         <option value="low-conf-A70">Low Conf ⚠ + A ≥ 70%</option>
+        <option value="low-conf-A90">Low Conf ⚠ + A ≥ 90%</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -517,25 +523,31 @@ function applyFilters(){
       if(ef==='H-dom'){if(!e||el!=='H')return false;}
       if(ef==='H-strong-e'){if(!e||e.h<50)return false;}
       if(ef==='H-vstrong-e'){if(!e||e.h<70)return false;}
+      if(ef==='H-ultra-e'){if(!e||e.h<90)return false;}
       if(ef==='A-dom'){if(!e||el!=='A')return false;}
       if(ef==='A-strong-e'){if(!e||e.a<50)return false;}
       if(ef==='A-vstrong-e'){if(!e||e.a<70)return false;}
+      if(ef==='A-ultra-e'){if(!e||e.a<90)return false;}
       if(ef==='agree'){if(!e||predictLead(r)!==el)return false;}
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
       if(ef==='high-conf'&&lc)return false;
       if(ef==='high-conf-H'){if(lc||!e||el!=='H')return false;}
       if(ef==='high-conf-H50'){if(lc||!e||e.h<50)return false;}
       if(ef==='high-conf-H70'){if(lc||!e||e.h<70)return false;}
+      if(ef==='high-conf-H90'){if(lc||!e||e.h<90)return false;}
       if(ef==='high-conf-A'){if(lc||!e||el!=='A')return false;}
       if(ef==='high-conf-A50'){if(lc||!e||e.a<50)return false;}
       if(ef==='high-conf-A70'){if(lc||!e||e.a<70)return false;}
+      if(ef==='high-conf-A90'){if(lc||!e||e.a<90)return false;}
       if(ef==='low-conf'&&!lc)return false;
       if(ef==='low-conf-H'){if(!lc||!e||el!=='H')return false;}
       if(ef==='low-conf-H50'){if(!lc||!e||e.h<50)return false;}
       if(ef==='low-conf-H70'){if(!lc||!e||e.h<70)return false;}
+      if(ef==='low-conf-H90'){if(!lc||!e||e.h<90)return false;}
       if(ef==='low-conf-A'){if(!lc||!e||el!=='A')return false;}
       if(ef==='low-conf-A50'){if(!lc||!e||e.a<50)return false;}
       if(ef==='low-conf-A70'){if(!lc||!e||e.a<70)return false;}
+      if(ef==='low-conf-A90'){if(!lc||!e||e.a<90)return false;}
     }
     return true;
   });
