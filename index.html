@@ -283,6 +283,25 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="low-conf-A90">Low Conf ⚠ + A ≥ 90%</option>
       </select>
     </div>
+    <div class="fg" style="min-width:130px;max-width:170px">
+      <div class="fl">Market Lean</div>
+      <select id="marketSelect">
+        <option value="">Any</option>
+        <option disabled>── Fair Probability ──</option>
+        <option value="balanced">Balanced (48–52%)</option>
+        <option disabled>── H Side ──</option>
+        <option value="h-slight">H Slight Edge (52–55%)</option>
+        <option value="h-clear">H Clear Edge (55–58%)</option>
+        <option disabled>── A Side ──</option>
+        <option value="a-slight">A Slight Edge (45–48%)</option>
+        <option value="a-clear">A Clear Edge (&lt;45%)</option>
+        <option disabled>── Vig / Margin ──</option>
+        <option value="vig-tight">Tight Vig (&lt;5%)</option>
+        <option value="vig-normal">Normal Vig (5–6%)</option>
+        <option value="vig-wide">Wide Vig (6–7%)</option>
+        <option value="vig-soft">Soft Vig (≥7%)</option>
+      </select>
+    </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
   </div>
 </header>
@@ -459,6 +478,7 @@ function loadData(){
       $('dateRangeSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('predictSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('expertSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('marketSelect').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
     .catch(function(e){
@@ -484,7 +504,7 @@ function expertLead(r){
 function applyFilters(){
   var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value;
   var al=$('asialineSelect').value,dr=$('dateRangeSelect').value;
-  var pf=$('predictSelect').value,ef=$('expertSelect').value;
+  var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value;
   // Date range cutoff
   var cutoff=null;
   if(dr){
@@ -549,6 +569,21 @@ function applyFilters(){
       if(ef==='low-conf-A70'){if(!lc||!e||e.a<70)return false;}
       if(ef==='low-conf-A90'){if(!lc||!e||e.a<90)return false;}
     }
+    // Market Lean filter
+    if(mf&&r.ASIAH&&r.ASIAA&&r.ASIAH>0&&r.ASIAA>0){
+      var rh=1/r.ASIAH,ra=1/r.ASIAA,vig=rh+ra;
+      var fh=rh/vig*100;
+      var vigPct=(vig-1)*100;
+      if(mf==='balanced'&&(fh<48||fh>52))return false;
+      if(mf==='h-slight'&&(fh<52||fh>=55))return false;
+      if(mf==='h-clear'&&(fh<55||fh>=58))return false;
+      if(mf==='a-slight'&&(fh<45||fh>=48))return false;
+      if(mf==='a-clear'&&fh>=45)return false;
+      if(mf==='vig-tight'&&vigPct>=5)return false;
+      if(mf==='vig-normal'&&(vigPct<5||vigPct>=6))return false;
+      if(mf==='vig-wide'&&(vigPct<6||vigPct>=7))return false;
+      if(mf==='vig-soft'&&vigPct<7)return false;
+    } else if(mf){return false;}
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
@@ -578,7 +613,7 @@ function toggleFilters(){
 
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
-  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';
+  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';
   pg=1;applyFilters();
 }
 
