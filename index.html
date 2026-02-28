@@ -595,7 +595,7 @@ function renderTable(){
         var scoreColor=rh>ra?'#f87171':rh===ra?'#4ade80':'#60a5fa';
         scoreHtml='<span style="font-family:var(--mono);font-size:18px;font-weight:800;color:'+scoreColor+'">'+rh+' – '+ra+'</span>';
       } else {
-        scoreHtml='<span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--muted)">vs</span>';
+        scoreHtml='';
       }
 
       // League cell colour: (HomeScore - AwayScore + AsiaLine) vs ±0.25
@@ -614,9 +614,7 @@ function renderTable(){
         +'<div style="flex:1;margin-right:70px">'
         +'<div style="font-size:11px;font-family:var(--mono);margin-bottom:3px"><span style="color:#94a3b8">'+esc(r.DATE||'')+'</span>'+(time?'<span style="color:#e2e8f0;font-weight:600;margin-left:5px">'+time+'</span>':'')+'</div>'
         +'<div style="'+catStyle+'">'+hl(esc(r.CATEGORY||''),s)+'</div>'
-        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMH||'?'),s)+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin:2px 0">vs</div>'
-        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+hl(esc(r.TEAMA||'?'),s)+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.4">'+hl(esc(r.TEAMH||'?'),s)+'<span style="color:var(--muted);font-weight:400;font-size:11px;margin:0 5px">vs</span>'+hl(esc(r.TEAMA||'?'),s)+'</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
         +'<span class="status-badge '+sc+'">'+sl+'</span>'
