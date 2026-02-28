@@ -423,7 +423,6 @@ function loadData(){
 
       renderAsiaStats(ALL);
       $('th-DATE').classList.add('sort-desc');
-      $('sortInfo').textContent='Sorted by DATE ↓';
       applyFilters();
 
       var t;
@@ -522,8 +521,6 @@ function applyFilters(){
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
-  $('showCount').textContent=filtered.length.toLocaleString();
-  $('totalCount').textContent=ALL.length.toLocaleString();
   renderAsiaStats(filtered);
   renderTable();renderPagination();
 }
@@ -533,7 +530,6 @@ function sortBy(col){
   pg=1;
   document.querySelectorAll('thead th').forEach(function(th){th.classList.remove('sort-asc','sort-desc');});
   var th=$('th-'+col);if(th)th.classList.add(sortDir===1?'sort-asc':'sort-desc');
-  $('sortInfo').textContent='Sorted by '+col+(sortDir===1?' ↑':' ↓');
   applyFilters();
 }
 
