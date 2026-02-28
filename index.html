@@ -263,10 +263,18 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option disabled>── Confidence ──</option>
         <option value="high-conf">High Confidence</option>
         <option value="high-conf-H">High Conf + H Leaning</option>
+        <option value="high-conf-H50">High Conf + H ≥ 50%</option>
+        <option value="high-conf-H70">High Conf + H ≥ 70%</option>
         <option value="high-conf-A">High Conf + A Leaning</option>
+        <option value="high-conf-A50">High Conf + A ≥ 50%</option>
+        <option value="high-conf-A70">High Conf + A ≥ 70%</option>
         <option value="low-conf">Low Confidence ⚠</option>
         <option value="low-conf-H">Low Conf ⚠ + H Leaning</option>
+        <option value="low-conf-H50">Low Conf ⚠ + H ≥ 50%</option>
+        <option value="low-conf-H70">Low Conf ⚠ + H ≥ 70%</option>
         <option value="low-conf-A">Low Conf ⚠ + A Leaning</option>
+        <option value="low-conf-A50">Low Conf ⚠ + A ≥ 50%</option>
+        <option value="low-conf-A70">Low Conf ⚠ + A ≥ 70%</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -516,10 +524,18 @@ function applyFilters(){
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
       if(ef==='high-conf'&&lc)return false;
       if(ef==='high-conf-H'){if(lc||!e||el!=='H')return false;}
+      if(ef==='high-conf-H50'){if(lc||!e||e.h<50)return false;}
+      if(ef==='high-conf-H70'){if(lc||!e||e.h<70)return false;}
       if(ef==='high-conf-A'){if(lc||!e||el!=='A')return false;}
+      if(ef==='high-conf-A50'){if(lc||!e||e.a<50)return false;}
+      if(ef==='high-conf-A70'){if(lc||!e||e.a<70)return false;}
       if(ef==='low-conf'&&!lc)return false;
       if(ef==='low-conf-H'){if(!lc||!e||el!=='H')return false;}
+      if(ef==='low-conf-H50'){if(!lc||!e||e.h<50)return false;}
+      if(ef==='low-conf-H70'){if(!lc||!e||e.h<70)return false;}
       if(ef==='low-conf-A'){if(!lc||!e||el!=='A')return false;}
+      if(ef==='low-conf-A50'){if(!lc||!e||e.a<50)return false;}
+      if(ef==='low-conf-A70'){if(!lc||!e||e.a<70)return false;}
     }
     return true;
   });
