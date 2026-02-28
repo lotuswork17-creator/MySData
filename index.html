@@ -201,7 +201,18 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
     <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
   <div class="filters" id="filtersPanel">
-    <div class="fg"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Home or Away team…"/></div>
+    <div class="fg" style="min-width:110px;max-width:150px">
+      <div class="fl">Date Range</div>
+      <select id="dateRangeSelect">
+        <option value="">All Time</option>
+        <option value="1">Last 1 Month</option>
+        <option value="2">Last 2 Months</option>
+        <option value="3">Last 3 Months</option>
+        <option value="6">Last 6 Months</option>
+        <option value="12">Last 12 Months</option>
+      </select>
+    </div>
+    <div class="fg" style="min-width:110px;max-width:150px"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Team name…"/></div>
     <div class="fg"><div class="fl">League</div><select id="catSelect"><option value="">All Leagues</option></select></div>
     <div class="fg" style="min-width:100px;max-width:120px">
       <div class="fl">Status</div>
@@ -217,17 +228,6 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
     <div class="fg" style="min-width:100px;max-width:130px">
       <div class="fl">Asia Line</div>
       <select id="asialineSelect"><option value="">All Lines</option></select>
-    </div>
-    <div class="fg" style="min-width:130px;max-width:160px">
-      <div class="fl">Date Range</div>
-      <select id="dateRangeSelect">
-        <option value="">All Time</option>
-        <option value="1">Last 1 Month</option>
-        <option value="2">Last 2 Months</option>
-        <option value="3">Last 3 Months</option>
-        <option value="6">Last 6 Months</option>
-        <option value="12">Last 12 Months</option>
-      </select>
     </div>
     <div class="fg" style="min-width:130px;max-width:160px">
       <div class="fl">Predict Trend</div>
@@ -283,11 +283,10 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="low-conf-A90">Low Conf ⚠ + A ≥ 90%</option>
       </select>
     </div>
-    <div class="fg" style="min-width:130px;max-width:170px">
+    <div class="fg" style="min-width:130px;max-width:160px">
       <div class="fl">Market Lean</div>
       <select id="marketSelect">
         <option value="">Any</option>
-        <option disabled>── Fair Probability ──</option>
         <option value="balanced">Balanced (48–52%)</option>
         <option disabled>── H Side ──</option>
         <option value="h-slight">H Slight Edge (52–55%)</option>
@@ -295,11 +294,16 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option disabled>── A Side ──</option>
         <option value="a-slight">A Slight Edge (45–48%)</option>
         <option value="a-clear">A Clear Edge (&lt;45%)</option>
-        <option disabled>── Vig / Margin ──</option>
-        <option value="vig-tight">Tight Vig (&lt;5%)</option>
-        <option value="vig-normal">Normal Vig (5–6%)</option>
-        <option value="vig-wide">Wide Vig (6–7%)</option>
-        <option value="vig-soft">Soft Vig (≥7%)</option>
+      </select>
+    </div>
+    <div class="fg" style="min-width:110px;max-width:140px">
+      <div class="fl">Vig Margin</div>
+      <select id="vigSelect">
+        <option value="">Any</option>
+        <option value="vig-tight">Tight (&lt;5%)</option>
+        <option value="vig-normal">Normal (5–6%)</option>
+        <option value="vig-wide">Wide (6–7%)</option>
+        <option value="vig-soft">Soft (≥7%)</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -479,6 +483,7 @@ function loadData(){
       $('predictSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('expertSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('marketSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('vigSelect').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
     .catch(function(e){
@@ -504,7 +509,7 @@ function expertLead(r){
 function applyFilters(){
   var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value;
   var al=$('asialineSelect').value,dr=$('dateRangeSelect').value;
-  var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value;
+  var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value,vf=$('vigSelect').value;
   // Date range cutoff
   var cutoff=null;
   if(dr){
@@ -570,20 +575,20 @@ function applyFilters(){
       if(ef==='low-conf-A90'){if(!lc||!e||e.a<90)return false;}
     }
     // Market Lean filter
-    if(mf&&r.ASIAH&&r.ASIAA&&r.ASIAH>0&&r.ASIAA>0){
-      var rh=1/r.ASIAH,ra=1/r.ASIAA,vig=rh+ra;
-      var fh=rh/vig*100;
-      var vigPct=(vig-1)*100;
-      if(mf==='balanced'&&(fh<48||fh>52))return false;
-      if(mf==='h-slight'&&(fh<52||fh>=55))return false;
-      if(mf==='h-clear'&&(fh<55||fh>=58))return false;
-      if(mf==='a-slight'&&(fh<45||fh>=48))return false;
-      if(mf==='a-clear'&&fh>=45)return false;
-      if(mf==='vig-tight'&&vigPct>=5)return false;
-      if(mf==='vig-normal'&&(vigPct<5||vigPct>=6))return false;
-      if(mf==='vig-wide'&&(vigPct<6||vigPct>=7))return false;
-      if(mf==='vig-soft'&&vigPct<7)return false;
-    } else if(mf){return false;}
+    if(mf||vf){
+      if(!r.ASIAH||!r.ASIAA||r.ASIAH<=0||r.ASIAA<=0)return false;
+      var rh2=1/r.ASIAH,ra2=1/r.ASIAA,vig2=rh2+ra2;
+      var fh2=rh2/vig2*100,vigPct2=(vig2-1)*100;
+      if(mf==='balanced'&&(fh2<48||fh2>52))return false;
+      if(mf==='h-slight'&&(fh2<52||fh2>=55))return false;
+      if(mf==='h-clear'&&(fh2<55||fh2>=58))return false;
+      if(mf==='a-slight'&&(fh2<45||fh2>=48))return false;
+      if(mf==='a-clear'&&fh2>=45)return false;
+      if(vf==='vig-tight'&&vigPct2>=5)return false;
+      if(vf==='vig-normal'&&(vigPct2<5||vigPct2>=6))return false;
+      if(vf==='vig-wide'&&(vigPct2<6||vigPct2>=7))return false;
+      if(vf==='vig-soft'&&vigPct2<7)return false;
+    }
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
@@ -613,7 +618,7 @@ function toggleFilters(){
 
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
-  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';
+  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';
   pg=1;applyFilters();
 }
 
