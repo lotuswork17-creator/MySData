@@ -272,6 +272,9 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   </div>
 </header>
 
+<div class="results-bar" id="resultsBar" style="display:none">
+  <span>Showing <b id="showCount">0</b> of <b id="totalCount">0</b></span>
+</div>
 
 <div id="asiaStats">
   <div class="as-title">Asia Handicap Results — Home Perspective</div>
@@ -420,6 +423,7 @@ function loadData(){
       $('loadingState').style.display='none';
       $('tableArea').style.display='block';
       $('pagination').classList.add('pg-visible');
+      $('resultsBar').style.display='flex';
 
       renderAsiaStats(ALL);
       $('th-DATE').classList.add('sort-desc');
@@ -521,6 +525,8 @@ function applyFilters(){
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
+  $('showCount').textContent=filtered.length.toLocaleString();
+  $('totalCount').textContent=ALL.length.toLocaleString();
   renderAsiaStats(filtered);
   renderTable();renderPagination();
 }
