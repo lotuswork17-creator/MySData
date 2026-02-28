@@ -838,7 +838,7 @@ function openDetail(idx){
     +'<div class="dc full"><h3>📈 1X2 Odds</h3>'
     +'<table class="ot"><thead><tr><th></th><th>Home</th><th>Draw</th><th>Away</th></tr></thead><tbody>'
     +'<tr><td class="ol">Opening</td><td>'+(r.ODDSHLN!=null?r.ODDSHLN:'\u2014')+'</td><td>'+(r.ODDSDLN!=null?r.ODDSDLN:'\u2014')+'</td><td>'+(r.ODDSALN!=null?r.ODDSALN:'\u2014')+'</td></tr>'
-    +'<tr><td class="ol">Latest</td>'+'<td>'+(r.ODDSH!=null?r.ODDSH+asiaOddsArrows(r.ODDSH,r.ODDSHLN):'\u2014')+'</td>'+'<td>'+(r.ODDSD!=null?r.ODDSD+asiaOddsArrows(r.ODDSD,r.ODDSDLN):'\u2014')+'</td>'+'<td>'+(r.ODDSA!=null?r.ODDSA+asiaOddsArrows(r.ODDSA,r.ODDSALN):'\u2014')+'</td>'+'</tr>'
+    +'<tr><td class="ol">Latest</td>'+'<td>'+asiaOddsArrows(r.ODDSH,r.ODDSHLN)+'</td>'+'<td>'+asiaOddsArrows(r.ODDSD,r.ODDSDLN)+'</td>'+'<td>'+asiaOddsArrows(r.ODDSA,r.ODDSALN)+'</td>'+'</tr>'
     +'</tbody></table></div>'
     +'<div class="dc full"><h3>📈 Asian Handicap</h3>'
     +(function(){
