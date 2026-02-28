@@ -198,6 +198,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   </div>
   <div class="filter-header">
     <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
+    <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
   <div class="filters" id="filtersPanel">
     <div class="fg"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Home or Away team…"/></div>
@@ -272,9 +273,6 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   </div>
 </header>
 
-<div class="results-bar" id="resultsBar" style="display:none">
-  <span>Showing <b id="showCount">0</b> of <b id="totalCount">0</b></span>
-</div>
 
 <div id="asiaStats">
   <div class="as-title">Asia Handicap Results — Home Perspective</div>
@@ -424,7 +422,7 @@ function loadData(){
       $('loadingState').style.display='none';
       $('tableArea').style.display='block';
       $('pagination').classList.add('pg-visible');
-      $('resultsBar').style.display='flex';
+      $('resultsInline').style.display='inline';
 
       renderAsiaStats(ALL);
       $('th-DATE').classList.add('sort-desc');
