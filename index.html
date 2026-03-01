@@ -866,6 +866,8 @@ function openDetail(idx){
     +'<div class="ti"><div class="tl">JC Tips SID</div><div class="tv">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</div></div>'
     +'<div class="ti"><div class="tl">Tips SID MAC</div><div class="tv">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</div></div>'
     +'<div class="ti"><div class="tl">Tips ON ID</div><div class="tv">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</div></div>'
+    +'<div class="ti"><div class="tl">GEM H/D/A</div><div class="tv" style="font-family:var(--mono);font-size:12px"><span style="color:#f87171">'+( r.GEMH!=null?r.GEMH:'—')+'</span> / <span style="color:#4ade80">'+( r.GEMD!=null?r.GEMD:'—')+'</span> / <span style="color:#60a5fa">'+( r.GEMA!=null?r.GEMA:'—')+'</span></div></div>'
+    +'<div class="ti"><div class="tl">GPT H/D/A</div><div class="tv" style="font-family:var(--mono);font-size:12px"><span style="color:#f87171">'+( r.GPTH!=null?r.GPTH:'—')+'</span> / <span style="color:#4ade80">'+( r.GPTD!=null?r.GPTD:'—')+'</span> / <span style="color:#60a5fa">'+( r.GPTA!=null?r.GPTA:'—')+'</span></div></div>'
     +'</div>'
     +(r.JCTIPS1?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">'
       +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">JC Tips Analysis</div>'
@@ -943,10 +945,6 @@ function openDetail(idx){
         +ahRow('Macau','#a78bfa',r.ASIALINEM2,r.ASIAHMACLN,r.ASIAAMACLN,r.ASIALINEMA,r.ASIAHMAC,r.ASIAAMAC)
         +ahRow('SBO','#fb923c',r.ASIALINES2,r.ASIAHSBOLN,r.ASIAASBOLN,r.ASIALINESB,r.ASIAHSBO,r.ASIAASBO);
     })()
-    +'</div>'
-    +'<div class="dc"><h3>🏆 Goals</h3>'
-    +'<div class="dr"><span class="dk">GEM H/D/A</span><span class="dv">'+r.GEMH+' / '+r.GEMD+' / '+r.GEMA+'</span></div>'
-    +'<div class="dr"><span class="dk">GPT H/D/A</span><span class="dv">'+r.GPTH+' / '+r.GPTD+' / '+r.GPTA+'</span></div>'
     +'</div>'
     +'<div class="dc"><h3>ℹ️ Info</h3>'
     
