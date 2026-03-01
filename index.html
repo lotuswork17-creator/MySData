@@ -686,7 +686,7 @@ function renderTable(){
         +scoreHtml
         +'</div></div>'
         +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Line: '+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+(r.ASIALINEMA!=null?' <span style="color:#a78bfa;font-size:9px">M</span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2):'')+(r.ASIALINESB!=null?' <span style="color:#fb923c;font-size:9px">S</span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2):'')+'</span> '+'<span>H: '+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+(r.ASIAHMAC!=null?' <span style="color:#a78bfa;font-size:9px">M</span>'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN):'')+(r.ASIAHSBO!=null?' <span style="color:#fb923c;font-size:9px">S</span>'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN):'')+'</span> '+'<span>A: '+asiaOddsArrows(r.ASIAA,r.ASIAALN)+(r.ASIAAMAC!=null?' <span style="color:#a78bfa;font-size:9px">M</span>'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN):'')+(r.ASIAASBO!=null?' <span style="color:#fb923c;font-size:9px">S</span>'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN):'')+'</span>'
+        +'<span>Line: '+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+(r.ASIALINEMA!=null?' <span style="color:#a78bfa;font-size:9px">M</span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2):'')+(r.ASIALINESB!=null?' <span style="color:#fb923c;font-size:9px">S</span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2):'')+'</span> '+'<span>H: '+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+(r.ASIAHMAC!=null?' '+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN):'')+(r.ASIAHSBO!=null?' '+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN):'')+'</span> '+'<span>A: '+asiaOddsArrows(r.ASIAA,r.ASIAALN)+(r.ASIAAMAC!=null?' '+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN):'')+(r.ASIAASBO!=null?' '+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN):'')+'</span>'
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">'
         +'<span style="color:var(--muted)">Sum:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)
@@ -812,14 +812,14 @@ function renderTable(){
         +(r.ASIALINESB!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2)+'</div>':'')
         +'</td>'
         +'<td class="oc" style="line-height:1.7">'
-        +(r.ASIAH!=null?'<div><span style="color:var(--muted);font-size:9px">G </span>'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</div>':'')
-        +(r.ASIAHMAC!=null?'<div><span style="color:#a78bfa;font-size:9px">M </span>'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN)+'</div>':'')
-        +(r.ASIAHSBO!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN)+'</div>':'')
+        +(r.ASIAH!=null?'<div>'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</div>':'')
+        +(r.ASIAHMAC!=null?'<div>'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN)+'</div>':'')
+        +(r.ASIAHSBO!=null?'<div>'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN)+'</div>':'')
         +'</td>'
         +'<td class="oc" style="line-height:1.7">'
-        +(r.ASIAA!=null?'<div><span style="color:var(--muted);font-size:9px">G </span>'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</div>':'')
-        +(r.ASIAAMAC!=null?'<div><span style="color:#a78bfa;font-size:9px">M </span>'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN)+'</div>':'')
-        +(r.ASIAASBO!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN)+'</div>':'')
+        +(r.ASIAA!=null?'<div>'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</div>':'')
+        +(r.ASIAAMAC!=null?'<div>'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN)+'</div>':'')
+        +(r.ASIAASBO!=null?'<div>'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN)+'</div>':'')
         +'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</td>'
