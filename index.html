@@ -887,7 +887,7 @@ function goPage(p){pg=p;renderTable();renderPagination();$('tableArea').scrollTo
 function openDetail(idx){
   selIdx=idx;var r=filtered[idx];
   document.querySelectorAll('tbody tr').forEach(function(tr,i){tr.classList.toggle('selected',(pg-1)*PG+i===idx);});
-  $('panelTitle').textContent=(r.TEAMH||'?')+' vs '+(r.TEAMA||'?');
+  $('panelTitle').innerHTML=esc((r.TEAMH||'?')+' vs '+(r.TEAMA||'?'))+' '+vigSymbol(r);
   $('panelMeta').textContent=(r.DATE||'')+(r.TIME?' '+fmtTime(r.TIME):'')+' · '+(r.CATEGORY||'')+' · '+(r.STATUS||'');
   var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
   var res='';
