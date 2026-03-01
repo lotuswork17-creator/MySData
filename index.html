@@ -300,10 +300,10 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <div class="fl">Vig Margin</div>
       <select id="vigSelect">
         <option value="">Any</option>
-        <option value="vig-tight">Tight (&lt;5%)</option>
+        <option value="vig-tight">💎 Tight (&lt;5%)</option>
         <option value="vig-normal">Normal (5–6%)</option>
-        <option value="vig-wide">Wide (6–7%)</option>
-        <option value="vig-soft">Soft (≥7%)</option>
+        <option value="vig-wide">💎💎 Wide (6–7%)</option>
+        <option value="vig-soft">💎💎💎 Soft (≥7%)</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -643,6 +643,14 @@ function asiaOddsArrows(lat,opn){
   else{n=lat>opn*1.1?3:lat>opn*1.05?2:1;arr='▲';col='#60a5fa';}
   return s+'<span style="color:'+col+';font-size:10px;margin-left:2px">'+arr.repeat(n)+'</span>';
 }
+function vigSymbol(r){
+  if(!r.ASIAH||!r.ASIAA||r.ASIAH<=0||r.ASIAA<=0)return '';
+  var v=(1/r.ASIAH+1/r.ASIAA-1)*100;
+  if(v<5)return '<span title="Tight vig &lt;5%" style="font-size:10px;opacity:.8">💎</span>';
+  if(v<6)return '';
+  if(v<7)return '<span title="Wide vig 6-7%" style="font-size:10px;opacity:.8">💎💎</span>';
+  return '<span title="Soft vig ≥7%" style="font-size:10px;opacity:.8">💎💎💎</span>';
+}
 function renderTable(){
   var body=$('tableBody'),start=(pg-1)*PG,rows=filtered.slice(start,start+PG),s=$('searchInput').value;
   $('emptyState').style.display=rows.length?'none':'block';
@@ -679,7 +687,7 @@ function renderTable(){
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div style="flex:1;margin-right:70px">'
         +'<div style="font-size:11px;font-family:var(--mono);margin-bottom:3px"><span style="color:#94a3b8">'+esc(r.DATE||'')+'</span>'+(time?'<span style="color:#e2e8f0;font-weight:600;margin-left:5px">'+time+'</span>':'')+'</div>'
-        +'<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:2px">'+'<span style="'+catStyle+'margin-bottom:0;flex-shrink:0">'+hl(esc(r.CATEGORY||''),s)+'</span>'+'<span style="font-size:13px;font-weight:700;color:var(--text);line-height:1.4">'+hl(esc(r.TEAMH||'?'),s)+'<span style="color:var(--muted);font-weight:400;font-size:11px;margin:0 5px">vs</span>'+hl(esc(r.TEAMA||'?'),s)+'</span>'+'</div>'
+        +'<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:2px">'+'<span style="'+catStyle+'margin-bottom:0;flex-shrink:0">'+hl(esc(r.CATEGORY||''),s)+'</span>'+'<span style="font-size:13px;font-weight:700;color:var(--text);line-height:1.4">'+hl(esc(r.TEAMH||'?'),s)+'<span style="color:var(--muted);font-weight:400;font-size:11px;margin:0 5px">vs</span>'+hl(esc(r.TEAMA||'?'),s)+' '+vigSymbol(r)+'</span>'+'</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
         +'<span class="status-badge '+sc+'">'+sl+'</span>'
@@ -783,7 +791,7 @@ function renderTable(){
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td><div style="color:#94a3b8">'+esc(r.DATE||'—')+'</div><div style="color:#e2e8f0;font-size:11px;font-weight:600">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
-        +'<td class="tcell" style="white-space:normal;max-width:180px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span><span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span></td>'
+        +'<td class="tcell" style="white-space:normal;max-width:180px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span><span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span>'+vigSymbol(r)+'</td>'
         +'<td>'+(function(){
           var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
           var e=expertScore(r);
