@@ -685,8 +685,27 @@ function renderTable(){
         +'<span class="status-badge '+sc+'">'+sl+'</span>'
         +scoreHtml
         +'</div></div>'
-        +'<div style="display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Line: '+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+(r.ASIALINEMA!=null?' <span style="color:#a78bfa;font-size:9px">M</span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2):'')+(r.ASIALINESB!=null?' <span style="color:#fb923c;font-size:9px">S</span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2):'')+'</span> '+'<span>H: '+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+(r.ASIAHMAC!=null?' '+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN):'')+(r.ASIAHSBO!=null?' '+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN):'')+'</span> '+'<span>A: '+asiaOddsArrows(r.ASIAA,r.ASIAALN)+(r.ASIAAMAC!=null?' '+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN):'')+(r.ASIAASBO!=null?' '+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN):'')+'</span>'
+        +'<div style="margin-top:8px;font-family:var(--mono);font-size:10px">'
+        +'<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;color:var(--muted);font-size:9px;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid var(--border)">'
+        +'<span>LINE</span><span>H</span><span>A</span></div>'
+        +(r.ASIALINE!=null||r.ASIAH!=null||r.ASIAA!=null?
+          '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
+          +'<span style="color:var(--muted)"><span style="font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</span>'
+          +'</div>':'') 
+        +(r.ASIALINEMA!=null||r.ASIAHMAC!=null||r.ASIAAMAC!=null?
+          '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
+          +'<span style="color:#a78bfa"><span style="font-size:9px">M </span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN)+'</span>'
+          +'</div>':'') 
+        +(r.ASIALINESB!=null||r.ASIAHSBO!=null||r.ASIAASBO!=null?
+          '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center">'
+          +'<span style="color:#fb923c"><span style="font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN)+'</span>'
+          +'</div>':'') 
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">'
         +'<span style="color:var(--muted)">Sum:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)
