@@ -320,6 +320,45 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="vig-soft">💎💎💎 Soft (≥7%)</option>
       </select>
     </div>
+    <div class="fg" style="min-width:110px;max-width:140px">
+      <div class="fl">Line Move</div>
+      <select id="lineMoveSelect">
+        <option value="">Any</option>
+        <option value="up">▲ Any Rise</option>
+        <option value="up2">▲▲ Rose ≥0.5</option>
+        <option value="up3">▲▲▲ Rose ≥1.0</option>
+        <option value="down">▼ Any Drop</option>
+        <option value="down2">▼▼ Dropped ≥0.5</option>
+        <option value="down3">▼▼▼ Dropped ≥1.0</option>
+        <option value="flat">— Unchanged</option>
+      </select>
+    </div>
+    <div class="fg" style="min-width:110px;max-width:140px">
+      <div class="fl">H Odds Move</div>
+      <select id="hMoveSelect">
+        <option value="">Any</option>
+        <option value="short">▲ Any Shorten</option>
+        <option value="short2">▲▲ Shortened ≥5%</option>
+        <option value="short3">▲▲▲ Shortened ≥10%</option>
+        <option value="drift">▼ Any Lengthen</option>
+        <option value="drift2">▼▼ Lengthened ≥5%</option>
+        <option value="drift3">▼▼▼ Lengthened ≥10%</option>
+        <option value="flat">— Unchanged</option>
+      </select>
+    </div>
+    <div class="fg" style="min-width:110px;max-width:140px">
+      <div class="fl">A Odds Move</div>
+      <select id="aMoveSelect">
+        <option value="">Any</option>
+        <option value="short">▲ Any Shorten</option>
+        <option value="short2">▲▲ Shortened ≥5%</option>
+        <option value="short3">▲▲▲ Shortened ≥10%</option>
+        <option value="drift">▼ Any Lengthen</option>
+        <option value="drift2">▼▼ Lengthened ≥5%</option>
+        <option value="drift3">▼▼▼ Lengthened ≥10%</option>
+        <option value="flat">— Unchanged</option>
+      </select>
+    </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
   </div>
 </header>
@@ -608,6 +647,9 @@ function loadData(){
       $('expertSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('marketSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('vigSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('lineMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('hMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('aMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
     .catch(function(e){
@@ -634,6 +676,7 @@ function applyFilters(){
   var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value;
   var al=$('asialineSelect').value,dr=$('dateRangeSelect').value;
   var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value,vf=$('vigSelect').value;
+  var lmf=$('lineMoveSelect').value,hmf=$('hMoveSelect').value,amf=$('aMoveSelect').value;
   // Date range cutoff
   var cutoff=null;
   if(dr){
@@ -714,6 +757,40 @@ function applyFilters(){
       if(vf==='vig-wide'&&(vigPct2<6||vigPct2>=7))return false;
       if(vf==='vig-soft'&&vigPct2<7)return false;
     }
+    // Line / H / A movement filters
+    if(lmf){
+      if(r.ASIALINE==null||r.ASIALINELN==null){return false;}
+      var ld=r.ASIALINE-r.ASIALINELN,la=Math.abs(ld);
+      if(lmf==='up'&&ld<=0)return false;
+      if(lmf==='up2'&&ld<0.5)return false;
+      if(lmf==='up3'&&ld<1.0)return false;
+      if(lmf==='down'&&ld>=0)return false;
+      if(lmf==='down2'&&ld>-0.5)return false;
+      if(lmf==='down3'&&ld>-1.0)return false;
+      if(lmf==='flat'&&ld!==0)return false;
+    }
+    if(hmf){
+      if(r.ASIAH==null||r.ASIAHLN==null){return false;}
+      var hd=r.ASIAH-r.ASIAHLN;
+      if(hmf==='short'&&hd>=0)return false;
+      if(hmf==='short2'&&(hd>=0||r.ASIAH>r.ASIAHLN*0.95))return false;
+      if(hmf==='short3'&&(hd>=0||r.ASIAH>r.ASIAHLN*0.90))return false;
+      if(hmf==='drift'&&hd<=0)return false;
+      if(hmf==='drift2'&&(hd<=0||r.ASIAH<r.ASIAHLN*1.05))return false;
+      if(hmf==='drift3'&&(hd<=0||r.ASIAH<r.ASIAHLN*1.10))return false;
+      if(hmf==='flat'&&hd!==0)return false;
+    }
+    if(amf){
+      if(r.ASIAA==null||r.ASIAALN==null){return false;}
+      var ad=r.ASIAA-r.ASIAALN;
+      if(amf==='short'&&ad>=0)return false;
+      if(amf==='short2'&&(ad>=0||r.ASIAA>r.ASIAALN*0.95))return false;
+      if(amf==='short3'&&(ad>=0||r.ASIAA>r.ASIAALN*0.90))return false;
+      if(amf==='drift'&&ad<=0)return false;
+      if(amf==='drift2'&&(ad<=0||r.ASIAA<r.ASIAALN*1.05))return false;
+      if(amf==='drift3'&&(ad<=0||r.ASIAA<r.ASIAALN*1.10))return false;
+      if(amf==='flat'&&ad!==0)return false;
+    }
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
@@ -754,7 +831,7 @@ function toggleFilters(){
 
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
-  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';
+  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';
   pg=1;applyFilters();
 }
 
