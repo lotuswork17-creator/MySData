@@ -301,6 +301,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       <select id="marketSelect">
         <option value="">Any</option>
         <option value="balanced">Balanced (48–52%)</option>
+        <option value="dead-even">Dead Even (49–51%)</option>
         <option disabled>── H Side ──</option>
         <option value="h-slight">H Slight Edge (52–55%)</option>
         <option value="h-clear">H Clear Edge (55%+)</option>
@@ -703,6 +704,7 @@ function applyFilters(){
       var rh2=1/r.ASIAH,ra2=1/r.ASIAA,vig2=rh2+ra2;
       var fh2=rh2/vig2*100,vigPct2=(vig2-1)*100;
       if(mf==='balanced'&&(fh2<48||fh2>52))return false;
+      if(mf==='dead-even'&&(fh2<49||fh2>51))return false;
       if(mf==='h-slight'&&(fh2<52||fh2>=55))return false;
       if(mf==='h-clear'&&fh2<55)return false;
       if(mf==='a-slight'&&(fh2<45||fh2>=48))return false;
