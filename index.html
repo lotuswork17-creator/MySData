@@ -203,7 +203,6 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <span class="updated" id="updatedAt"></span>
       <div class="hstats">
-        <div class="hstat">Total <b id="hTotal">—</b></div>
         <div class="hstat" style="border-color:rgba(74,222,128,.3)">Results <b id="hResult" style="color:var(--accent)">—</b></div>
         <div class="hstat" style="border-color:rgba(96,165,250,.3)">Upcoming <b id="hPreeve" style="color:var(--accent2)">—</b></div>
       </div>
@@ -214,7 +213,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
     <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
   <div class="filters" id="filtersPanel">
-    <div class="fg" style="min-width:110px;max-width:150px">
+    <div class="fg" style="min-width:100px;max-width:130px">
       <div class="fl">Date Range</div>
       <select id="dateRangeSelect">
         <option value="">All Time</option>
@@ -225,9 +224,9 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="12">Last 12 Months</option>
       </select>
     </div>
-    <div class="fg" style="min-width:110px;max-width:150px"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Team name…"/></div>
-    <div class="fg" style="min-width:100px;max-width:140px"><div class="fl">League</div><select id="catSelect"><option value="">All</option></select></div>
-    <div class="fg" style="min-width:100px;max-width:120px">
+    <div class="fg" style="min-width:90px;max-width:130px"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Team name…"/></div>
+    <div class="fg" style="min-width:90px;max-width:120px"><div class="fl">League</div><select id="catSelect"><option value="">All</option></select></div>
+    <div class="fg" style="min-width:90px;max-width:110px">
       <div class="fl">Status</div>
       <select id="statusSelect">
         <option value="">All</option>
@@ -238,11 +237,11 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="Suspen">Suspended</option>
       </select>
     </div>
-    <div class="fg" style="min-width:100px;max-width:130px">
+    <div class="fg" style="min-width:90px;max-width:120px">
       <div class="fl">Asia Line</div>
       <select id="asialineSelect"><option value="">All Lines</option></select>
     </div>
-    <div class="fg" style="min-width:130px;max-width:160px">
+    <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Predict Trend</div>
       <select id="predictSelect">
         <option value="">Any</option>
@@ -259,7 +258,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="A-vstrong">A Dominant (A ≥ 70%)</option>
       </select>
     </div>
-    <div class="fg" style="min-width:130px;max-width:160px">
+    <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Expert Signal</div>
       <select id="expertSelect">
         <option value="">Any</option>
@@ -299,7 +298,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="low-conf-A90">Low Conf ⚠ + A ≥ 90%</option>
       </select>
     </div>
-    <div class="fg" style="min-width:130px;max-width:160px">
+    <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Market Lean</div>
       <select id="marketSelect">
         <option value="">Any</option>
@@ -313,7 +312,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="a-clear">A Clear Edge (45%-)</option>
       </select>
     </div>
-    <div class="fg" style="min-width:110px;max-width:140px">
+    <div class="fg" style="min-width:90px;max-width:110px">
       <div class="fl">Vig Margin</div>
       <select id="vigSelect">
         <option value="">Any</option>
@@ -323,7 +322,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="vig-soft">💎💎💎 Soft (≥7%)</option>
       </select>
     </div>
-    <div class="fg" style="min-width:110px;max-width:140px">
+    <div class="fg" style="min-width:90px;max-width:110px">
       <div class="fl">Line Move</div>
       <select id="lineMoveSelect">
         <option value="">Any</option>
@@ -336,7 +335,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="flat">— Unchanged</option>
       </select>
     </div>
-    <div class="fg" style="min-width:110px;max-width:140px">
+    <div class="fg" style="min-width:90px;max-width:110px">
       <div class="fl">H Odds Move</div>
       <select id="hMoveSelect">
         <option value="">Any</option>
@@ -349,7 +348,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="flat">— Unchanged</option>
       </select>
     </div>
-    <div class="fg" style="min-width:110px;max-width:140px">
+    <div class="fg" style="min-width:90px;max-width:110px">
       <div class="fl">A Odds Move</div>
       <select id="aMoveSelect">
         <option value="">Any</option>
@@ -611,7 +610,6 @@ function loadData(){
     .then(function(d){
       ALL=d.records||[];
       var m=d.meta||{};
-      $('hTotal').textContent=ALL.length.toLocaleString();
       $('hResult').textContent=ALL.filter(function(r){return r.STATUS==='Result';}).length.toLocaleString();
       $('hPreeve').textContent=ALL.filter(function(r){return r.STATUS==='PREEVE';}).length.toLocaleString();
       if(m.generated_at){
