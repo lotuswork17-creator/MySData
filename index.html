@@ -838,7 +838,7 @@ function clearFilters(){
 function asiaLineArrows(val,ln){
   if(val==null)return'—';
   var s=String(val);
-  if(ln==null||ln===0)return s;
+  if(ln==null||ln===val)return s;
   var diff=Math.round((val-ln)*100)/100;
   if(diff===0)return s;
   var abs=Math.abs(diff);
@@ -1152,7 +1152,7 @@ function openDetail(idx){
       function ahVal(v){return v!=null?String(v):'—';}
       // Line diff: absolute movement, skip if open==0
       function ahDiff(latest,open){
-        if(latest==null||open==null||open===0)return'';
+        if(latest==null||open==null||latest===open)return'';
         var d=Math.round((latest-open)*100)/100;
         if(d===0)return'';
         var abs=Math.abs(d);
