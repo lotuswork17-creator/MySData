@@ -226,7 +226,7 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
       </select>
     </div>
     <div class="fg" style="min-width:110px;max-width:150px"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Team name…"/></div>
-    <div class="fg"><div class="fl">League</div><select id="catSelect"><option value="">All Leagues</option></select></div>
+    <div class="fg" style="min-width:100px;max-width:140px"><div class="fl">League</div><select id="catSelect"><option value="">All</option></select></div>
     <div class="fg" style="min-width:100px;max-width:120px">
       <div class="fl">Status</div>
       <select id="statusSelect">
@@ -275,6 +275,9 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option disabled>── vs Predict ──</option>
         <option value="agree">Agrees with Predict</option>
         <option value="disagree">Disagrees with Predict</option>
+        <option disabled>── Split Signal ──</option>
+        <option value="split5">Split ≤5% (H/A within 5pts)</option>
+        <option value="split10">Split ≤10% (H/A within 10pts)</option>
         <option disabled>── Confidence ──</option>
         <option value="high-conf">High Confidence</option>
         <option value="high-conf-H">High Conf + H Leaning</option>
@@ -722,6 +725,8 @@ function applyFilters(){
       if(ef==='A-ultra-e'){if(!e||e.a<90)return false;}
       if(ef==='agree'){if(!e||predictLead(r)!==el)return false;}
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
+      if(ef==='split5'){if(!e||Math.abs(e.h-e.a)>5)return false;}
+      if(ef==='split10'){if(!e||Math.abs(e.h-e.a)>10)return false;}
       if(ef==='high-conf'&&lc)return false;
       if(ef==='high-conf-H'){if(lc||!e||el!=='H')return false;}
       if(ef==='high-conf-H50'){if(lc||!e||e.h<50)return false;}
