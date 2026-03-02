@@ -43,6 +43,19 @@ input::placeholder{color:var(--muted)}
 .results-bar{padding:5px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:2px}
 .results-bar b{color:var(--accent)}
 
+/* BET CALCULATOR */
+#betCalc{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0;display:none}
+.bc-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-family:var(--sans)}
+.bc-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bc-card{flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px}
+.bc-card-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.bc-side{font-size:10px;font-weight:600;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.bc-row{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:2px}
+.bc-row span:first-child{color:var(--muted)}
+.bc-pos{color:#4ade80;font-weight:700}
+.bc-neg{color:#f87171;font-weight:700}
+.bc-chart-wrap{position:relative;height:80px}
+canvas#betChart{width:100%;height:80px}
 /* ASIA STATS PANEL */
 #asiaStats{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0;display:none}
 .as-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-family:var(--sans)}
@@ -323,6 +336,32 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
   <div class="as-bar-wrap" id="as-bar"></div>
 </div>
 
+<div id="betCalc">
+  <div class="bc-title">💰 $1/Match Return Calculator (Latest Odds, Results Only)</div>
+  <div class="bc-summary">
+    <div class="bc-card">
+      <div class="bc-side" style="color:#f87171">Asia H Side</div>
+      <div class="bc-row"><span>Bets</span><span id="bc-h-bets">—</span></div>
+      <div class="bc-row"><span>Staked</span><span id="bc-h-staked">—</span></div>
+      <div class="bc-row"><span>Return</span><span id="bc-h-return">—</span></div>
+      <div class="bc-row"><span>P&amp;L</span><span id="bc-h-pnl">—</span></div>
+      <div class="bc-row"><span>ROI</span><span id="bc-h-roi">—</span></div>
+    </div>
+    <div class="bc-card">
+      <div class="bc-side" style="color:#60a5fa">Asia A Side</div>
+      <div class="bc-row"><span>Bets</span><span id="bc-a-bets">—</span></div>
+      <div class="bc-row"><span>Staked</span><span id="bc-a-staked">—</span></div>
+      <div class="bc-row"><span>Return</span><span id="bc-a-return">—</span></div>
+      <div class="bc-row"><span>P&amp;L</span><span id="bc-a-pnl">—</span></div>
+      <div class="bc-row"><span>ROI</span><span id="bc-a-roi">—</span></div>
+    </div>
+    <div class="bc-card" style="flex:2;min-width:200px">
+      <div class="bc-card-label">Running P&L</div>
+      <div class="bc-chart-wrap"><canvas id="betChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
 <div id="loadingState"><div class="spinner"></div><span>Loading match data…</span></div>
 
 <div id="errorState">
@@ -414,6 +453,87 @@ function asiaOutcome(r){
   return'lw';
 }
 
+function renderBetCalc(data){
+  var el=document.getElementById('betCalc');
+  var results=data.filter(function(r){
+    return r.STATUS==='Result'&&r.ASIALINE!=null&&r.RESULTH!=null&&r.RESULTA!=null&&r.ASIAH!=null&&r.ASIAA!=null;
+  });
+  if(!results.length){el.style.display='none';return;}
+  el.style.display='block';
+
+  // Sort by date ascending for chart
+  var sorted=results.slice().sort(function(a,b){return(a.DATE||'') < (b.DATE||'')?-1:1;});
+
+  var hPnl=0,aPnl=0,hRunning=[],aRunning=[];
+  sorted.forEach(function(r){
+    var outcome=asiaOutcome(r);
+    var oh=r.ASIAH,oa=r.ASIAA;
+    var hp=0,ap=0;
+    if(outcome==='ww'){hp=oh-1;ap=-1;}
+    else if(outcome==='wh'){hp=(oh-1)*0.5;ap=-0.5;}
+    else if(outcome==='dd'){hp=0;ap=0;}
+    else if(outcome==='lh'){hp=-0.5;ap=(oa-1)*0.5;}
+    else if(outcome==='lw'){hp=-1;ap=oa-1;}
+    hPnl+=hp;aPnl+=ap;
+    hRunning.push(Math.round(hPnl*100)/100);
+    aRunning.push(Math.round(aPnl*100)/100);
+  });
+
+  var n=results.length;
+  function fmt(v){return(v>=0?'+':'')+v.toFixed(2);}
+  function cls(v){return v>=0?'bc-pos':'bc-neg';}
+
+  $('bc-h-bets').textContent=n;
+  $('bc-h-staked').textContent='$'+n+'.00';
+  $('bc-h-return').textContent='$'+(n+hPnl).toFixed(2);
+  $('bc-h-pnl').innerHTML='<span class="'+cls(hPnl)+'">'+fmt(hPnl)+'</span>';
+  $('bc-h-roi').innerHTML='<span class="'+cls(hPnl)+'">'+fmt(hPnl/n*100)+'%</span>';
+
+  $('bc-a-bets').textContent=n;
+  $('bc-a-staked').textContent='$'+n+'.00';
+  $('bc-a-return').textContent='$'+(n+aPnl).toFixed(2);
+  $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
+  $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
+
+  // Draw chart
+  var canvas=document.getElementById('betChart');
+  var ctx=canvas.getContext('2d');
+  var dpr=window.devicePixelRatio||1;
+  var w=canvas.parentElement.offsetWidth,h=80;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+
+  var all=hRunning.concat(aRunning);
+  var mn=Math.min(0,Math.min.apply(null,all)),mx=Math.max(0,Math.max.apply(null,all));
+  var range=mx-mn||1;
+  var pad=8;
+  function yx(v){return pad+(1-(v-mn)/range)*(h-pad*2);}
+  function xx(i){return i/(hRunning.length-1||1)*(w-pad*2)+pad;}
+
+  // Zero line
+  ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,yx(0));ctx.lineTo(w-pad,yx(0));ctx.stroke();
+
+  // Draw line for H and A
+  [[hRunning,'#f87171'],[aRunning,'#60a5fa']].forEach(function(pair){
+    var pts=pair[0],col=pair[1];
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();
+    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i),yx(v)):ctx.lineTo(xx(i),yx(v));});
+    ctx.stroke();
+    // Fill under line
+    ctx.beginPath();
+    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i),yx(v)):ctx.lineTo(xx(i),yx(v));});
+    ctx.lineTo(xx(pts.length-1),yx(0));ctx.lineTo(pad,yx(0));ctx.closePath();
+    ctx.fillStyle=col.replace(')',',0.08)').replace('rgb','rgba');ctx.fill();
+  });
+
+  // Labels
+  ctx.font='9px IBM Plex Mono';ctx.textBaseline='middle';
+  ctx.fillStyle='#f87171';ctx.fillText('H '+fmt(hPnl),pad+2,yx(hRunning[hRunning.length-1])-8);
+  ctx.fillStyle='#60a5fa';ctx.fillText('A '+fmt(aPnl),pad+2,yx(aRunning[aRunning.length-1])+8);
+}
 function renderAsiaStats(data){
   var counts={ww:0,wh:0,dd:0,lh:0,lw:0};
   data.forEach(function(r){var o=asiaOutcome(r);if(o)counts[o]++;});
@@ -461,7 +581,7 @@ function loadData(){
       $('pagination').classList.add('pg-visible');
       $('resultsInline').style.display='inline';
 
-      renderAsiaStats(ALL);
+      renderAsiaStats(ALL);renderBetCalc(ALL);
       $('th-DATE').classList.add('sort-desc');
       applyFilters();
 
@@ -594,7 +714,7 @@ function applyFilters(){
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
   $('showCount').textContent=filtered.length.toLocaleString();
   $('totalCount').textContent=ALL.length.toLocaleString();
-  renderAsiaStats(filtered);
+  renderAsiaStats(filtered);renderBetCalc(filtered);
   renderTable();renderPagination();
 }
 
