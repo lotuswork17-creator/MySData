@@ -337,8 +337,11 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
 </div>
 
 <div id="betCalc">
-  <div class="bc-title">💰 $1/Match Return Calculator (Latest Odds, Results Only)</div>
-  <div class="bc-summary">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div class="bc-title" style="margin-bottom:0">💰 $1/Match Return Calculator (Latest Odds, Results Only)</div>
+    <button class="filter-toggle active" id="betCalcToggle" onclick="toggleBetCalc()"><span id="betCalcLabel">Hide</span> <span class="ft-arrow">▼</span></button>
+  </div>
+  <div class="bc-summary" id="betCalcBody">
     <div class="bc-card">
       <div class="bc-side" style="color:#f87171">Asia H Side</div>
       <div class="bc-row"><span>Bets</span><span id="bc-h-bets">—</span></div>
@@ -726,6 +729,17 @@ function sortBy(col){
   applyFilters();
 }
 
+function toggleBetCalc(){
+  var body=document.getElementById('betCalcBody');
+  var btn=document.getElementById('betCalcToggle');
+  var lbl=document.getElementById('betCalcLabel');
+  var hidden=body.style.display==='none';
+  body.style.display=hidden?'flex':'none';
+  btn.classList.toggle('active',hidden);
+  lbl.textContent=hidden?'Hide':'Show';
+  var arrow=btn.querySelector('.ft-arrow');
+  if(arrow)arrow.style.transform=hidden?'':' rotate(-90deg)';
+}
 function toggleFilters(){
   var panel=document.getElementById('filtersPanel');
   var btn=document.getElementById('filterToggle');
