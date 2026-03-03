@@ -39,6 +39,10 @@ input::placeholder{color:var(--muted)}
 .btn-clear{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);white-space:nowrap;align-self:flex-end;min-height:34px}
 .btn-clear:active{color:var(--text)}
 
+/* SMART MONEY FILTER */
+.fg-smart select{background:#1a1f2e;border:1px solid rgba(251,191,36,.35);border-radius:7px;color:#fbbf24}
+.fg-smart select:focus{border-color:rgba(251,191,36,.7)}
+.fg-smart .fl{color:#fbbf24;opacity:.85}
 /* RESULTS BAR */
 .results-bar{padding:5px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:2px}
 .results-bar b{color:var(--accent)}
@@ -361,6 +365,19 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option value="flat">— Unchanged</option>
       </select>
     </div>
+    <div class="fg fg-smart" style="min-width:130px;max-width:200px">
+      <div class="fl">⚡ Smart Money</div>
+      <select id="smartSelect">
+        <option value="">Any</option>
+        <option disabled>── H Bet Signals ──</option>
+        <option value="sm1">▲ Line Rose + Expert H≥67% (H bet)</option>
+        <option value="sm3">▲ Line Rose + Expert H≥67% + Vig&lt;6% (H bet)</option>
+        <option value="sm2">▲ Line Rose + Expert H≥83% + Vig&lt;6% (H bet)</option>
+        <option disabled>── Contrarian H Signals ──</option>
+        <option value="sm4">Expert A≥83% + Line Unchanged (H bet)</option>
+        <option value="sm5">Expert A≥83% + Line Rose (H bet)</option>
+      </select>
+    </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
   </div>
 </header>
@@ -651,6 +668,7 @@ function loadData(){
       $('lineMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('hMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('aMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('smartSelect').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
     .catch(function(e){
@@ -677,7 +695,7 @@ function applyFilters(){
   var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value;
   var al=$('asialineSelect').value,dr=$('dateRangeSelect').value;
   var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value,vf=$('vigSelect').value;
-  var lmf=$('lineMoveSelect').value,hmf=$('hMoveSelect').value,amf=$('aMoveSelect').value;
+  var lmf=$('lineMoveSelect').value,hmf=$('hMoveSelect').value,amf=$('aMoveSelect').value,smf=$('smartSelect').value;
   // Date range cutoff
   var cutoff=null;
   if(dr){
@@ -794,6 +812,18 @@ function applyFilters(){
       if(amf==='drift3'&&(ad<=0||r.ASIAA<r.ASIAALN*1.10))return false;
       if(amf==='flat'&&ad!==0)return false;
     }
+    // Smart Money filter
+    if(smf){
+      var sgl=r.ASIALINE,sln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
+      var sld=sgl!=null&&sln!=null?Math.round((sgl-sln)*100)/100:null;
+      var se=expertScore(r);
+      var sv=sh&&sa&&sh>0&&sa>0?(1/sh+1/sa-1)*100:null;
+      if(smf==='sm1'){if(sld===null||sld<=0||!se||se.h<67)return false;}
+      else if(smf==='sm2'){if(sld===null||sld<=0||!se||se.h<83||sv===null||sv>=6)return false;}
+      else if(smf==='sm3'){if(sld===null||sld<=0||!se||se.h<67||sv===null||sv>=6)return false;}
+      else if(smf==='sm4'){if(sld===null||sld!==0||!se||se.a<83)return false;}
+      else if(smf==='sm5'){if(sld===null||sld<=0||!se||se.a<83)return false;}
+    }
     return true;
   });
   filtered.sort(function(a,b){var av=a[sortCol],bv=b[sortCol];if(av==null)return 1;if(bv==null)return-1;return(av<bv?-1:av>bv?1:0)*sortDir;});
@@ -834,7 +864,7 @@ function toggleFilters(){
 
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
-  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';
+  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';$('smartSelect').value='';
   pg=1;applyFilters();
 }
 
