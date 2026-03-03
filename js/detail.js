@@ -125,3 +125,6 @@ function openDetail(idx){
 function closePanelBg(e){if(e.target===$('panelOverlay'))closePanel();}
 
 function closePanel(){$('panelOverlay').classList.remove('open');}
+
+// Initialise app
+loadData();
