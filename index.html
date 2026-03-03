@@ -376,6 +376,10 @@ mark{background:rgba(96,165,250,.2);color:var(--accent2);border-radius:2px;paddi
         <option disabled>── Contrarian H Signals ──</option>
         <option value="sm4">Expert A≥83% + Line Unchanged (H bet)</option>
         <option value="sm5">Expert A≥83% + Line Rose (H bet)</option>
+        <option disabled>── A Bet Signals ──</option>
+        <option value="sm6">▼ Line Dropped + Expert A≥50% + Vig&lt;6% (A bet)</option>
+        <option disabled>── Contrarian A Signals ──</option>
+        <option value="sm7">Expert H≥83% + Line Unchanged (A bet)</option>
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕</button>
@@ -823,6 +827,8 @@ function applyFilters(){
       else if(smf==='sm3'){if(sld===null||sld<=0||!se||se.h<67||sv===null||sv>=6)return false;}
       else if(smf==='sm4'){if(sld===null||sld!==0||!se||se.a<83)return false;}
       else if(smf==='sm5'){if(sld===null||sld<=0||!se||se.a<83)return false;}
+      else if(smf==='sm6'){if(sld===null||sld>=0||!se||se.a<50||sv===null||sv>=6)return false;}
+      else if(smf==='sm7'){if(sld===null||sld!==0||!se||se.h<83)return false;}
     }
     return true;
   });
