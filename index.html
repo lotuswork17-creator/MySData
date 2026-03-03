@@ -1139,6 +1139,20 @@ function openDetail(idx){
     +'<div class="dc"><h3>📊 Prediction %</h3>'
     +'<div class="pl"><span style="color:var(--accent2)">H '+ph+'%</span><span style="color:#a78bfa">D '+pd+'%</span><span style="color:var(--warn)">A '+pa+'%</span></div>'
     +'<div class="pbar"><div class="ph2" style="width:'+(ph/pt*100).toFixed(1)+'%"></div><div class="pd2" style="width:'+(pd/pt*100).toFixed(1)+'%"></div><div class="pa2" style="width:'+(pa/pt*100).toFixed(1)+'%"></div></div>'
+    +(function(){
+      var e=expertScore(r);
+      if(!e)return '';
+      var et=e.h+e.d+e.a||1;
+      var lc=lowConfidence(r);
+      return '<div style="margin-top:8px">'
+        +'<div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Expert Signal</div>'
+        +'<div class="pl"><span style="color:#f87171">H '+e.h+'%</span><span style="color:#4ade80">D '+e.d+'%</span><span style="color:#60a5fa">A '+e.a+'%</span></div>'
+        +(lc
+          ?'<div class="pbar" style="opacity:.45"><div style="width:'+e.h+'%;background:repeating-linear-gradient(90deg,#f87171 0 3px,transparent 3px 6px);height:100%"></div><div style="width:'+e.d+'%;background:repeating-linear-gradient(90deg,#4ade80 0 3px,transparent 3px 6px);height:100%"></div><div style="width:'+e.a+'%;background:repeating-linear-gradient(90deg,#60a5fa 0 3px,transparent 3px 6px);height:100%"></div></div>'
+          :'<div class="pbar"><div style="width:'+e.h+'%;background:#f87171;height:100%"></div><div style="width:'+e.d+'%;background:#4ade80;height:100%"></div><div style="width:'+e.a+'%;background:#60a5fa;height:100%"></div></div>')
+        +(lc?'<div style="font-size:9px;color:var(--warn);margin-top:3px">⚠ Low confidence</div>':'')
+        +'</div>';
+    })()
     +'<div style="margin-top:10px">'
     +'<div class="dr"><span class="dk">Recent H/D/A</span><span class="dv">'+r.RECENTH+' / '+r.RECENTD+' / '+r.RECENTA+'</span></div>'
     +'<div class="dr"><span class="dk">1-Year H/D/A</span><span class="dv">'+r.REC1YRH+' / '+r.REC1YRD+' / '+r.REC1YRA+'</span></div>'
