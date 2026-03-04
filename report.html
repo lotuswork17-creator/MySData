@@ -142,18 +142,9 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 2: LINE -->
 <div class="rpt-section" id="tab2">
   <div class="rpt-title">ROI by Asia Line</div>
-  <div class="rpt-sub">Cumulative running P&L per line value over time. Top 5 lines by match count.</div>
+  <div class="rpt-sub">One chart per handicap line. Each chart shows H bet (blue) and A bet (red) cumulative P&L over time — so you can compare both sides on the same scale.</div>
   <div class="rpt-cards" id="lineCards"></div>
-  <div class="chart-box">
-    <div class="chart-box-label">H Bet — Cumulative P&L by Asia Line</div>
-    <div class="chart-legend" id="lgdLineH"></div>
-    <canvas id="cLineH"></canvas>
-  </div>
-  <div class="chart-box">
-    <div class="chart-box-label">A Bet — Cumulative P&L by Asia Line</div>
-    <div class="chart-legend" id="lgdLineA"></div>
-    <canvas id="cLineA"></canvas>
-  </div>
+  <div id="lineChartsArea"></div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr><th>Line</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Best</th></tr></thead>
     <tbody id="tbLine"></tbody>
@@ -423,10 +414,17 @@ function computeReport(records){
   // ── Line ──
   var liMap = {};
   results.forEach(function(r){ if(r.ASIALINE==null)return; var k=String(r.ASIALINE); if(!liMap[k])liMap[k]=[]; liMap[k].push(r); });
-  var topLines = Object.keys(liMap).sort(function(a,b){ return liMap[b].length-liMap[a].length; }).slice(0,5);
-  var lineSeriesH = topLines.map(function(k,i){ var lv=parseFloat(k); return{label:(lv>=0?'+':'')+k,color:COLS[i],pts:runPnl(liMap[k],cH)}; });
-  var lineSeriesA = topLines.map(function(k,i){ var lv=parseFloat(k); return{label:(lv>=0?'+':'')+k,color:COLS[i],pts:runPnl(liMap[k],cA)}; });
-  var lineTable = Object.keys(liMap).sort(function(a,b){ return parseFloat(a)-parseFloat(b); }).map(function(k){
+  // All lines sorted ascending, each line gets a pair of series {H, A}
+  var lineKeys = Object.keys(liMap).sort(function(a,b){ return parseFloat(a)-parseFloat(b); });
+  var linePerLine = lineKeys.map(function(k){
+    var lv=parseFloat(k), lbl=(lv>=0?'+':'')+k;
+    return{
+      key:k, label:lbl, n:liMap[k].length,
+      seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(liMap[k],cH)},
+      seriesA:{label:'A bet',color:'#f87171',pts:runPnl(liMap[k],cA)},
+    };
+  });
+  var lineTable = lineKeys.map(function(k){
     var v=liMap[k], n=v.length;
     return{line:parseFloat(k),n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
   });
@@ -519,7 +517,7 @@ function computeReport(records){
     monthBounds:monthBounds,
     leagueSeriesH:leagueSeriesH, leagueSeriesA:leagueSeriesA, leagueTable:leagueTable,
     allHpts:allHpts, allApts:allApts, monthTable:monthTable,
-    lineSeriesH:lineSeriesH, lineSeriesA:lineSeriesA, lineTable:lineTable,
+    linePerLine:linePerLine, lineTable:lineTable,
     expHSeries:expHSeries, expASeries:expASeries, expTable:expTable,
     smHSeries:smHSeries, smASeries:smASeries, smTable:smTable,
     lmHSeries:lmHSeries, lmASeries:lmASeries, lmTable:lmTable,
@@ -561,18 +559,37 @@ function renderMonth(d){
 
 function renderLine(d){
   var best=d.lineTable.slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
+  var worst=d.lineTable.slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
   document.getElementById('lineCards').innerHTML=
-    (best?'<div class="rpt-card"><div class="rpt-card-label">Best Line</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
-    +'<div class="rpt-card"><div class="rpt-card-label">Lines Total</div><div class="rpt-card-val neu">'+d.lineTable.length+'</div></div>';
-  makeLegend('lgdLineH',d.lineSeriesH); makeLegend('lgdLineA',d.lineSeriesA);
+    '<div class="rpt-card"><div class="rpt-card-label">Lines</div><div class="rpt-card-val neu">'+d.lineTable.length+'</div></div>'
+    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best Line</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
+    +(worst?'<div class="rpt-card"><div class="rpt-card-label">Worst Line</div><div class="rpt-card-val neg">'+(worst.line>=0?'+':'')+worst.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
+  // Build one chart-box per line
+  var area=document.getElementById('lineChartsArea');
+  area.innerHTML=d.linePerLine.map(function(ln){
+    var lbl=ln.label, id='cLine_'+ln.key.replace('.','_').replace('-','m');
+    var hRoi=d.lineTable.find(function(t){return t.line===parseFloat(ln.key);});
+    var roiNote=hRoi?(' — H: '+fmtRoi(hRoi.hroi)+'  A: '+fmtRoi(hRoi.aroi)):'';
+    return '<div class="chart-box">'
+      +'<div class="chart-box-label">Line '+lbl+' (N='+ln.n+')'+roiNote+'</div>'
+      +'<div class="chart-legend">'
+      +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
+      +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
+      +'</div>'
+      +'<canvas id="'+id+'"></canvas>'
+      +'</div>';
+  }).join('');
+  // Draw all charts after DOM updates
+  setTimeout(function(){
+    d.linePerLine.forEach(function(ln){
+      var id='cLine_'+ln.key.replace('.','_').replace('-','m');
+      drawChart(id,[ln.seriesH,ln.seriesA],d.monthBounds,100);
+    });
+  },30);
   document.getElementById('tbLine').innerHTML=d.lineTable.map(function(x){
     var best=x.hroi>x.aroi?'<span class="pos">H '+fmtRoi(x.hroi)+'</span>':'<span class="neg">A '+fmtRoi(x.aroi)+'</span>';
     return'<tr><td>'+(x.line>=0?'+':'')+x.line+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+best+'</td></tr>';
   }).join('');
-  setTimeout(function(){
-    drawChart('cLineH',d.lineSeriesH,d.monthBounds,120);
-    drawChart('cLineA',d.lineSeriesA,d.monthBounds,120);
-  },30);
 }
 
 function renderExpert(d){
@@ -638,7 +655,7 @@ function showTab(i){
     var fns=[
       function(){ drawChart('cLeagueH',RD.leagueSeriesH,RD.monthBounds,110); drawChart('cLeagueA',RD.leagueSeriesA,RD.monthBounds,110); },
       function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
-      function(){ drawChart('cLineH',RD.lineSeriesH,RD.monthBounds,120); drawChart('cLineA',RD.lineSeriesA,RD.monthBounds,120); },
+      function(){ RD.linePerLine.forEach(function(ln){ var id='cLine_'+ln.key.replace('.','_').replace('-','m'); drawChart(id,[ln.seriesH,ln.seriesA],RD.monthBounds,100); }); },
       function(){ drawChart('cExpertH',RD.expHSeries,RD.monthBounds,120); drawChart('cExpertA',RD.expASeries,RD.monthBounds,120); },
       function(){ drawChart('cSmartH',RD.smHSeries,RD.monthBounds,120); drawChart('cSmartA',RD.smASeries,RD.monthBounds,120); },
       function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
