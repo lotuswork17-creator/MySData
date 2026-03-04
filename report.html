@@ -142,7 +142,7 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 2: LINE -->
 <div class="rpt-section" id="tab2">
   <div class="rpt-title">ROI by Asia Line</div>
-  <div class="rpt-sub">One chart per handicap line. Each chart shows H bet (blue) and A bet (red) cumulative P&L over time — so you can compare both sides on the same scale.</div>
+  <div class="rpt-sub">One chart per handicap line. Each chart shows H bet (red) and A bet (blue) cumulative P&L over time — so you can compare both sides on the same scale.</div>
   <div class="rpt-cards" id="lineCards"></div>
   <div id="lineChartsArea"></div>
   <div class="rpt-table-wrap"><table class="rpt-table">
@@ -154,7 +154,7 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 3: EXPERT -->
 <div class="rpt-section" id="tab3">
   <div class="rpt-title">Expert Signal Accuracy</div>
-  <div class="rpt-sub">One chart per expert threshold. Each chart shows H bet (blue) and A bet (red) cumulative P&L — so you can see whether following or fading the experts produces edge. Grey = baseline (all matches).</div>
+  <div class="rpt-sub">One chart per expert threshold. Each chart shows H bet (red) and A bet (blue) cumulative P&L — so you can see whether following or fading the experts produces edge. Grey = baseline (all matches).</div>
   <div id="expertChartsArea"></div>
   <div class="exp-grid" id="expertGrid"></div>
   <div class="rpt-title" style="margin-top:4px">Verdict</div>
@@ -418,8 +418,8 @@ function computeReport(records){
     var hroi=roiOf(hr), aroi=roiOf(ar);
     return{
       key:k, label:lbl, n:n, hroi:hroi, aroi:aroi,
-      seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(liMap[k],cH)},
-      seriesA:{label:'A bet',color:'#f87171',pts:runPnl(liMap[k],cA)},
+      seriesH:{label:'H bet',color:'#f87171',pts:runPnl(liMap[k],cH)},
+      seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(liMap[k],cA)},
     };
   });
   var lineTable = linePerLine.map(function(d){ return{line:parseFloat(d.key),n:d.n,hroi:d.hroi,aroi:d.aroi}; });
@@ -443,8 +443,8 @@ function computeReport(records){
         side:side, thresh:thresh, n:n,
         label:'Expert '+side+' ≥'+thresh+'%',
         hroi:roiOf(hr), aroi:roiOf(ar),
-        seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(sub,cH)},
-        seriesA:{label:'A bet',color:'#f87171',pts:runPnl(sub,cA)},
+        seriesH:{label:'H bet',color:'#f87171',pts:runPnl(sub,cH)},
+        seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(sub,cA)},
       });
     });
   });
@@ -458,8 +458,8 @@ function computeReport(records){
       side:'~', thresh:gap, n:n,
       label:'H/A Close (≤'+gap+'pts)',
       hroi:roiOf(hr), aroi:roiOf(ar),
-      seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(sub,cH)},
-      seriesA:{label:'A bet',color:'#f87171',pts:runPnl(sub,cA)},
+      seriesH:{label:'H bet',color:'#f87171',pts:runPnl(sub,cH)},
+      seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(sub,cA)},
     });
   });
 
@@ -580,8 +580,8 @@ function renderLine(d){
     return '<div class="chart-box">'
       +'<div class="chart-box-label">Line '+ln.label+' (N='+ln.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
-      +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
+      +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
+      +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
       +'</div>'
       +'<canvas id="'+id+'"></canvas>'
       +'</div>';
@@ -609,8 +609,8 @@ function renderExpert(d){
     return '<div class="chart-box">'
       +'<div class="chart-box-label">'+ep.label+' (N='+ep.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
-      +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
+      +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
+      +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
       +'<span style="margin-left:6px">'+bestSide+'</span>'
       +'</div>'
       +'<canvas id="'+id+'"></canvas>'
@@ -628,10 +628,10 @@ function renderExpert(d){
     var vA,vcA; if(ep.aroi>=5){vA='✅ Suitable';vcA='verdict-ok';}else if(ep.aroi>=0){vA='⚠ Marginal';vcA='verdict-caution';}else{vA='❌ Avoid';vcA='verdict-avoid';}
     return'<div class="exp-card"><div class="exp-card-top">'+ep.label+' · N='+ep.n+'</div>'
       +'<div style="display:flex;gap:10px;margin-bottom:4px">'
-      +'<div><div style="font-size:9px;color:#60a5fa;font-weight:700;margin-bottom:2px">H BET</div>'
+      +'<div><div style="font-size:9px;color:#f87171;font-weight:700;margin-bottom:2px">H BET</div>'
       +'<div class="exp-card-roi '+posNeg(ep.hroi)+'">'+fmtRoi(ep.hroi)+'</div>'
       +'<div class="exp-verdict '+vcH+'">'+vH+'</div></div>'
-      +'<div><div style="font-size:9px;color:#f87171;font-weight:700;margin-bottom:2px">A BET</div>'
+      +'<div><div style="font-size:9px;color:#60a5fa;font-weight:700;margin-bottom:2px">A BET</div>'
       +'<div class="exp-card-roi '+posNeg(ep.aroi)+'">'+fmtRoi(ep.aroi)+'</div>'
       +'<div class="exp-verdict '+vcA+'">'+vA+'</div></div>'
       +'</div></div>';
