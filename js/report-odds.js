@@ -223,10 +223,9 @@ function chartBox(id, seg){
 var PREF_EDGE = 3;
 
 function oddsSetFilter(mode){
-  // Update button states
+  // Update button active states
   document.querySelectorAll('.odds-btn').forEach(function(btn){
-    btn.classList.remove('active');
-    if(btn.getAttribute('onclick')==="oddsSetFilter('"+mode+"')") btn.classList.add('active');
+    btn.classList.toggle('active', btn.getAttribute('data-mode')===mode);
   });
 
   var items   = document.querySelectorAll('.odds-item');
