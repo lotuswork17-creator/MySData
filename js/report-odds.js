@@ -194,8 +194,8 @@ function renderOdds(d){
 
 // ── UI helpers ──
 function chartBox(id, seg){
-  var small   = seg.n < ODDS_MIN_N;
-  var edge    = seg.hroi - seg.aroi;
+  var small    = seg.n < ODDS_MIN_N;
+  var edge     = seg.hroi - seg.aroi;
   var bestSide = edge>0
     ? '<span class="pos">H leads +'+Math.abs(edge).toFixed(1)+'%</span>'
     : '<span class="neg">A leads +'+Math.abs(edge).toFixed(1)+'%</span>';
@@ -208,13 +208,77 @@ function chartBox(id, seg){
       +'</div>'
       +'<canvas id="'+id+'"></canvas>'
     : '<div style="color:#64748b;font-size:10px;padding:6px 0">No data for this combination</div>';
-  return '<div class="chart-box">'
+  return '<div class="chart-box odds-item" data-n="'+seg.n+'" data-edge="'+edge.toFixed(1)+'">'
     +'<div class="chart-box-label">'+seg.label
     +' (N='+seg.n+')'+warn
     +(seg.n>0 ? ' — H: '+fmtRoi(seg.hroi)+'  A: '+fmtRoi(seg.aroi) : '')
     +'</div>'
     +body
     +'</div>';
+}
+
+// ── Filter logic ──
+// mode: 'all' | 'n80' | 'n80_h' | 'n80_a' | 'n80_any'
+// preference threshold: edge > 3% either direction
+var PREF_EDGE = 3;
+
+function oddsSetFilter(mode){
+  // Update button states
+  document.querySelectorAll('.odds-btn').forEach(function(btn){
+    btn.classList.remove('active');
+    if(btn.getAttribute('onclick')==="oddsSetFilter('"+mode+"')") btn.classList.add('active');
+  });
+
+  var items   = document.querySelectorAll('.odds-item');
+  var shown   = 0;
+  var hidden  = 0;
+
+  items.forEach(function(el){
+    var n    = parseInt(el.getAttribute('data-n')||'0');
+    var edge = parseFloat(el.getAttribute('data-edge')||'0');
+    var visible = true;
+
+    if(mode==='n80'){
+      visible = n >= 80;
+    } else if(mode==='n80_h'){
+      visible = n >= 80 && edge > PREF_EDGE;
+    } else if(mode==='n80_a'){
+      visible = n >= 80 && edge < -PREF_EDGE;
+    } else if(mode==='n80_any'){
+      visible = n >= 80 && Math.abs(edge) > PREF_EDGE;
+    }
+    // 'all' → visible stays true
+
+    el.style.display = visible ? '' : 'none';
+    visible ? shown++ : hidden++;
+  });
+
+  // Hide section/group labels that have no visible charts beneath them
+  document.querySelectorAll('.odds-group-label, .odds-sub-label, .odds-line-header').forEach(function(lbl){
+    var sib = lbl.nextElementSibling;
+    var hasVisible = false;
+    while(sib){
+      var isLabel = sib.classList.contains('odds-group-label')
+                 || sib.classList.contains('odds-sub-label')
+                 || sib.classList.contains('odds-line-header');
+      if(isLabel) break;
+      if(sib.classList.contains('odds-item') && sib.style.display!=='none') hasVisible=true;
+      sib = sib.nextElementSibling;
+    }
+    lbl.style.display = hasVisible ? '' : 'none';
+  });
+
+  var hint = document.getElementById('oddsFilterHint');
+  if(hint){
+    var labels = {
+      'all':     'showing all '+shown+' charts',
+      'n80':     shown+' charts with N≥80',
+      'n80_h':   shown+' charts — N≥80, H edge >'+PREF_EDGE+'%',
+      'n80_a':   shown+' charts — N≥80, A edge >'+PREF_EDGE+'%',
+      'n80_any': shown+' charts — N≥80, either side edge >'+PREF_EDGE+'%',
+    };
+    hint.textContent = labels[mode] || '';
+  }
 }
 
 function tableRow(lineLabel, segLabel, seg, isBase){
