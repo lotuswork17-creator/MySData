@@ -73,7 +73,7 @@ body{display:block;padding-bottom:40px}
 .odds-line-header{font-size:13px;font-weight:800;color:var(--text);margin:18px 0 8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .odds-line-n{font-size:10px;font-weight:400;color:#94a3b8;font-family:var(--mono)}
 .odds-line-roi{font-size:11px;font-family:var(--mono);margin-left:auto}
-.odds-filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.odds-filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;position:sticky;top:44px;z-index:50;background:var(--surface);padding:8px 0;border-bottom:1px solid var(--border)}
 .odds-filter-label{font-size:10px;color:#94a3b8;font-family:var(--mono)}
 .odds-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:#94a3b8;font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s}
 .odds-btn.active{background:var(--accent2);border-color:var(--accent2);color:#0f172a}
@@ -199,11 +199,11 @@ body{display:block;padding-bottom:40px}
   <div class="rpt-sub">Each chart = one AsiaLine × Expert Signal combination. H bet (red) vs A bet (blue). Sub-filters (Market Lean, Line Movement, Vig) appear beneath when N≥30.</div>
   <div class="odds-filter-bar">
     <span class="odds-filter-label">Show:</span>
-    <button class="odds-btn active" onclick="oddsSetFilter('all')">All</button>
-    <button class="odds-btn"        onclick="oddsSetFilter('n80')">N≥80</button>
-    <button class="odds-btn"        onclick="oddsSetFilter('n80_h')">N≥80 · H pref</button>
-    <button class="odds-btn"        onclick="oddsSetFilter('n80_a')">N≥80 · A pref</button>
-    <button class="odds-btn"        onclick="oddsSetFilter('n80_any')">N≥80 · Either pref</button>
+    <button class="odds-btn active" data-mode="all"    onclick="oddsSetFilter('all')">All</button>
+    <button class="odds-btn"        data-mode="n80"    onclick="oddsSetFilter('n80')">N≥80</button>
+    <button class="odds-btn"        data-mode="n80_h"  onclick="oddsSetFilter('n80_h')">N≥80 · H pref</button>
+    <button class="odds-btn"        data-mode="n80_a"  onclick="oddsSetFilter('n80_a')">N≥80 · A pref</button>
+    <button class="odds-btn"        data-mode="n80_any"onclick="oddsSetFilter('n80_any')">N≥80 · Either pref</button>
     <span class="odds-filter-hint" id="oddsFilterHint"></span>
   </div>
   <div id="oddsChartsArea"></div>
