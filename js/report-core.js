@@ -194,5 +194,6 @@ function computeReport(records){
     expert      : computeExpert(results),
     smart       : computeSmart(results, allHpts, allApts),
     lm          : computeLM(results, allHpts, allApts),
+    odds        : computeOdds(results),
   };
 }
