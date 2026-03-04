@@ -32,7 +32,6 @@ body{display:block;padding-bottom:40px}
 .rpt-card-sub{font-size:10px;color:#94a3b8;font-family:var(--mono);margin-top:2px}
 .pos{color:#4ade80}.neg{color:#f87171}.neu{color:#94a3b8}
 
-/* Chart box matches bc-card style from front page */
 .chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px}
 .chart-box-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#cbd5e1;margin-bottom:6px;font-family:var(--sans)}
 .chart-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;font-size:9px;font-family:var(--mono);color:#94a3b8;align-items:center}
@@ -88,14 +87,8 @@ body{display:block;padding-bottom:40px}
   </div>
 </div>
 
-<div class="rpt-tabs">
-  <div class="rpt-tab active" onclick="showTab(0)">📊 League</div>
-  <div class="rpt-tab" onclick="showTab(1)">📅 Month</div>
-  <div class="rpt-tab" onclick="showTab(2)">📐 Line</div>
-  <div class="rpt-tab" onclick="showTab(3)">🧠 Expert</div>
-  <div class="rpt-tab" onclick="showTab(4)">⚡ Smart Money</div>
-  <div class="rpt-tab" onclick="showTab(5)">↕️ Line × Expert</div>
-</div>
+<!-- Tab bar — built dynamically from TABS registry in JS -->
+<div class="rpt-tabs" id="rptTabBar"></div>
 
 <div id="rptLoading"><div class="spinner"></div>Loading report…</div>
 
@@ -123,7 +116,7 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 1: MONTH -->
 <div class="rpt-section" id="tab1">
   <div class="rpt-title">Overall Performance over Time</div>
-  <div class="rpt-sub">Running P&L for all H and A bets, match by match sorted by date. Identical to front page chart at full scale.</div>
+  <div class="rpt-sub">Running P&L for all H and A bets, match by match sorted by date.</div>
   <div class="rpt-cards" id="monthCards"></div>
   <div class="chart-box">
     <div class="chart-box-label">H Bet vs A Bet — Cumulative P&L</div>
@@ -142,7 +135,7 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 2: LINE -->
 <div class="rpt-section" id="tab2">
   <div class="rpt-title">ROI by Asia Line</div>
-  <div class="rpt-sub">One chart per handicap line. Each chart shows H bet (red) and A bet (blue) cumulative P&L over time — so you can compare both sides on the same scale.</div>
+  <div class="rpt-sub">One chart per handicap line. H bet (red) vs A bet (blue) — compare both sides on the same scale.</div>
   <div class="rpt-cards" id="lineCards"></div>
   <div id="lineChartsArea"></div>
   <div class="rpt-table-wrap"><table class="rpt-table">
@@ -154,7 +147,7 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 3: EXPERT -->
 <div class="rpt-section" id="tab3">
   <div class="rpt-title">Expert Signal Accuracy</div>
-  <div class="rpt-sub">One chart per expert threshold. Each chart shows H bet (red) and A bet (blue) cumulative P&L — so you can see whether following or fading the experts produces edge. Grey = baseline (all matches).</div>
+  <div class="rpt-sub">One chart per expert threshold. H bet (red) vs A bet (blue) — follow or fade the experts?</div>
   <div id="expertChartsArea"></div>
   <div class="exp-grid" id="expertGrid"></div>
   <div class="rpt-title" style="margin-top:4px">Verdict</div>
@@ -164,15 +157,15 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 4: SMART MONEY -->
 <div class="rpt-section" id="tab4">
   <div class="rpt-title">⚡ Smart Money Signals</div>
-  <div class="rpt-sub">One chart per signal — cumulative P&L over time. Red = H bet signals, blue = A bet signals.</div>
+  <div class="rpt-sub">One chart per signal — cumulative P&L over time. Red = H bet, blue = A bet.</div>
   <div id="smartChartsArea"></div>
   <div class="sm-grid" id="smartGrid"></div>
 </div>
 
-<!-- TAB 5: LM × EXPERT -->
+<!-- TAB 5: LINE × EXPERT -->
 <div class="rpt-section" id="tab5">
   <div class="rpt-title">Line Movement × Expert</div>
-  <div class="rpt-sub">Running P&L for key line move + expert combinations vs baseline. Shows which combos produce edge over time.</div>
+  <div class="rpt-sub">Key line move + expert combinations vs baseline. Which combos produce edge over time?</div>
   <div class="chart-box">
     <div class="chart-box-label">H Bet — Line Rose × Expert (vs Baseline)</div>
     <div class="chart-legend" id="lgdLmH"></div>
@@ -189,527 +182,74 @@ body{display:block;padding-bottom:40px}
   </table></div>
 </div>
 
+<!--
+  ═══════════════════════════════════════════════
+  HOW TO ADD A NEW REPORT TAB
+  ═══════════════════════════════════════════════
+  1. Add tab HTML above:
+       <div class="rpt-section" id="tabN"> ... </div>
+
+  2. Create js/report-mytab.js with two functions:
+       computeMyTab(results, ...)  → returns data object
+       renderMyTab(RD)             → writes to DOM
+
+  3. In report-core.js → computeReport():
+       Add:  mytab: computeMyTab(results, monthBounds),
+
+  4. Add script tag below (before the inline script):
+       <script src="js/report-mytab.js"></script>
+
+  5. Add to TABS array in the inline script below:
+       { label:'🔖 My Tab', render: renderMyTab },
+  ═══════════════════════════════════════════════
+-->
+
+<!-- JS modules: core first, then one file per tab -->
+<script src="js/report-core.js"></script>
+<script src="js/report-league.js"></script>
+<script src="js/report-month.js"></script>
+<script src="js/report-line.js"></script>
+<script src="js/report-expert.js"></script>
+<script src="js/report-smart.js"></script>
+<script src="js/report-lm.js"></script>
+
 <script>
-// Inlined from helpers.js — no external dependency needed
-function expertScore(r){
-  function ts(v){if(!v)return null;var u=String(v).toUpperCase();
-    if(u==='H'||u==='1H'||u==='AH')return'H';
-    if(u==='D'||u==='1D'||u==='AD')return'D';
-    if(u==='A'||u==='1A'||u==='AA')return'A';
-    return null;}
-  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
-  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
-  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
-  var tt=th+td+ta;if(!tt)return null;
-  return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
-}
+// ═══════════════════════════════════════════════
+// TAB REGISTRY — add new tabs here only
+// ═══════════════════════════════════════════════
+var TABS = [
+  { label:'📊 League',        render: renderLeague },
+  { label:'📅 Month',         render: renderMonth  },
+  { label:'📐 Line',          render: renderLine   },
+  { label:'🧠 Expert',        render: renderExpert },
+  { label:'⚡ Smart Money',   render: renderSmart  },
+  { label:'↕️ Line × Expert', render: renderLM     },
+];
 
-var RD = null; // report data
-var drawn = [false,false,false,false,false,false];
-
-var COLS = ['#f87171','#60a5fa','#4ade80','#fbbf24','#a78bfa','#fb923c','#34d399','#e879f9'];
-
-function fmtPnl(v){return(v>=0?'+':'')+v.toFixed(2);}
-function fmtRoi(v){return(v>=0?'+':'')+v.toFixed(1)+'%';}
-function posNeg(v){return v>=0?'pos':'neg';}
-function roiOf(arr){if(!arr.length)return 0;return Math.round(arr.reduce(function(s,v){return s+v;},0)/arr.length*1000)/10;}
-
-// ── Outcome helpers (same as helpers.js) ──
-function ao(r){
-  if(r.STATUS!=='Result'||r.ASIALINE==null||r.RESULTH==null||r.RESULTA==null)return null;
-  var m=Math.round((r.RESULTH-r.RESULTA+r.ASIALINE)*4)/4;
-  if(m>=0.5)return'ww';if(m===0.25)return'wh';if(m===0)return'dd';if(m===-0.25)return'lh';return'lw';
-}
-function cH(r){var o=ao(r);if(!o)return null;var od=r.ASIAH;if(!od||od<=0)return null;
-  if(o==='ww')return od-1;if(o==='wh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='lh')return-0.5;return-1;}
-function cA(r){var o=ao(r);if(!o)return null;var od=r.ASIAA;if(!od||od<=0)return null;
-  if(o==='lw')return od-1;if(o==='lh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='wh')return-0.5;return-1;}
-
-// Build running P&L array from a subset
-function runPnl(subset, fn){
-  var pnl=0,pts=[];
-  subset.forEach(function(r){var v=fn(r);if(v!==null){pnl=Math.round((pnl+v)*1000)/1000;pts.push(pnl);}});
-  return pts;
-}
-
-// ── CHART DRAW — identical style to stats.js front page ──
-// series = [{label, color, pts:[]}]
-// monthBoundaries = [{label:'26-01', xFrac:0.45}, ...]  for x-axis ticks
-function drawChart(canvasId, series, monthBoundaries, chartH){
-  chartH = chartH || 100;
-  var el = document.getElementById(canvasId);
-  if(!el) return;
-  var ctx = el.getContext('2d');
-  var dpr = window.devicePixelRatio || 1;
-  var w = el.parentElement.offsetWidth - 20 || 300;
-  var h = chartH + 18; // extra 18px for x-axis labels
-  el.width = w*dpr; el.height = h*dpr;
-  el.style.width = w+'px'; el.style.height = h+'px';
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-
-  var pad = 8;
-  var chartTop = pad;
-  var chartBot = h - 18; // leave 18px for x labels
-  var chartH2 = chartBot - chartTop;
-
-  // Gather all pts to find min/max
-  var all = [];
-  series.forEach(function(s){ s.pts.forEach(function(v){ all.push(v); }); });
-  if(!all.length) return;
-  var mn = Math.min(0, Math.min.apply(null, all));
-  var mx = Math.max(0, Math.max.apply(null, all));
-  var range = mx - mn || 1;
-
-  // The longest series defines the x axis
-  var nPts = 0;
-  series.forEach(function(s){ if(s.pts.length > nPts) nPts = s.pts.length; });
-  if(!nPts) return;
-
-  function xx(i){ return pad + i/(nPts-1||1) * (w - pad*2); }
-  function yy(v){ return chartTop + (1-(v-mn)/range) * chartH2; }
-
-  // Zero line — exact same style as stats.js
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad, yy(0));
-  ctx.lineTo(w - pad, yy(0));
-  ctx.stroke();
-
-  // Month boundary ticks on x-axis
-  if(monthBoundaries && monthBoundaries.length){
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '9px IBM Plex Mono';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    monthBoundaries.forEach(function(mb){
-      var x = pad + mb.xFrac * (w - pad*2);
-      // tick
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3,4]);
-      ctx.beginPath(); ctx.moveTo(x, chartTop); ctx.lineTo(x, chartBot); ctx.stroke();
-      ctx.setLineDash([]);
-      // label
-      ctx.fillText(mb.label, x, h - 2);
-    });
-  }
-
-  // Draw each series — same as stats.js
-  series.forEach(function(s){
-    if(!s.pts.length) return;
-    var col = s.color;
-    var pts = s.pts;
-    var thisPts = pts.length;
-    function xi(i){ return pad + i/(nPts-1||1) * (w - pad*2); }
-
-    // Line
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    pts.forEach(function(v,i){ i===0 ? ctx.moveTo(xi(i),yy(v)) : ctx.lineTo(xi(i),yy(v)); });
-    ctx.stroke();
-
-    // Fill under — identical to stats.js
-    ctx.beginPath();
-    pts.forEach(function(v,i){ i===0 ? ctx.moveTo(xi(i),yy(v)) : ctx.lineTo(xi(i),yy(v)); });
-    ctx.lineTo(xi(thisPts-1), yy(0));
-    ctx.lineTo(xi(0), yy(0));
-    ctx.closePath();
-    // Parse hex color → rgba 0.08
-    var r=parseInt(col.slice(1,3),16), g=parseInt(col.slice(3,5),16), b=parseInt(col.slice(5,7),16);
-    ctx.fillStyle = 'rgba('+r+','+g+','+b+',0.08)';
-    ctx.fill();
-
-    // End-of-line label (same as stats.js)
-    var lastV = pts[pts.length-1];
-    ctx.font = '9px IBM Plex Mono';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = col;
-    ctx.textAlign = 'left';
-    var lx = xi(thisPts-1) + 3;
-    var ly = yy(lastV);
-    if(lx > w - 36) lx = xi(thisPts-1) - 40;
-    ctx.fillText(fmtPnl(lastV), lx, ly);
+// Build tab bar from registry
+(function(){
+  var bar = document.getElementById('rptTabBar');
+  TABS.forEach(function(t, i){
+    var el = document.createElement('div');
+    el.className = 'rpt-tab' + (i===0 ? ' active' : '');
+    el.textContent = t.label;
+    el.onclick = function(){ showTab(i); };
+    bar.appendChild(el);
+    drawn.push(false);
   });
-}
+})();
 
-function makeLegend(elId, series){
-  var el = document.getElementById(elId); if(!el) return;
-  el.innerHTML = series.map(function(s){
-    return '<span><span class="ld" style="background:'+s.color+'"></span>'+s.label+'</span>';
-  }).join('');
-}
-
-// ── Smart money filter ──
-function smFilter(r, key){
-  var gl=r.ASIALINE, ln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
-  var sld = gl!=null&&ln!=null ? Math.round((gl-ln)*100)/100 : null;
-  var e = expertScore(r);
-  var sv = sh&&sa&&sh>0&&sa>0 ? (1/sh+1/sa-1)*100 : null;
-  if(key==='sm1') return sld!==null&&sld>0&&e&&e.h>=67;
-  if(key==='sm2') return sld!==null&&sld>0&&e&&e.h>=83&&sv!==null&&sv<6;
-  if(key==='sm3') return sld!==null&&sld>0&&e&&e.h>=67&&sv!==null&&sv<6;
-  if(key==='sm4') return sld!==null&&sld===0&&e&&e.a>=83;
-  if(key==='sm5') return sld!==null&&sld>0&&e&&e.a>=83;
-  if(key==='sm6') return sld!==null&&sld<0&&e&&e.a>=50&&sv!==null&&sv<6;
-  if(key==='sm7') return sld!==null&&sld===0&&e&&e.h>=83;
-  return false;
-}
-
-// ── Compute all data ──
-function computeReport(records){
-  // Sort all result matches by date — same as stats.js
-  var results = records.filter(function(r){ return ao(r) && r.DATE && r.DATE.length>=7; });
-  results.sort(function(a,b){ return a.DATE < b.DATE ? -1 : 1; });
-  var N = results.length;
-
-  // Month boundaries for x-axis ticks
-  // xFrac = position of month start as fraction of total N
-  var monthBounds = [];
-  var seen = {};
-  results.forEach(function(r, i){
-    var ym = r.DATE.slice(0,7);
-    if(!seen[ym]){ seen[ym]=true; monthBounds.push({label:ym.slice(2), xFrac: i/(N-1||1)}); }
-  });
-
-  // ── League ──
-  var lMap = {};
-  results.forEach(function(r){ var c=r.CATEGORY||'?'; if(!lMap[c])lMap[c]=[]; lMap[c].push(r); });
-  var leagueSorted = Object.keys(lMap).sort(function(a,b){ return lMap[b].length-lMap[a].length; });
-  var top5 = leagueSorted.slice(0,5);
-  var leagueSeriesH = top5.map(function(cat,i){ return{label:cat,color:COLS[i],pts:runPnl(lMap[cat],cH)}; });
-  var leagueSeriesA = top5.map(function(cat,i){ return{label:cat,color:COLS[i],pts:runPnl(lMap[cat],cA)}; });
-  var leagueTable = leagueSorted.map(function(cat){
-    var v=lMap[cat], n=v.length;
-    return{cat:cat,n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
-  });
-
-  // ── Month ──
-  var mMap = {};
-  results.forEach(function(r){ var ym=r.DATE.slice(0,7); if(!mMap[ym])mMap[ym]=[]; mMap[ym].push(r); });
-  var monthTable = Object.keys(mMap).sort().map(function(ym){
-    var v=mMap[ym], n=v.length;
-    return{ym:ym,n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
-  });
-  var allHpts = runPnl(results, cH);
-  var allApts = runPnl(results, cA);
-
-  // ── Line ──
-  var liMap = {};
-  results.forEach(function(r){ if(r.ASIALINE==null)return; var k=String(r.ASIALINE); if(!liMap[k])liMap[k]=[]; liMap[k].push(r); });
-  // All lines sorted ascending, each line gets a pair of series {H, A}
-  var lineKeys = Object.keys(liMap).sort(function(a,b){ return parseFloat(a)-parseFloat(b); });
-  var linePerLine = lineKeys.map(function(k){
-    var lv=parseFloat(k), lbl=(lv>=0?'+':'')+k;
-    var v=liMap[k], n=v.length;
-    var hr=v.map(cH).filter(function(x){return x!==null;});
-    var ar=v.map(cA).filter(function(x){return x!==null;});
-    var hroi=roiOf(hr), aroi=roiOf(ar);
-    return{
-      key:k, label:lbl, n:n, hroi:hroi, aroi:aroi,
-      seriesH:{label:'H bet',color:'#f87171',pts:runPnl(liMap[k],cH)},
-      seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(liMap[k],cA)},
-    };
-  });
-  var lineTable = linePerLine.map(function(d){ return{line:parseFloat(d.key),n:d.n,hroi:d.hroi,aroi:d.aroi}; });
-
-  // ── Expert ──
-  var expTable = [];
-  // expPerThresh: one entry per [side, thresh] with H bet + A bet series
-  var expPerThresh = [];
-  ['H','A'].forEach(function(side){
-    [50,67,83].forEach(function(thresh){
-      var sk=side.toLowerCase();
-      var sub=results.filter(function(r){var e=expertScore(r);return e&&e[sk]>=thresh;});
-      var n=sub.length; if(!n) return;
-      var hr=sub.map(cH).filter(function(x){return x!==null;});
-      var ar=sub.map(cA).filter(function(x){return x!==null;});
-      var wh=sub.filter(function(r){return['ww','wh'].indexOf(ao(r))>=0;}).length;
-      var wa=sub.filter(function(r){return['lw','lh'].indexOf(ao(r))>=0;}).length;
-      expTable.push({side:side,thresh:thresh,n:n,hroi:roiOf(hr),aroi:roiOf(ar),
-        hwin:Math.round(wh/n*1000)/10,awin:Math.round(wa/n*1000)/10});
-      expPerThresh.push({
-        side:side, thresh:thresh, n:n,
-        label:'Expert '+side+' ≥'+thresh+'%',
-        hroi:roiOf(hr), aroi:roiOf(ar),
-        seriesH:{label:'H bet',color:'#f87171',pts:runPnl(sub,cH)},
-        seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(sub,cA)},
-      });
-    });
-  });
-  // Close-call segments: H/A expert gap ≤ threshold
-  [5,10,15].forEach(function(gap){
-    var sub=results.filter(function(r){var e=expertScore(r);return e&&Math.abs(e.h-e.a)<=gap;});
-    var n=sub.length; if(!n) return;
-    var hr=sub.map(cH).filter(function(x){return x!==null;});
-    var ar=sub.map(cA).filter(function(x){return x!==null;});
-    expPerThresh.push({
-      side:'~', thresh:gap, n:n,
-      label:'H/A Close (≤'+gap+'pts)',
-      hroi:roiOf(hr), aroi:roiOf(ar),
-      seriesH:{label:'H bet',color:'#f87171',pts:runPnl(sub,cH)},
-      seriesA:{label:'A bet',color:'#60a5fa',pts:runPnl(sub,cA)},
-    });
-  });
-
-  // ── Smart Money ──
-  var smDefs = [
-    {key:'sm1',label:'▲ Rose + H≥67%',full:'▲ Line Rose + Expert H≥67%',side:'H',color:'#60a5fa'},
-    {key:'sm2',label:'▲ Rose + H≥83%+Vig',full:'▲ Line Rose + Expert H≥83% + Vig<6%',side:'H',color:'#a78bfa'},
-    {key:'sm3',label:'▲ Rose + H≥67%+Vig',full:'▲ Line Rose + Expert H≥67% + Vig<6%',side:'H',color:'#4ade80'},
-    {key:'sm4',label:'A≥83%+Flat→H',full:'Expert A≥83% + Line Unchanged (H bet)',side:'H',color:'#34d399'},
-    {key:'sm5',label:'A≥83%+Rose→H',full:'Expert A≥83% + Line Rose (H bet)',side:'H',color:'#fbbf24'},
-    {key:'sm6',label:'▼ Drop+A≥50%+Vig',full:'▼ Line Dropped + Expert A≥50% + Vig<6%',side:'A',color:'#f87171'},
-    {key:'sm7',label:'H≥83%+Flat→A',full:'Expert H≥83% + Line Unchanged (A bet)',side:'A',color:'#fb923c'},
-  ];
-  var smTable = smDefs.map(function(d){
-    var sub=results.filter(function(r){return smFilter(r,d.key);});
-    var n=sub.length;
-    var fn=d.side==='H'?cH:cA;
-    var rois=sub.map(fn).filter(function(x){return x!==null;});
-    return{key:d.key,label:d.label,full:d.full,n:n,roi:roiOf(rois),side:d.side,color:d.color,pts:runPnl(sub,fn)};
-  });
-  var smHSeries = smTable.filter(function(d){return d.side==='H';});
-  var smASeries = smTable.filter(function(d){return d.side==='A';});
-
-  // ── Line Move × Expert ──
-  var lmTable = [];
-  var lmHSeries = [{label:'Baseline (all H)',color:'#94a3b8',pts:allHpts}];
-  var lmASeries = [{label:'Baseline (all A)',color:'#94a3b8',pts:allApts}];
-  var lmHCols = ['#60a5fa','#a78bfa','#4ade80','#fbbf24'];
-  var lmACols = ['#f87171','#fb923c','#fbbf24'];
-  var hi=0, ai=0;
-  [['up','▲ Rose'],['down','▼ Dropped'],['flat','— Flat']].forEach(function(lmP){
-    [['H',67,'H≥67%'],['H',83,'H≥83%'],['A',50,'A≥50%'],['A',67,'A≥67%']].forEach(function(ex){
-      var sub = results.filter(function(r){
-        var gl=r.ASIALINE,ln=r.ASIALINELN; if(gl==null||ln==null) return false;
-        var ld=Math.round((gl-ln)*100)/100;
-        if(lmP[0]==='up'&&ld<=0) return false;
-        if(lmP[0]==='down'&&ld>=0) return false;
-        if(lmP[0]==='flat'&&ld!==0) return false;
-        var e=expertScore(r); if(!e) return false;
-        if(ex[0]==='H'&&e.h<ex[1]) return false;
-        if(ex[0]==='A'&&e.a<ex[1]) return false;
-        return true;
-      });
-      var n=sub.length; if(n<5) return;
-      var side=ex[0], fn=side==='H'?cH:cA;
-      var rois=sub.map(fn).filter(function(x){return x!==null;});
-      var roi=roiOf(rois);
-      lmTable.push({lm:lmP[1],expert:ex[0]+' '+ex[2],side:side,n:n,roi:roi});
-      if(lmP[0]==='up'&&side==='H'&&hi<4){
-        lmHSeries.push({label:lmP[1]+' '+ex[2],color:lmHCols[hi++],pts:runPnl(sub,cH)});
-      }
-      if((lmP[0]==='flat'||lmP[0]==='down')&&side==='A'&&ai<3){
-        lmASeries.push({label:lmP[1]+' '+ex[2],color:lmACols[ai++],pts:runPnl(sub,cA)});
-      }
-    });
-  });
-
-  return{
-    monthBounds:monthBounds,
-    leagueSeriesH:leagueSeriesH, leagueSeriesA:leagueSeriesA, leagueTable:leagueTable,
-    allHpts:allHpts, allApts:allApts, monthTable:monthTable,
-    linePerLine:linePerLine, lineTable:lineTable,
-    expPerThresh:expPerThresh, expTable:expTable,
-    smHSeries:smHSeries, smASeries:smASeries, smTable:smTable,
-    lmHSeries:lmHSeries, lmASeries:lmASeries, lmTable:lmTable,
-  };
-}
-
-// ── Render tabs ──
-function renderLeague(d){
-  var best=d.leagueTable.filter(function(x){return x.n>=20;}).slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
-  var worst=d.leagueTable.filter(function(x){return x.n>=20;}).slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
-  document.getElementById('leagueCards').innerHTML=
-    '<div class="rpt-card"><div class="rpt-card-label">Leagues</div><div class="rpt-card-val neu">'+d.leagueTable.length+'</div></div>'
-    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best ≥20</div><div class="rpt-card-val pos" style="font-size:12px">'+best.cat+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
-    +(worst?'<div class="rpt-card"><div class="rpt-card-label">Worst ≥20</div><div class="rpt-card-val neg" style="font-size:12px">'+worst.cat+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
-  makeLegend('lgdLeagueH',d.leagueSeriesH); makeLegend('lgdLeagueA',d.leagueSeriesA);
-  document.getElementById('tbLeague').innerHTML=d.leagueTable.map(function(x){
-    return'<tr><td>'+x.cat+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+(x.hroi>x.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>')+'</td></tr>';
-  }).join('');
-  setTimeout(function(){
-    drawChart('cLeagueH',d.leagueSeriesH,d.monthBounds,110);
-    drawChart('cLeagueA',d.leagueSeriesA,d.monthBounds,110);
-  },30);
-}
-
-function renderMonth(d){
-  var totH=d.allHpts[d.allHpts.length-1]||0, totA=d.allApts[d.allApts.length-1]||0;
-  var n=d.monthTable.reduce(function(s,m){return s+m.n;},0);
-  document.getElementById('monthCards').innerHTML=
-    '<div class="rpt-card"><div class="rpt-card-label">Matches</div><div class="rpt-card-val neu">'+n+'</div></div>'
-    +'<div class="rpt-card"><div class="rpt-card-label">H Total P&L</div><div class="rpt-card-val '+posNeg(totH)+'">$'+fmtPnl(totH)+'</div></div>'
-    +'<div class="rpt-card"><div class="rpt-card-label">A Total P&L</div><div class="rpt-card-val '+posNeg(totA)+'">$'+fmtPnl(totA)+'</div></div>';
-  document.getElementById('tbMonth').innerHTML=d.monthTable.map(function(x){
-    return'<tr><td>'+x.ym+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+(x.hroi>x.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>')+'</td></tr>';
-  }).join('');
-  setTimeout(function(){
-    drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:d.allHpts},{label:'A Bet',color:'#60a5fa',pts:d.allApts}],d.monthBounds,120);
-  },30);
-}
-
-function renderLine(d){
-  // Filter n>=20 for meaningful best/worst to avoid tiny sample noise
-  var qualified=d.lineTable.filter(function(x){return x.n>=20;});
-  var best=qualified.slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
-  var worst=qualified.slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
-  document.getElementById('lineCards').innerHTML=
-    '<div class="rpt-card"><div class="rpt-card-label">Lines</div><div class="rpt-card-val neu">'+d.lineTable.length+'</div></div>'
-    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best Line (N≥20)</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
-    +(worst&&worst.line!==best.line?'<div class="rpt-card"><div class="rpt-card-label">Worst Line (N≥20)</div><div class="rpt-card-val neg">'+(worst.line>=0?'+':'')+worst.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
-  // Build one chart-box per line — ROI comes directly from linePerLine (no lookup needed)
-  var area=document.getElementById('lineChartsArea');
-  area.innerHTML=d.linePerLine.map(function(ln){
-    var id='cLine_'+ln.key.replace('.','_').replace('-','m');
-    var roiNote=' — H: '+fmtRoi(ln.hroi)+'  A: '+fmtRoi(ln.aroi);
-    return '<div class="chart-box">'
-      +'<div class="chart-box-label">Line '+ln.label+' (N='+ln.n+')'+roiNote+'</div>'
-      +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
-      +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
-      +'</div>'
-      +'<canvas id="'+id+'"></canvas>'
-      +'</div>';
-  }).join('');
-  // Draw all charts after DOM updates
-  setTimeout(function(){
-    d.linePerLine.forEach(function(ln){
-      var id='cLine_'+ln.key.replace('.','_').replace('-','m');
-      drawChart(id,[ln.seriesH,ln.seriesA],d.monthBounds,100);
-    });
-  },30);
-  document.getElementById('tbLine').innerHTML=d.lineTable.map(function(x){
-    var best=x.hroi>x.aroi?'<span class="pos">H '+fmtRoi(x.hroi)+'</span>':'<span class="neg">A '+fmtRoi(x.aroi)+'</span>';
-    return'<tr><td>'+(x.line>=0?'+':'')+x.line+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+best+'</td></tr>';
-  }).join('');
-}
-
-function renderExpert(d){
-  // Build one chart per threshold — baseline (grey) + H bet (blue) + A bet (red)
-  var area=document.getElementById('expertChartsArea');
-  area.innerHTML=d.expPerThresh.map(function(ep){
-    var id='cExp_'+(ep.side==='~'?'close':ep.side)+ep.thresh;
-    var roiNote=' — H bet: '+fmtRoi(ep.hroi)+'  A bet: '+fmtRoi(ep.aroi);
-    var bestSide=ep.hroi>ep.aroi?'<span class="pos">H bet leads</span>':'<span class="neg">A bet leads</span>';
-    return '<div class="chart-box">'
-      +'<div class="chart-box-label">'+ep.label+' (N='+ep.n+')'+roiNote+'</div>'
-      +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
-      +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
-      +'<span style="margin-left:6px">'+bestSide+'</span>'
-      +'</div>'
-      +'<canvas id="'+id+'"></canvas>'
-      +'</div>';
-  }).join('');
-  setTimeout(function(){
-    d.expPerThresh.forEach(function(ep){
-      var id='cExp_'+ep.side+ep.thresh;
-      drawChart(id,[ep.seriesH,ep.seriesA],d.monthBounds,100);
-    });
-  },30);
-  // Verdict cards — show H and A ROI side by side
-  document.getElementById('expertGrid').innerHTML=d.expPerThresh.map(function(ep){
-    var vH,vcH; if(ep.hroi>=5){vH='✅ Suitable';vcH='verdict-ok';}else if(ep.hroi>=0){vH='⚠ Marginal';vcH='verdict-caution';}else{vH='❌ Avoid';vcH='verdict-avoid';}
-    var vA,vcA; if(ep.aroi>=5){vA='✅ Suitable';vcA='verdict-ok';}else if(ep.aroi>=0){vA='⚠ Marginal';vcA='verdict-caution';}else{vA='❌ Avoid';vcA='verdict-avoid';}
-    return'<div class="exp-card"><div class="exp-card-top">'+ep.label+' · N='+ep.n+'</div>'
-      +'<div style="display:flex;gap:10px;margin-bottom:4px">'
-      +'<div><div style="font-size:9px;color:#f87171;font-weight:700;margin-bottom:2px">H BET</div>'
-      +'<div class="exp-card-roi '+posNeg(ep.hroi)+'">'+fmtRoi(ep.hroi)+'</div>'
-      +'<div class="exp-verdict '+vcH+'">'+vH+'</div></div>'
-      +'<div><div style="font-size:9px;color:#60a5fa;font-weight:700;margin-bottom:2px">A BET</div>'
-      +'<div class="exp-card-roi '+posNeg(ep.aroi)+'">'+fmtRoi(ep.aroi)+'</div>'
-      +'<div class="exp-verdict '+vcA+'">'+vA+'</div></div>'
-      +'</div></div>';
-  }).join('');
-  // Full verdict table — both sides per threshold
-  document.getElementById('expertVerdict').innerHTML='<div class="rpt-table-wrap"><table class="rpt-table">'
-    +'<thead><tr><th>Signal</th><th class="num">N</th>'
-    +'<th class="num">H Bet ROI</th><th>H Verdict</th>'
-    +'<th class="num">A Bet ROI</th><th>A Verdict</th>'
-    +'</tr></thead><tbody>'
-    +d.expPerThresh.map(function(ep){
-      var vH,vcH; if(ep.hroi>=5){vH='✅ Suitable';vcH='verdict-ok';}else if(ep.hroi>=0){vH='⚠ Marginal';vcH='verdict-caution';}else{vH='❌ Avoid';vcH='verdict-avoid';}
-      var vA,vcA; if(ep.aroi>=5){vA='✅ Suitable';vcA='verdict-ok';}else if(ep.aroi>=0){vA='⚠ Marginal';vcA='verdict-caution';}else{vA='❌ Avoid';vcA='verdict-avoid';}
-      return'<tr>'
-        +'<td>'+ep.label+'</td>'
-        +'<td class="num">'+ep.n+'</td>'
-        +'<td class="num '+posNeg(ep.hroi)+'">'+fmtRoi(ep.hroi)+'</td>'
-        +'<td><span class="exp-verdict '+vcH+'">'+vH+'</span></td>'
-        +'<td class="num '+posNeg(ep.aroi)+'">'+fmtRoi(ep.aroi)+'</td>'
-        +'<td><span class="exp-verdict '+vcA+'">'+vA+'</span></td>'
-        +'</tr>';
-    }).join('')+'</tbody></table></div>';
-}
-
-function renderSmart(d){
-  // One chart per signal — each its own length, no baseline mismatch
-  var area = document.getElementById('smartChartsArea');
-  area.innerHTML = d.smTable.map(function(sm){
-    var id = 'cSm_'+sm.key;
-    var col = sm.side==='H' ? '#f87171' : '#60a5fa';
-    var roiNote = ' — ROI: '+fmtRoi(sm.roi);
-    var rel = sm.n>=30 ? '' : sm.n>=15 ? ' ⚠ small sample' : ' ⚠ very small';
-    return '<div class="chart-box">'
-      +'<div class="chart-box-label">'+sm.full+' (N='+sm.n+')'+roiNote+rel+'</div>'
-      +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:'+col+'"></span>'+sm.side+' bet</span>'
-      +'</div>'
-      +'<canvas id="'+id+'"></canvas>'
-      +'</div>';
-  }).join('');
-  setTimeout(function(){
-    d.smTable.forEach(function(sm){
-      var col = sm.side==='H' ? '#f87171' : '#60a5fa';
-      drawChart('cSm_'+sm.key, [{label:sm.side+' bet', color:col, pts:sm.pts}], d.monthBounds, 80);
-    });
-  },30);
-  document.getElementById('smartGrid').innerHTML=d.smTable.map(function(x){
-    var rel=x.n>=30?'✅ Reliable':x.n>=15?'⚠ Small sample':'⚠️ Very small';
-    return'<div class="sm-card"><div class="sm-card-top"><div class="sm-card-label">'+x.full+'</div>'
-      +'<div class="sm-card-roi '+posNeg(x.roi)+'">'+fmtRoi(x.roi)+'</div></div>'
-      +'<div class="sm-card-meta"><span>N='+x.n+'</span><span><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+' bet</span></span><span>'+rel+'</span></div></div>';
-  }).join('');
-}
-
-function renderLM(d){
-  makeLegend('lgdLmH',d.lmHSeries); makeLegend('lgdLmA',d.lmASeries);
-  setTimeout(function(){
-    drawChart('cLmH',d.lmHSeries,d.monthBounds,120);
-    drawChart('cLmA',d.lmASeries,d.monthBounds,120);
-  },30);
-  document.getElementById('tbLm').innerHTML=d.lmTable.map(function(x){
-    var rc=x.roi>=10?'roi-high':x.roi>=0?'roi-mid':'roi-low';
-    var sig=x.roi>=10?'🔥 Strong':x.roi>=0?'👍 Positive':'❌ Negative';
-    return'<tr><td>'+x.lm+'</td><td>'+x.expert+'</td><td class="num">'+x.n+'</td>'
-      +'<td class="num '+rc+'">'+fmtRoi(x.roi)+'</td>'
-      +'<td><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+'</span></td>'
-      +'<td>'+sig+'</td></tr>';
-  }).join('');
-}
-
-// ── Tab switching ──
+// Tab switching — lazy render on first view
 function showTab(i){
-  document.querySelectorAll('.rpt-tab').forEach(function(t,idx){ t.classList.toggle('active',idx===i); });
-  document.querySelectorAll('.rpt-section').forEach(function(s,idx){ s.classList.toggle('active',idx===i); });
+  document.querySelectorAll('.rpt-tab').forEach(function(t,idx){ t.classList.toggle('active', idx===i); });
+  document.querySelectorAll('.rpt-section').forEach(function(s,idx){ s.classList.toggle('active', idx===i); });
   if(RD && !drawn[i]){
-    drawn[i]=true;
-    var fns=[
-      function(){ drawChart('cLeagueH',RD.leagueSeriesH,RD.monthBounds,110); drawChart('cLeagueA',RD.leagueSeriesA,RD.monthBounds,110); },
-      function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
-      function(){ RD.linePerLine.forEach(function(ln){ var id='cLine_'+ln.key.replace('.','_').replace('-','m'); drawChart(id,[ln.seriesH,ln.seriesA],RD.monthBounds,100); }); },
-      function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+(ep.side==='~'?'close':ep.side)+ep.thresh,[ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
-      function(){ RD.smTable.forEach(function(sm){ var col=sm.side==='H'?'#f87171':'#60a5fa'; drawChart('cSm_'+sm.key,[{label:sm.side+' bet',color:col,pts:sm.pts}],RD.monthBounds,80); }); },
-      function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
-    ];
-    if(fns[i]) setTimeout(fns[i], 30);
+    drawn[i] = true;
+    setTimeout(function(){ TABS[i].render(RD); }, 30);
   }
 }
 
-// ── Load ──
+// Load data and boot
 function loadReport(){
   fetch('./data.json?v='+Date.now())
     .then(function(r){ return r.json(); })
@@ -717,23 +257,25 @@ function loadReport(){
       var records = d.records || [];
       var m = d.meta || {};
       if(m.generated_at){
-        var dt=new Date(m.generated_at);
-        document.getElementById('rptUpdated').textContent='Updated '+dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        var dt = new Date(m.generated_at);
+        document.getElementById('rptUpdated').textContent =
+          'Updated '+dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       }
-      try {
+      try{
         RD = computeReport(records);
-      } catch(err) {
-        document.getElementById('rptLoading').innerHTML='<p style="color:#f87171">⚠️ Compute error: '+err.message+'</p>';
+      } catch(err){
+        document.getElementById('rptLoading').innerHTML =
+          '<p style="color:#f87171">⚠️ Compute error: '+err.message+'</p>';
         return;
       }
-      document.getElementById('rptLoading').style.display='none';
+      document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab0').classList.add('active');
-      renderLeague(RD); renderMonth(RD); renderLine(RD);
-      renderExpert(RD); renderSmart(RD); renderLM(RD);
-      drawn[0]=true;
+      drawn[0] = true;
+      TABS[0].render(RD);
     })
     .catch(function(e){
-      document.getElementById('rptLoading').innerHTML='<p style="color:#f87171">⚠️ Failed to load: '+e.message+'</p>';
+      document.getElementById('rptLoading').innerHTML =
+        '<p style="color:#f87171">⚠️ Failed to load: '+e.message+'</p>';
     });
 }
 loadReport();
