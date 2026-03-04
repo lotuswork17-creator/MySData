@@ -586,7 +586,7 @@ function renderLine(d){
     var id='cLine_'+ln.key.replace('.','_').replace('-','m');
     var roiNote=' — H: '+fmtRoi(ln.hroi)+'  A: '+fmtRoi(ln.aroi);
     return '<div class="chart-box">'
-      +'<div class="chart-box-label">Line '+lbl+' (N='+ln.n+')'+roiNote+'</div>'
+      +'<div class="chart-box-label">Line '+ln.label+' (N='+ln.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
       +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
       +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
