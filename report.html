@@ -73,7 +73,12 @@ body{display:block;padding-bottom:40px}
 .odds-line-header{font-size:13px;font-weight:800;color:var(--text);margin:18px 0 8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .odds-line-n{font-size:10px;font-weight:400;color:#94a3b8;font-family:var(--mono)}
 .odds-line-roi{font-size:11px;font-family:var(--mono);margin-left:auto}
-.odds-group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin:10px 0 4px;padding-left:2px}
+.odds-filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.odds-filter-label{font-size:10px;color:#94a3b8;font-family:var(--mono)}
+.odds-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:#94a3b8;font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s}
+.odds-btn.active{background:var(--accent2);border-color:var(--accent2);color:#0f172a}
+.odds-filter-hint{font-size:10px;color:#64748b;font-family:var(--mono);margin-left:4px}
+.odds-small{opacity:0.45}  /* dimmed when sig-only mode */
 .odds-sub-label{font-size:9px;font-weight:600;color:#64748b;margin:6px 0 3px;padding-left:10px;letter-spacing:.04em}
 
 #rptLoading{text-align:center;padding:60px 20px;color:#94a3b8}
@@ -190,13 +195,22 @@ body{display:block;padding-bottom:40px}
 
 <!-- TAB 6: ODDS ANALYSIS -->
 <div class="rpt-section" id="tab6">
-  <div class="rpt-title">H vs A Bet — Odds Analysis</div>
-  <div class="rpt-sub">Compare H bet (red) vs A bet (blue) P&L across 7 dimensions: market lean, vig, asia line bucket, line movement, odds drift, expert×market combos, and vig×line move. Each segment shows which side has edge under those conditions.</div>
+  <div class="rpt-title">AsiaLine × Expert Signal Analysis</div>
+  <div class="rpt-sub">Each chart = one AsiaLine × Expert Signal combination. H bet (red) vs A bet (blue). Sub-filters (Market Lean, Line Movement, Vig) appear beneath when N≥30.</div>
+  <div class="odds-filter-bar">
+    <span class="odds-filter-label">Show:</span>
+    <button class="odds-btn active" onclick="oddsSetFilter('all')">All</button>
+    <button class="odds-btn"        onclick="oddsSetFilter('n80')">N≥80</button>
+    <button class="odds-btn"        onclick="oddsSetFilter('n80_h')">N≥80 · H pref</button>
+    <button class="odds-btn"        onclick="oddsSetFilter('n80_a')">N≥80 · A pref</button>
+    <button class="odds-btn"        onclick="oddsSetFilter('n80_any')">N≥80 · Either pref</button>
+    <span class="odds-filter-hint" id="oddsFilterHint"></span>
+  </div>
   <div id="oddsChartsArea"></div>
-  <div class="rpt-title" style="margin-top:8px">Full Summary Table</div>
+  <div class="rpt-title" style="margin-top:8px">Summary Table</div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr>
-      <th>Group</th><th>Segment</th><th class="num">N</th>
+      <th>Line</th><th>Expert Signal</th><th class="num">N</th>
       <th class="num">H ROI</th><th class="num">A ROI</th>
       <th class="num">Edge</th><th>Signal</th>
     </tr></thead>
