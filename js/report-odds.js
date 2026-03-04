@@ -1,12 +1,15 @@
 // ── report-odds.js — Tab 6: H vs A Bet — Odds Analysis ──
-// Segments: Market Lean, Vig, Line Bucket, Expert×Market, Line Move×Vig
-// All show H bet (red) vs A bet (blue) per segment chart
+// Primary axis: AsiaLine value
+// Cross-tabs: Market Lean, Expert Signal, Line Movement, Vig
+// All segments require N >= MIN_N to be shown
 
-// ── Odds helpers ──
+var ODDS_MIN_N = 30;
+
+// ── Helpers ──
 function mktH(r){
   var h=r.ASIAH, a=r.ASIAA;
   if(!h||!a||h<=0||a<=0) return null;
-  return Math.round((1/h)/(1/h+1/a)*1000)/10;  // H implied % of total book
+  return Math.round((1/h)/(1/h+1/a)*1000)/10;
 }
 function vigPct(r){
   var h=r.ASIAH, a=r.ASIAA;
@@ -23,178 +26,206 @@ function hOddsDelta(r){
   if(!g||!l||g<=0||l<=0) return null;
   return Math.round((g-l)*1000)/1000;
 }
+function lineFmt(v){ return (v>0?'+':'')+v; }
 
-// ── Segment definitions ──
-// Each segment: { key, label, group, fn }
-var oddsDefs = [
+// ── Cross-tab filter definitions ──
+// For each AsiaLine value, these sub-filters are applied
+var oddsSubFilters = [
 
-  // GROUP 1: Market Lean (implied H% from odds)
-  { key:'mkt_h_strong', group:'Market Lean',
-    label:'H Strong Fav (H implied >60%)',
-    fn: function(r){ var m=mktH(r); return m!==null && m>60; } },
-  { key:'mkt_h_slight', group:'Market Lean',
-    label:'H Slight Fav (55–60%)',
-    fn: function(r){ var m=mktH(r); return m!==null && m>55 && m<=60; } },
-  { key:'mkt_balanced', group:'Market Lean',
-    label:'Balanced (45–55%)',
+  // A: Market Lean
+  { key:'mkt_h',  group:'Market Lean',  label:'H-favored (implied >55%)',
+    fn: function(r){ var m=mktH(r); return m!==null && m>55; } },
+  { key:'mkt_bal',group:'Market Lean',  label:'Balanced (45–55%)',
     fn: function(r){ var m=mktH(r); return m!==null && m>=45 && m<=55; } },
-  { key:'mkt_a_slight', group:'Market Lean',
-    label:'A Slight Fav (40–45%)',
-    fn: function(r){ var m=mktH(r); return m!==null && m>=40 && m<45; } },
-  { key:'mkt_a_strong', group:'Market Lean',
-    label:'A Strong Fav (H implied <40%)',
-    fn: function(r){ var m=mktH(r); return m!==null && m<40; } },
+  { key:'mkt_a',  group:'Market Lean',  label:'A-favored (implied <45%)',
+    fn: function(r){ var m=mktH(r); return m!==null && m<45; } },
 
-  // GROUP 2: Vig (book margin)
-  { key:'vig_low',  group:'Vig (Book Margin)',
-    label:'Low Vig (<5%)',
-    fn: function(r){ var v=vigPct(r); return v!==null && v<5; } },
-  { key:'vig_mid',  group:'Vig (Book Margin)',
-    label:'Mid Vig (5–8%)',
-    fn: function(r){ var v=vigPct(r); return v!==null && v>=5 && v<=8; } },
-  { key:'vig_high', group:'Vig (Book Margin)',
-    label:'High Vig (>8%)',
-    fn: function(r){ var v=vigPct(r); return v!==null && v>8; } },
+  // B: Expert Signal
+  { key:'exp_h67',group:'Expert Signal', label:'Expert H ≥67%',
+    fn: function(r){ var e=expertScore(r); return e&&e.h>=67; } },
+  { key:'exp_h50',group:'Expert Signal', label:'Expert H ≥50%',
+    fn: function(r){ var e=expertScore(r); return e&&e.h>=50; } },
+  { key:'exp_a50',group:'Expert Signal', label:'Expert A ≥50%',
+    fn: function(r){ var e=expertScore(r); return e&&e.a>=50; } },
+  { key:'exp_a67',group:'Expert Signal', label:'Expert A ≥67%',
+    fn: function(r){ var e=expertScore(r); return e&&e.a>=67; } },
 
-  // GROUP 3: Asia Line bucket
-  { key:'line_neg',  group:'Asia Line',
-    label:'Negative Line (<0, A favored)',
-    fn: function(r){ return r.ASIALINE!=null && r.ASIALINE<0; } },
-  { key:'line_zero', group:'Asia Line',
-    label:'Level Line (0)',
-    fn: function(r){ return r.ASIALINE===0; } },
-  { key:'line_low',  group:'Asia Line',
-    label:'Low Line (0 – 0.5, H slight fav)',
-    fn: function(r){ return r.ASIALINE!=null && r.ASIALINE>0 && r.ASIALINE<=0.5; } },
-  { key:'line_high', group:'Asia Line',
-    label:'High Line (>0.5, H clear fav)',
-    fn: function(r){ return r.ASIALINE!=null && r.ASIALINE>0.5; } },
-
-  // GROUP 4: Line Movement
-  { key:'lm_rose',    group:'Line Movement',
-    label:'Line Rose (H handicap grew → market backing H)',
+  // C: Line Movement
+  { key:'lm_rose',   group:'Line Movement', label:'Line Rose (market backed H)',
     fn: function(r){ var d=lineDelta(r); return d!==null && d>0; } },
-  { key:'lm_flat',    group:'Line Movement',
-    label:'Line Flat (no change)',
+  { key:'lm_flat',   group:'Line Movement', label:'Line Flat',
     fn: function(r){ var d=lineDelta(r); return d!==null && d===0; } },
-  { key:'lm_dropped', group:'Line Movement',
-    label:'Line Dropped (H handicap shrunk → market backing A)',
+  { key:'lm_drop',   group:'Line Movement', label:'Line Dropped (market backed A)',
     fn: function(r){ var d=lineDelta(r); return d!==null && d<0; } },
 
-  // GROUP 5: H odds drift (price movement without line change)
-  { key:'odds_h_short', group:'Odds Drift',
-    label:'H Odds Shortened >5pts (money on H)',
+  // D: Vig
+  { key:'vig_low', group:'Vig', label:'Low Vig (<5%)',
+    fn: function(r){ var v=vigPct(r); return v!==null && v<5; } },
+  { key:'vig_mid', group:'Vig', label:'Mid Vig (5–8%)',
+    fn: function(r){ var v=vigPct(r); return v!==null && v>=5 && v<=8; } },
+  { key:'vig_high',group:'Vig', label:'High Vig (>8%)',
+    fn: function(r){ var v=vigPct(r); return v!==null && v>8; } },
+
+  // E: Odds Drift (H price movement)
+  { key:'drift_h', group:'Odds Drift', label:'H odds shortened (money on H)',
     fn: function(r){ var d=hOddsDelta(r); return d!==null && d>0.05; } },
-  { key:'odds_stable',  group:'Odds Drift',
-    label:'Odds Stable (within 5pts)',
-    fn: function(r){ var d=hOddsDelta(r); return d!==null && Math.abs(d)<=0.05; } },
-  { key:'odds_h_drift', group:'Odds Drift',
-    label:'H Odds Drifted >5pts (money on A)',
+  { key:'drift_a', group:'Odds Drift', label:'H odds drifted (money on A)',
     fn: function(r){ var d=hOddsDelta(r); return d!==null && d<-0.05; } },
-
-  // GROUP 6: Expert × Market combos (high-signal intersections)
-  { key:'exp_h_mkt_h', group:'Expert × Market',
-    label:'Expert H≥67% + Market H-favored',
-    fn: function(r){ var e=expertScore(r),m=mktH(r); return e&&e.h>=67&&m!==null&&m>55; } },
-  { key:'exp_h_mkt_b', group:'Expert × Market',
-    label:'Expert H≥67% + Market Balanced',
-    fn: function(r){ var e=expertScore(r),m=mktH(r); return e&&e.h>=67&&m!==null&&m>=45&&m<=55; } },
-  { key:'exp_a_mkt_h', group:'Expert × Market',
-    label:'Expert A≥67% + Market H-favored (contrarian)',
-    fn: function(r){ var e=expertScore(r),m=mktH(r); return e&&e.a>=67&&m!==null&&m>55; } },
-  { key:'exp_a_mkt_b', group:'Expert × Market',
-    label:'Expert A≥67% + Market Balanced',
-    fn: function(r){ var e=expertScore(r),m=mktH(r); return e&&e.a>=67&&m!==null&&m>=45&&m<=55; } },
-
-  // GROUP 7: Vig × Line Move (sharp money signals)
-  { key:'vig_low_rose',    group:'Vig × Line Move',
-    label:'Low Vig + Line Rose',
-    fn: function(r){ var v=vigPct(r),d=lineDelta(r); return v!==null&&v<5&&d!==null&&d>0; } },
-  { key:'vig_low_flat',    group:'Vig × Line Move',
-    label:'Low Vig + Line Flat',
-    fn: function(r){ var v=vigPct(r),d=lineDelta(r); return v!==null&&v<5&&d!==null&&d===0; } },
-  { key:'vig_low_dropped', group:'Vig × Line Move',
-    label:'Low Vig + Line Dropped',
-    fn: function(r){ var v=vigPct(r),d=lineDelta(r); return v!==null&&v<5&&d!==null&&d<0; } },
 ];
 
-function computeOdds(results){
-  var groups = {};  // group label → [{seg data}]
-  oddsDefs.forEach(function(def){
-    var sub = results.filter(def.fn);
-    var n   = sub.length;
-    var hr  = sub.map(cH).filter(function(x){return x!==null;});
-    var ar  = sub.map(cA).filter(function(x){return x!==null;});
-    var seg = {
-      key   : def.key,
-      label : def.label,
-      group : def.group,
-      n     : n,
-      hroi  : roiOf(hr),
-      aroi  : roiOf(ar),
-      seriesH : {label:'H bet', color:'#f87171', pts: runPnl(sub, cH)},
-      seriesA : {label:'A bet', color:'#60a5fa', pts: runPnl(sub, cA)},
-    };
-    if(!groups[def.group]) groups[def.group]=[];
-    groups[def.group].push(seg);
-  });
-  return { groups: groups, groupOrder: Object.keys(groups) };
+function makeSeg(sub, key, group, lineVal, label, monthBounds){
+  var n   = sub.length;
+  var hr  = sub.map(cH).filter(function(x){return x!==null;});
+  var ar  = sub.map(cA).filter(function(x){return x!==null;});
+  var hroi = roiOf(hr);
+  var aroi = roiOf(ar);
+  return {
+    key      : key,
+    group    : group,
+    lineVal  : lineVal,
+    label    : label,
+    n        : n,
+    hroi     : hroi,
+    aroi     : aroi,
+    seriesH  : {label:'H bet', color:'#f87171', pts: runPnl(sub, cH)},
+    seriesA  : {label:'A bet', color:'#60a5fa', pts: runPnl(sub, cA)},
+  };
 }
 
+function computeOdds(results){
+  // Lines with enough data to be useful
+  var lineGroups = [];
+  var allLines = [];
+  results.forEach(function(r){ if(r.ASIALINE!=null && allLines.indexOf(r.ASIALINE)<0) allLines.push(r.ASIALINE); });
+  allLines.sort(function(a,b){return a-b;});
+
+  allLines.forEach(function(line){
+    var lineSub = results.filter(function(r){ return r.ASIALINE===line; });
+    if(lineSub.length < ODDS_MIN_N) return;  // skip thin lines
+
+    // Overall segment for this line
+    var overall = makeSeg(lineSub, 'overall', 'Overall', line, 'All matches');
+
+    // Cross-tab segments — only include if N >= MIN_N
+    var crossSegs = [];
+    oddsSubFilters.forEach(function(sf){
+      var sub2 = lineSub.filter(sf.fn);
+      if(sub2.length < ODDS_MIN_N) return;
+      crossSegs.push(makeSeg(sub2, sf.key, sf.group, line, sf.label));
+    });
+
+    // Group cross-segs by group label
+    var groups = {};
+    var groupOrder = [];
+    crossSegs.forEach(function(s){
+      if(!groups[s.group]){ groups[s.group]=[]; groupOrder.push(s.group); }
+      groups[s.group].push(s);
+    });
+
+    lineGroups.push({
+      line      : line,
+      label     : lineFmt(line),
+      n         : lineSub.length,
+      overall   : overall,
+      groups    : groups,
+      groupOrder: groupOrder,
+    });
+  });
+
+  return { lineGroups: lineGroups };
+}
+
+// ── Render ──
 function renderOdds(d){
   var area = document.getElementById('oddsChartsArea');
-  var html  = '';
+  var html = '';
 
-  d.odds.groupOrder.forEach(function(gname){
-    html += '<div class="rpt-title" style="margin-top:8px;margin-bottom:8px">'+gname+'</div>';
-    d.odds.groups[gname].forEach(function(seg){
-      if(seg.n < 10){ return; }  // skip tiny samples
-      var id      = 'cOdds_'+seg.key;
-      var best    = seg.hroi > seg.aroi
-        ? '<span class="pos">H bet leads +'+Math.abs(seg.hroi-seg.aroi).toFixed(1)+'%</span>'
-        : '<span class="neg">A bet leads +'+Math.abs(seg.hroi-seg.aroi).toFixed(1)+'%</span>';
-      var roiNote = ' — H: '+fmtRoi(seg.hroi)+'  A: '+fmtRoi(seg.aroi);
-      html += '<div class="chart-box">'
-        +'<div class="chart-box-label">'+seg.label+' (N='+seg.n+')'+roiNote+'</div>'
-        +'<div class="chart-legend">'
-        +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
-        +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
-        +'<span style="margin-left:6px">'+best+'</span>'
-        +'</div>'
-        +'<canvas id="'+id+'"></canvas>'
-        +'</div>';
+  d.odds.lineGroups.forEach(function(lg){
+    // Section header for this AsiaLine
+    html += '<div class="odds-line-header">Asia Line '
+      + lg.label
+      + ' <span class="odds-line-n">N='+lg.n+'</span>'
+      + ' <span class="odds-line-roi">'
+      + 'H: <span class="'+posNeg(lg.overall.hroi)+'">'+fmtRoi(lg.overall.hroi)+'</span>'
+      + '  A: <span class="'+posNeg(lg.overall.aroi)+'">'+fmtRoi(lg.overall.aroi)+'</span>'
+      + '</span>'
+      + '</div>';
+
+    // Overall chart for this line
+    html += chartBox('cOdds_'+lg.line+'_overall', lg.overall);
+
+    // Cross-tab groups
+    lg.groupOrder.forEach(function(gname){
+      html += '<div class="odds-group-label">'+gname+'</div>';
+      lg.groups[gname].forEach(function(seg){
+        html += chartBox('cOdds_'+lg.line+'_'+seg.key, seg);
+      });
     });
   });
 
   area.innerHTML = html;
 
+  // Draw all charts
   setTimeout(function(){
-    d.odds.groupOrder.forEach(function(gname){
-      d.odds.groups[gname].forEach(function(seg){
-        if(seg.n < 10) return;
-        drawChart('cOdds_'+seg.key, [seg.seriesH, seg.seriesA], d.monthBounds, 90);
+    d.odds.lineGroups.forEach(function(lg){
+      drawOddsChart('cOdds_'+lg.line+'_overall', lg.overall, d.monthBounds);
+      lg.groupOrder.forEach(function(gname){
+        lg.groups[gname].forEach(function(seg){
+          drawOddsChart('cOdds_'+lg.line+'_'+seg.key, seg, d.monthBounds);
+        });
       });
     });
   }, 30);
 
-  // Summary table — one row per segment, all groups
+  // Summary table
   var rows = '';
-  d.odds.groupOrder.forEach(function(gname){
-    d.odds.groups[gname].forEach(function(seg){
-      var edge = seg.hroi - seg.aroi;
-      var edgeCls = edge>5?'roi-high':edge<-5?'roi-low':'roi-mid';
-      var verdict = edge>10?'🔴 Bet H':edge>3?'↗ H edge':edge<-10?'🔵 Bet A':edge<-3?'↙ A edge':'— Neutral';
-      rows += '<tr>'
-        +'<td style="color:#94a3b8;font-size:9px">'+gname+'</td>'
-        +'<td>'+seg.label+'</td>'
-        +'<td class="num">'+seg.n+'</td>'
-        +'<td class="num '+posNeg(seg.hroi)+'">'+fmtRoi(seg.hroi)+'</td>'
-        +'<td class="num '+posNeg(seg.aroi)+'">'+fmtRoi(seg.aroi)+'</td>'
-        +'<td class="num '+edgeCls+'">'+fmtRoi(edge)+'</td>'
-        +'<td>'+verdict+'</td>'
-        +'</tr>';
+  d.odds.lineGroups.forEach(function(lg){
+    // Overall row
+    rows += tableRow(lg.label, 'Overall', lg.overall, true);
+    // Cross-tab rows
+    lg.groupOrder.forEach(function(gname){
+      lg.groups[gname].forEach(function(seg){
+        rows += tableRow(lg.label, gname+': '+seg.label, seg, false);
+      });
     });
   });
-
   document.getElementById('tbOdds').innerHTML = rows;
+}
+
+function chartBox(id, seg){
+  var edge    = seg.hroi - seg.aroi;
+  var bestSide = edge>0
+    ? '<span class="pos">H leads +'+Math.abs(edge).toFixed(1)+'%</span>'
+    : '<span class="neg">A leads +'+Math.abs(edge).toFixed(1)+'%</span>';
+  return '<div class="chart-box">'
+    +'<div class="chart-box-label">'+seg.label
+    +' (N='+seg.n+')'
+    +' — H: '+fmtRoi(seg.hroi)+'  A: '+fmtRoi(seg.aroi)
+    +'</div>'
+    +'<div class="chart-legend">'
+    +'<span><span class="ld" style="background:#f87171"></span>H bet</span>'
+    +'<span><span class="ld" style="background:#60a5fa"></span>A bet</span>'
+    +'<span style="margin-left:6px">'+bestSide+'</span>'
+    +'</div>'
+    +'<canvas id="'+id+'"></canvas>'
+    +'</div>';
+}
+
+function drawOddsChart(id, seg, monthBounds){
+  drawChart(id, [seg.seriesH, seg.seriesA], monthBounds, 90);
+}
+
+function tableRow(lineLabel, segLabel, seg, isOverall){
+  var edge    = seg.hroi - seg.aroi;
+  var edgeCls = edge>5?'roi-high':edge<-5?'roi-low':'roi-mid';
+  var signal  = edge>10?'🔴 Bet H':edge>3?'↗ H edge':edge<-10?'🔵 Bet A':edge<-3?'↙ A edge':'— Neutral';
+  return '<tr'+(isOverall?' style="background:rgba(255,255,255,0.03)"':'')+'>'
+    +'<td style="font-weight:'+(isOverall?'700':'400')+'">'+lineLabel+'</td>'
+    +'<td style="color:'+(isOverall?'var(--text)':'#94a3b8')+'">'+segLabel+'</td>'
+    +'<td class="num">'+seg.n+'</td>'
+    +'<td class="num '+posNeg(seg.hroi)+'">'+fmtRoi(seg.hroi)+'</td>'
+    +'<td class="num '+posNeg(seg.aroi)+'">'+fmtRoi(seg.aroi)+'</td>'
+    +'<td class="num '+edgeCls+'">'+fmtRoi(edge)+'</td>'
+    +'<td>'+signal+'</td>'
+    +'</tr>';
 }
