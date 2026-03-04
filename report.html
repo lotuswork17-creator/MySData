@@ -12,14 +12,13 @@ body{display:block;padding-bottom:40px}
 .rpt-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .rpt-nav-title{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px}
 .rpt-nav-title .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 7px var(--accent);flex-shrink:0}
-.rpt-back{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-family:var(--sans);font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.rpt-back{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-family:var(--sans);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
 .rpt-updated{font-size:10px;color:var(--muted);font-family:var(--mono)}
 
-.rpt-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);background:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 14px}
+.rpt-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 14px}
 .rpt-tabs::-webkit-scrollbar{display:none}
 .rpt-tab{padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:var(--sans);transition:color .15s,border-color .15s}
 .rpt-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
-.rpt-tab:hover{color:var(--text)}
 
 .rpt-section{display:none;padding:14px}
 .rpt-section.active{display:block}
@@ -27,11 +26,17 @@ body{display:block;padding-bottom:40px}
 .rpt-sub{font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5}
 
 .rpt-cards{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.rpt-card{flex:1;min-width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.rpt-card{flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .rpt-card-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
-.rpt-card-val{font-size:20px;font-weight:800;font-family:var(--mono)}
+.rpt-card-val{font-size:18px;font-weight:800;font-family:var(--mono);line-height:1.2}
 .rpt-card-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
 .pos{color:#4ade80}.neg{color:#f87171}.neu{color:#94a3b8}
+
+/* Chart box matches bc-card style from front page */
+.chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px}
+.chart-box-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-family:var(--sans)}
+.chart-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;font-size:9px;font-family:var(--mono);color:var(--muted);align-items:center}
+.ld{width:16px;height:3px;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:middle}
 
 .rpt-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);margin-bottom:14px}
 .rpt-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
@@ -40,10 +45,6 @@ body{display:block;padding-bottom:40px}
 .rpt-table tr:last-child td{border-bottom:none}
 .rpt-table tr:hover td{background:var(--surface2)}
 .rpt-table .num{text-align:right}
-
-.chart-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px}
-.chart-legend{display:flex;gap:14px;margin-bottom:8px;font-size:10px;font-family:var(--mono);color:var(--muted);flex-wrap:wrap}
-.legend-dot{width:10px;height:4px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
 
 .sm-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .sm-card{background:var(--surface2);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:12px 14px}
@@ -88,563 +89,586 @@ body{display:block;padding-bottom:40px}
 </div>
 
 <div class="rpt-tabs">
-  <div class="rpt-tab active" onclick="showTab(0)">📊 By League</div>
-  <div class="rpt-tab" onclick="showTab(1)">📅 By Month</div>
-  <div class="rpt-tab" onclick="showTab(2)">📐 By Line</div>
+  <div class="rpt-tab active" onclick="showTab(0)">📊 League</div>
+  <div class="rpt-tab" onclick="showTab(1)">📅 Month</div>
+  <div class="rpt-tab" onclick="showTab(2)">📐 Line</div>
   <div class="rpt-tab" onclick="showTab(3)">🧠 Expert</div>
   <div class="rpt-tab" onclick="showTab(4)">⚡ Smart Money</div>
   <div class="rpt-tab" onclick="showTab(5)">↕️ Line × Expert</div>
 </div>
 
-<div id="rptLoading"><div class="spinner"></div>Loading report data…</div>
+<div id="rptLoading"><div class="spinner"></div>Loading report…</div>
 
-<!-- TAB 0 -->
+<!-- TAB 0: LEAGUE -->
 <div class="rpt-section" id="tab0">
   <div class="rpt-title">ROI by League</div>
-  <div class="rpt-sub">$1 staked per match on H or A side. Chart shows top leagues (≥15 matches). Blue = H ROI, Red = A ROI.</div>
+  <div class="rpt-sub">Cumulative running P&L per match (time on X axis). Top 5 leagues by match count shown.</div>
   <div class="rpt-cards" id="leagueCards"></div>
-  <div class="chart-wrap">
-    <div class="chart-legend">
-      <span><span class="legend-dot" style="background:#60a5fa"></span>H ROI%</span>
-      <span><span class="legend-dot" style="background:#f87171"></span>A ROI%</span>
-    </div>
-    <canvas id="leagueChart" style="width:100%;height:180px"></canvas>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet — Cumulative P&L by League</div>
+    <div class="chart-legend" id="lgdLeagueH"></div>
+    <canvas id="cLeagueH"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-box-label">A Bet — Cumulative P&L by League</div>
+    <div class="chart-legend" id="lgdLeagueA"></div>
+    <canvas id="cLeagueA"></canvas>
   </div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr><th>League</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Best</th></tr></thead>
-    <tbody id="leagueBody"></tbody>
+    <tbody id="tbLeague"></tbody>
   </table></div>
 </div>
 
-<!-- TAB 1 -->
+<!-- TAB 1: MONTH -->
 <div class="rpt-section" id="tab1">
-  <div class="rpt-title">ROI by Month</div>
-  <div class="rpt-sub">Monthly H/A ROI trend with cumulative P&L running total below.</div>
-  <div class="chart-wrap">
+  <div class="rpt-title">Overall Performance over Time</div>
+  <div class="rpt-sub">Running P&L for all H and A bets, match by match sorted by date. Identical to front page chart at full scale.</div>
+  <div class="rpt-cards" id="monthCards"></div>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet vs A Bet — Cumulative P&L</div>
     <div class="chart-legend">
-      <span><span class="legend-dot" style="background:#60a5fa"></span>H ROI%</span>
-      <span><span class="legend-dot" style="background:#f87171"></span>A ROI%</span>
+      <span><span class="ld" style="background:#f87171"></span>H Bet</span>
+      <span><span class="ld" style="background:#60a5fa"></span>A Bet</span>
     </div>
-    <canvas id="monthChart" style="width:100%;height:170px"></canvas>
-  </div>
-  <div class="chart-wrap">
-    <div class="rpt-title" style="font-size:11px;margin-bottom:8px">Cumulative P&L ($1/match)</div>
-    <canvas id="monthCumChart" style="width:100%;height:130px"></canvas>
+    <canvas id="cMonth"></canvas>
   </div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr><th>Month</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Better</th></tr></thead>
-    <tbody id="monthBody"></tbody>
+    <tbody id="tbMonth"></tbody>
   </table></div>
 </div>
 
-<!-- TAB 2 -->
+<!-- TAB 2: LINE -->
 <div class="rpt-section" id="tab2">
   <div class="rpt-title">ROI by Asia Line</div>
-  <div class="rpt-sub">Grouped bars per handicap value. Identifies which lines favour H or A.</div>
-  <div class="chart-wrap">
-    <div class="chart-legend">
-      <span><span class="legend-dot" style="background:#60a5fa"></span>H ROI%</span>
-      <span><span class="legend-dot" style="background:#f87171"></span>A ROI%</span>
-    </div>
-    <canvas id="lineChart" style="width:100%;height:200px"></canvas>
+  <div class="rpt-sub">Cumulative running P&L per line value over time. Top 5 lines by match count.</div>
+  <div class="rpt-cards" id="lineCards"></div>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet — Cumulative P&L by Asia Line</div>
+    <div class="chart-legend" id="lgdLineH"></div>
+    <canvas id="cLineH"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-box-label">A Bet — Cumulative P&L by Asia Line</div>
+    <div class="chart-legend" id="lgdLineA"></div>
+    <canvas id="cLineA"></canvas>
   </div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr><th>Line</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Best</th></tr></thead>
-    <tbody id="lineBody"></tbody>
+    <tbody id="tbLine"></tbody>
   </table></div>
 </div>
 
-<!-- TAB 3 -->
+<!-- TAB 3: EXPERT -->
 <div class="rpt-section" id="tab3">
-  <div class="rpt-title">Expert Accuracy & Suitability</div>
-  <div class="rpt-sub">ROI when experts back each side at 50/67/83% thresholds. Bar = bet-side ROI. Verdict = whether threshold is worth using.</div>
-  <div class="chart-wrap">
+  <div class="rpt-title">Expert Signal Accuracy</div>
+  <div class="rpt-sub">Running P&L for H and A thresholds vs baseline. Upward divergence from baseline = signal adds value.</div>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet — Expert H Thresholds vs Baseline</div>
     <div class="chart-legend">
-      <span><span class="legend-dot" style="background:#60a5fa"></span>H bet ROI (Expert backs H)</span>
-      <span><span class="legend-dot" style="background:#f87171"></span>A bet ROI (Expert backs A)</span>
+      <span><span class="ld" style="background:#475569"></span>Baseline</span>
+      <span><span class="ld" style="background:#60a5fa"></span>H≥50%</span>
+      <span><span class="ld" style="background:#a78bfa"></span>H≥67%</span>
+      <span><span class="ld" style="background:#4ade80"></span>H≥83%</span>
     </div>
-    <canvas id="expertChart" style="width:100%;height:180px"></canvas>
+    <canvas id="cExpertH"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-box-label">A Bet — Expert A Thresholds vs Baseline</div>
+    <div class="chart-legend">
+      <span><span class="ld" style="background:#475569"></span>Baseline</span>
+      <span><span class="ld" style="background:#f87171"></span>A≥50%</span>
+      <span><span class="ld" style="background:#fb923c"></span>A≥67%</span>
+      <span><span class="ld" style="background:#fbbf24"></span>A≥83%</span>
+    </div>
+    <canvas id="cExpertA"></canvas>
   </div>
   <div class="exp-grid" id="expertGrid"></div>
-  <div class="rpt-title" style="margin-top:4px">Verdict Table</div>
+  <div class="rpt-title" style="margin-top:4px">Verdict</div>
   <div id="expertVerdict"></div>
 </div>
 
-<!-- TAB 4 -->
+<!-- TAB 4: SMART MONEY -->
 <div class="rpt-section" id="tab4">
-  <div class="rpt-title">⚡ Smart Money Signal Performance</div>
-  <div class="rpt-sub">Bar chart compares all 7 signals. Green ≥10%, yellow ≥0%, red = loss. Cards below show full detail.</div>
-  <div class="chart-wrap">
-    <canvas id="smartChart" style="width:100%;height:180px"></canvas>
+  <div class="rpt-title">⚡ Smart Money Signals</div>
+  <div class="rpt-sub">Running P&L per signal vs baseline over time. Signals that rise above the grey baseline are working.</div>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet Signals — Cumulative P&L vs Baseline</div>
+    <div class="chart-legend" id="lgdSmH"></div>
+    <canvas id="cSmartH"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-box-label">A Bet Signals — Cumulative P&L vs Baseline</div>
+    <div class="chart-legend" id="lgdSmA"></div>
+    <canvas id="cSmartA"></canvas>
   </div>
   <div class="sm-grid" id="smartGrid"></div>
 </div>
 
-<!-- TAB 5 -->
+<!-- TAB 5: LM × EXPERT -->
 <div class="rpt-section" id="tab5">
-  <div class="rpt-title">Line Movement × Expert Signal</div>
-  <div class="rpt-sub">Heatmap shows ROI for each combination. Green = profitable, red = loss. Table lists all combinations below.</div>
-  <div class="chart-wrap">
-    <div class="rpt-title" style="font-size:11px;margin-bottom:8px">ROI Heatmap (Line Move vs Expert Threshold)</div>
-    <canvas id="lmChart" style="width:100%;height:220px"></canvas>
+  <div class="rpt-title">Line Movement × Expert</div>
+  <div class="rpt-sub">Running P&L for key line move + expert combinations vs baseline. Shows which combos produce edge over time.</div>
+  <div class="chart-box">
+    <div class="chart-box-label">H Bet — Line Rose × Expert (vs Baseline)</div>
+    <div class="chart-legend" id="lgdLmH"></div>
+    <canvas id="cLmH"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-box-label">A Bet — Line Dropped/Flat × Expert (vs Baseline)</div>
+    <div class="chart-legend" id="lgdLmA"></div>
+    <canvas id="cLmA"></canvas>
   </div>
   <div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr><th>Line Move</th><th>Expert</th><th class="num">N</th><th class="num">ROI%</th><th>Bet</th><th>Signal</th></tr></thead>
-    <tbody id="lmBody"></tbody>
+    <tbody id="tbLm"></tbody>
   </table></div>
 </div>
 
 <script src="js/helpers.js"></script>
 <script>
-var REPORT_DATA=null;
-var chartDrawn=[false,false,false,false,false,false];
+var RD = null; // report data
+var drawn = [false,false,false,false,false,false];
 
-function fmt(v){return(v>=0?'+':'')+v.toFixed(1)+'%';}
+var COLS = ['#f87171','#60a5fa','#4ade80','#fbbf24','#a78bfa','#fb923c','#34d399','#e879f9'];
+
+function fmtPnl(v){return(v>=0?'+':'')+v.toFixed(2);}
+function fmtRoi(v){return(v>=0?'+':'')+v.toFixed(1)+'%';}
 function posNeg(v){return v>=0?'pos':'neg';}
 function roiOf(arr){if(!arr.length)return 0;return Math.round(arr.reduce(function(s,v){return s+v;},0)/arr.length*1000)/10;}
 
-function initCanvas(id,h){
-  var el=document.getElementById(id);if(!el)return null;
-  var ctx=el.getContext('2d');
-  var dpr=window.devicePixelRatio||1;
-  var w=el.parentElement.offsetWidth-24||300;
-  el.width=w*dpr;el.height=h*dpr;
-  el.style.width=w+'px';el.style.height=h+'px';
-  ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
-  return{ctx:ctx,w:w,h:h};
-}
-function drawZero(ctx,w,yZ,pL,pR){
-  ctx.save();ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
-  ctx.beginPath();ctx.moveTo(pL,yZ);ctx.lineTo(w-pR,yZ);ctx.stroke();
-  ctx.setLineDash([]);ctx.restore();
-}
-function drawYLabels(ctx,mn,mx,pL,pT,H,steps){
-  ctx.save();ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
-  for(var i=0;i<=steps;i++){
-    var v=mn+(mx-mn)*i/steps;
-    ctx.fillText((v>=0?'+':'')+v.toFixed(0)+'%',pL-4,pT+H-H*i/steps+3);
-  }
-  ctx.restore();
-}
-
-function asiaOutcome(r){
+// ── Outcome helpers (same as helpers.js) ──
+function ao(r){
   if(r.STATUS!=='Result'||r.ASIALINE==null||r.RESULTH==null||r.RESULTA==null)return null;
   var m=Math.round((r.RESULTH-r.RESULTA+r.ASIALINE)*4)/4;
   if(m>=0.5)return'ww';if(m===0.25)return'wh';if(m===0)return'dd';if(m===-0.25)return'lh';return'lw';
 }
-function calcH(r){
-  var o=asiaOutcome(r);if(!o)return null;var od=r.ASIAH;if(!od||od<=0)return null;
-  if(o==='ww')return od-1;if(o==='wh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='lh')return-0.5;return-1;
-}
-function calcA(r){
-  var o=asiaOutcome(r);if(!o)return null;var od=r.ASIAA;if(!od||od<=0)return null;
-  if(o==='lw')return od-1;if(o==='lh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='wh')return-0.5;return-1;
+function cH(r){var o=ao(r);if(!o)return null;var od=r.ASIAH;if(!od||od<=0)return null;
+  if(o==='ww')return od-1;if(o==='wh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='lh')return-0.5;return-1;}
+function cA(r){var o=ao(r);if(!o)return null;var od=r.ASIAA;if(!od||od<=0)return null;
+  if(o==='lw')return od-1;if(o==='lh')return(od-1)*0.5;if(o==='dd')return 0;if(o==='wh')return-0.5;return-1;}
+
+// Build running P&L array from a subset
+function runPnl(subset, fn){
+  var pnl=0,pts=[];
+  subset.forEach(function(r){var v=fn(r);if(v!==null){pnl=Math.round((pnl+v)*1000)/1000;pts.push(pnl);}});
+  return pts;
 }
 
+// ── CHART DRAW — identical style to stats.js front page ──
+// series = [{label, color, pts:[]}]
+// monthBoundaries = [{label:'26-01', xFrac:0.45}, ...]  for x-axis ticks
+function drawChart(canvasId, series, monthBoundaries, chartH){
+  chartH = chartH || 100;
+  var el = document.getElementById(canvasId);
+  if(!el) return;
+  var ctx = el.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var w = el.parentElement.offsetWidth - 20 || 300;
+  var h = chartH + 18; // extra 18px for x-axis labels
+  el.width = w*dpr; el.height = h*dpr;
+  el.style.width = w+'px'; el.style.height = h+'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  var pad = 8;
+  var chartTop = pad;
+  var chartBot = h - 18; // leave 18px for x labels
+  var chartH2 = chartBot - chartTop;
+
+  // Gather all pts to find min/max
+  var all = [];
+  series.forEach(function(s){ s.pts.forEach(function(v){ all.push(v); }); });
+  if(!all.length) return;
+  var mn = Math.min(0, Math.min.apply(null, all));
+  var mx = Math.max(0, Math.max.apply(null, all));
+  var range = mx - mn || 1;
+
+  // The longest series defines the x axis
+  var nPts = 0;
+  series.forEach(function(s){ if(s.pts.length > nPts) nPts = s.pts.length; });
+  if(!nPts) return;
+
+  function xx(i){ return pad + i/(nPts-1||1) * (w - pad*2); }
+  function yy(v){ return chartTop + (1-(v-mn)/range) * chartH2; }
+
+  // Zero line — exact same style as stats.js
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, yy(0));
+  ctx.lineTo(w - pad, yy(0));
+  ctx.stroke();
+
+  // Month boundary ticks on x-axis
+  if(monthBoundaries && monthBoundaries.length){
+    ctx.fillStyle = '#475569';
+    ctx.font = '9px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    monthBoundaries.forEach(function(mb){
+      var x = pad + mb.xFrac * (w - pad*2);
+      // tick
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3,4]);
+      ctx.beginPath(); ctx.moveTo(x, chartTop); ctx.lineTo(x, chartBot); ctx.stroke();
+      ctx.setLineDash([]);
+      // label
+      ctx.fillText(mb.label, x, h - 2);
+    });
+  }
+
+  // Draw each series — same as stats.js
+  series.forEach(function(s){
+    if(!s.pts.length) return;
+    var col = s.color;
+    var pts = s.pts;
+    var thisPts = pts.length;
+    function xi(i){ return pad + i/(nPts-1||1) * (w - pad*2); }
+
+    // Line
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    pts.forEach(function(v,i){ i===0 ? ctx.moveTo(xi(i),yy(v)) : ctx.lineTo(xi(i),yy(v)); });
+    ctx.stroke();
+
+    // Fill under — identical to stats.js
+    ctx.beginPath();
+    pts.forEach(function(v,i){ i===0 ? ctx.moveTo(xi(i),yy(v)) : ctx.lineTo(xi(i),yy(v)); });
+    ctx.lineTo(xi(thisPts-1), yy(0));
+    ctx.lineTo(xi(0), yy(0));
+    ctx.closePath();
+    // Parse hex color → rgba 0.08
+    var r=parseInt(col.slice(1,3),16), g=parseInt(col.slice(3,5),16), b=parseInt(col.slice(5,7),16);
+    ctx.fillStyle = 'rgba('+r+','+g+','+b+',0.08)';
+    ctx.fill();
+
+    // End-of-line label (same as stats.js)
+    var lastV = pts[pts.length-1];
+    ctx.font = '9px IBM Plex Mono';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'left';
+    var lx = xi(thisPts-1) + 3;
+    var ly = yy(lastV);
+    if(lx > w - 36) lx = xi(thisPts-1) - 40;
+    ctx.fillText(fmtPnl(lastV), lx, ly);
+  });
+}
+
+function makeLegend(elId, series){
+  var el = document.getElementById(elId); if(!el) return;
+  el.innerHTML = series.map(function(s){
+    return '<span><span class="ld" style="background:'+s.color+'"></span>'+s.label+'</span>';
+  }).join('');
+}
+
+// ── Smart money filter ──
+function smFilter(r, key){
+  var gl=r.ASIALINE, ln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
+  var sld = gl!=null&&ln!=null ? Math.round((gl-ln)*100)/100 : null;
+  var e = expertScore(r);
+  var sv = sh&&sa&&sh>0&&sa>0 ? (1/sh+1/sa-1)*100 : null;
+  if(key==='sm1') return sld!==null&&sld>0&&e&&e.h>=67;
+  if(key==='sm2') return sld!==null&&sld>0&&e&&e.h>=83&&sv!==null&&sv<6;
+  if(key==='sm3') return sld!==null&&sld>0&&e&&e.h>=67&&sv!==null&&sv<6;
+  if(key==='sm4') return sld!==null&&sld===0&&e&&e.a>=83;
+  if(key==='sm5') return sld!==null&&sld>0&&e&&e.a>=83;
+  if(key==='sm6') return sld!==null&&sld<0&&e&&e.a>=50&&sv!==null&&sv<6;
+  if(key==='sm7') return sld!==null&&sld===0&&e&&e.h>=83;
+  return false;
+}
+
+// ── Compute all data ──
 function computeReport(records){
-  var results=records.filter(function(r){return asiaOutcome(r);});
+  // Sort all result matches by date — same as stats.js
+  var results = records.filter(function(r){ return ao(r) && r.DATE && r.DATE.length>=7; });
+  results.sort(function(a,b){ return a.DATE < b.DATE ? -1 : 1; });
+  var N = results.length;
 
-  var lm={};
-  results.forEach(function(r){
-    var cat=r.CATEGORY||'Unknown';
-    if(!lm[cat])lm[cat]=[];
-    var h=calcH(r),a=calcA(r);if(h!==null)lm[cat].push([h,a]);
-  });
-  var league=Object.keys(lm).map(function(cat){
-    var v=lm[cat],n=v.length;
-    return{cat:cat,n:n,hroi:roiOf(v.map(function(x){return x[0];})),aroi:roiOf(v.map(function(x){return x[1];}))};
-  }).sort(function(a,b){return b.n-a.n;});
-
-  var mm={};
-  results.forEach(function(r){
-    var d=r.DATE||'';if(d.length<7)return;
-    var ym=d.slice(0,7);if(!mm[ym])mm[ym]=[];
-    var h=calcH(r),a=calcA(r);if(h!==null)mm[ym].push([h,a]);
-  });
-  var month=Object.keys(mm).sort().map(function(ym){
-    var v=mm[ym],n=v.length;
-    return{ym:ym,n:n,hroi:roiOf(v.map(function(x){return x[0];})),aroi:roiOf(v.map(function(x){return x[1];}))};
+  // Month boundaries for x-axis ticks
+  // xFrac = position of month start as fraction of total N
+  var monthBounds = [];
+  var seen = {};
+  results.forEach(function(r, i){
+    var ym = r.DATE.slice(0,7);
+    if(!seen[ym]){ seen[ym]=true; monthBounds.push({label:ym.slice(2), xFrac: i/(N-1||1)}); }
   });
 
-  var liMap={};
-  results.forEach(function(r){
-    if(r.ASIALINE==null)return;
-    var k=String(r.ASIALINE);if(!liMap[k])liMap[k]=[];
-    var h=calcH(r),a=calcA(r);if(h!==null)liMap[k].push([h,a]);
-  });
-  var line=Object.keys(liMap).sort(function(a,b){return parseFloat(a)-parseFloat(b);}).map(function(k){
-    var v=liMap[k],n=v.length;
-    return{line:parseFloat(k),n:n,hroi:roiOf(v.map(function(x){return x[0];})),aroi:roiOf(v.map(function(x){return x[1];}))};
+  // ── League ──
+  var lMap = {};
+  results.forEach(function(r){ var c=r.CATEGORY||'?'; if(!lMap[c])lMap[c]=[]; lMap[c].push(r); });
+  var leagueSorted = Object.keys(lMap).sort(function(a,b){ return lMap[b].length-lMap[a].length; });
+  var top5 = leagueSorted.slice(0,5);
+  var leagueSeriesH = top5.map(function(cat,i){ return{label:cat,color:COLS[i],pts:runPnl(lMap[cat],cH)}; });
+  var leagueSeriesA = top5.map(function(cat,i){ return{label:cat,color:COLS[i],pts:runPnl(lMap[cat],cA)}; });
+  var leagueTable = leagueSorted.map(function(cat){
+    var v=lMap[cat], n=v.length;
+    return{cat:cat,n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
   });
 
-  var expert=[];
+  // ── Month ──
+  var mMap = {};
+  results.forEach(function(r){ var ym=r.DATE.slice(0,7); if(!mMap[ym])mMap[ym]=[]; mMap[ym].push(r); });
+  var monthTable = Object.keys(mMap).sort().map(function(ym){
+    var v=mMap[ym], n=v.length;
+    return{ym:ym,n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
+  });
+  var allHpts = runPnl(results, cH);
+  var allApts = runPnl(results, cA);
+
+  // ── Line ──
+  var liMap = {};
+  results.forEach(function(r){ if(r.ASIALINE==null)return; var k=String(r.ASIALINE); if(!liMap[k])liMap[k]=[]; liMap[k].push(r); });
+  var topLines = Object.keys(liMap).sort(function(a,b){ return liMap[b].length-liMap[a].length; }).slice(0,5);
+  var lineSeriesH = topLines.map(function(k,i){ var lv=parseFloat(k); return{label:(lv>=0?'+':'')+k,color:COLS[i],pts:runPnl(liMap[k],cH)}; });
+  var lineSeriesA = topLines.map(function(k,i){ var lv=parseFloat(k); return{label:(lv>=0?'+':'')+k,color:COLS[i],pts:runPnl(liMap[k],cA)}; });
+  var lineTable = Object.keys(liMap).sort(function(a,b){ return parseFloat(a)-parseFloat(b); }).map(function(k){
+    var v=liMap[k], n=v.length;
+    return{line:parseFloat(k),n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
+  });
+
+  // ── Expert ──
+  var expTable = [];
   ['H','A'].forEach(function(side){
     [50,67,83].forEach(function(thresh){
       var sk=side.toLowerCase();
       var sub=results.filter(function(r){var e=expertScore(r);return e&&e[sk]>=thresh;});
-      var n=sub.length;if(!n)return;
-      var hr=sub.map(calcH).filter(function(v){return v!==null;});
-      var ar=sub.map(calcA).filter(function(v){return v!==null;});
-      var wh=sub.filter(function(r){return['ww','wh'].indexOf(asiaOutcome(r))>=0;}).length;
-      var wa=sub.filter(function(r){return['lw','lh'].indexOf(asiaOutcome(r))>=0;}).length;
-      expert.push({side:side,thresh:thresh,n:n,hroi:roiOf(hr),aroi:roiOf(ar),
-        hwin:Math.round(wh/n*1000)/10,awin:Math.round(wa/n*1000)/10});
+      var n=sub.length; if(!n) return;
+      var hr=sub.map(cH).filter(function(x){return x!==null;});
+      var ar=sub.map(cA).filter(function(x){return x!==null;});
+      var wh=sub.filter(function(r){return['ww','wh'].indexOf(ao(r))>=0;}).length;
+      var wa=sub.filter(function(r){return['lw','lh'].indexOf(ao(r))>=0;}).length;
+      expTable.push({side:side,thresh:thresh,n:n,hroi:roiOf(hr),aroi:roiOf(ar),hwin:Math.round(wh/n*1000)/10,awin:Math.round(wa/n*1000)/10});
     });
   });
-
-  function smFilter(r,key){
-    var gl=r.ASIALINE,ln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
-    var sld=gl!=null&&ln!=null?Math.round((gl-ln)*100)/100:null;
-    var e=expertScore(r);
-    var sv=sh&&sa&&sh>0&&sa>0?(1/sh+1/sa-1)*100:null;
-    if(key==='sm1')return sld!==null&&sld>0&&e&&e.h>=67;
-    if(key==='sm2')return sld!==null&&sld>0&&e&&e.h>=83&&sv!==null&&sv<6;
-    if(key==='sm3')return sld!==null&&sld>0&&e&&e.h>=67&&sv!==null&&sv<6;
-    if(key==='sm4')return sld!==null&&sld===0&&e&&e.a>=83;
-    if(key==='sm5')return sld!==null&&sld>0&&e&&e.a>=83;
-    if(key==='sm6')return sld!==null&&sld<0&&e&&e.a>=50&&sv!==null&&sv<6;
-    if(key==='sm7')return sld!==null&&sld===0&&e&&e.h>=83;
-    return false;
-  }
-  var smDefs=[
-    {key:'sm1',label:'▲ Rose + H≥67%',full:'▲ Line Rose + Expert H≥67%',side:'H'},
-    {key:'sm2',label:'▲ Rose + H≥83%+Vig',full:'▲ Line Rose + Expert H≥83% + Vig<6%',side:'H'},
-    {key:'sm3',label:'▲ Rose + H≥67%+Vig',full:'▲ Line Rose + Expert H≥67% + Vig<6%',side:'H'},
-    {key:'sm4',label:'A≥83%+Flat→H',full:'Expert A≥83% + Line Unchanged (H bet)',side:'H'},
-    {key:'sm5',label:'A≥83%+Rose→H',full:'Expert A≥83% + Line Rose (H bet)',side:'H'},
-    {key:'sm6',label:'▼ Drop+A≥50%+Vig',full:'▼ Line Dropped + Expert A≥50% + Vig<6%',side:'A'},
-    {key:'sm7',label:'H≥83%+Flat→A',full:'Expert H≥83% + Line Unchanged (A bet)',side:'A'},
+  // Series: baseline + 3 thresholds, each betting on the expert's side
+  var expHSeries = [
+    {label:'Baseline (all)',color:'#475569',pts:allHpts},
+    {label:'H≥50%',color:'#60a5fa',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=50;}),cH)},
+    {label:'H≥67%',color:'#a78bfa',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=67;}),cH)},
+    {label:'H≥83%',color:'#4ade80',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=83;}),cH)},
   ];
-  var smart=smDefs.map(function(d){
+  var expASeries = [
+    {label:'Baseline (all)',color:'#475569',pts:allApts},
+    {label:'A≥50%',color:'#f87171',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=50;}),cA)},
+    {label:'A≥67%',color:'#fb923c',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=67;}),cA)},
+    {label:'A≥83%',color:'#fbbf24',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=83;}),cA)},
+  ];
+
+  // ── Smart Money ──
+  var smDefs = [
+    {key:'sm1',label:'▲ Rose + H≥67%',full:'▲ Line Rose + Expert H≥67%',side:'H',color:'#60a5fa'},
+    {key:'sm2',label:'▲ Rose + H≥83%+Vig',full:'▲ Line Rose + Expert H≥83% + Vig<6%',side:'H',color:'#a78bfa'},
+    {key:'sm3',label:'▲ Rose + H≥67%+Vig',full:'▲ Line Rose + Expert H≥67% + Vig<6%',side:'H',color:'#4ade80'},
+    {key:'sm4',label:'A≥83%+Flat→H',full:'Expert A≥83% + Line Unchanged (H bet)',side:'H',color:'#34d399'},
+    {key:'sm5',label:'A≥83%+Rose→H',full:'Expert A≥83% + Line Rose (H bet)',side:'H',color:'#fbbf24'},
+    {key:'sm6',label:'▼ Drop+A≥50%+Vig',full:'▼ Line Dropped + Expert A≥50% + Vig<6%',side:'A',color:'#f87171'},
+    {key:'sm7',label:'H≥83%+Flat→A',full:'Expert H≥83% + Line Unchanged (A bet)',side:'A',color:'#fb923c'},
+  ];
+  var smTable = smDefs.map(function(d){
     var sub=results.filter(function(r){return smFilter(r,d.key);});
     var n=sub.length;
-    var rois=(d.side==='H'?sub.map(calcH):sub.map(calcA)).filter(function(v){return v!==null;});
-    return{key:d.key,label:d.label,full:d.full,n:n,roi:roiOf(rois),side:d.side};
+    var fn=d.side==='H'?cH:cA;
+    var rois=sub.map(fn).filter(function(x){return x!==null;});
+    return{key:d.key,label:d.label,full:d.full,n:n,roi:roiOf(rois),side:d.side,color:d.color,pts:runPnl(sub,fn)};
   });
+  var smHSeries = [{label:'Baseline (all H)',color:'#475569',pts:allHpts}]
+    .concat(smTable.filter(function(d){return d.side==='H';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
+  var smASeries = [{label:'Baseline (all A)',color:'#475569',pts:allApts}]
+    .concat(smTable.filter(function(d){return d.side==='A';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
 
-  var lmExpert=[];
-  [['up','▲ Rose'],['down','▼ Dropped'],['flat','— Flat']].forEach(function(lmPair){
-    [['H',67,'H H≥67%'],['H',83,'H H≥83%'],['A',50,'A A≥50%'],['A',67,'A A≥67%']].forEach(function(ex){
-      var sub=results.filter(function(r){
-        var gl=r.ASIALINE,ln=r.ASIALINELN;if(gl==null||ln==null)return false;
+  // ── Line Move × Expert ──
+  var lmTable = [];
+  var lmHSeries = [{label:'Baseline (all H)',color:'#475569',pts:allHpts}];
+  var lmASeries = [{label:'Baseline (all A)',color:'#475569',pts:allApts}];
+  var lmHCols = ['#60a5fa','#a78bfa','#4ade80','#fbbf24'];
+  var lmACols = ['#f87171','#fb923c','#fbbf24'];
+  var hi=0, ai=0;
+  [['up','▲ Rose'],['down','▼ Dropped'],['flat','— Flat']].forEach(function(lmP){
+    [['H',67,'H≥67%'],['H',83,'H≥83%'],['A',50,'A≥50%'],['A',67,'A≥67%']].forEach(function(ex){
+      var sub = results.filter(function(r){
+        var gl=r.ASIALINE,ln=r.ASIALINELN; if(gl==null||ln==null) return false;
         var ld=Math.round((gl-ln)*100)/100;
-        if(lmPair[0]==='up'&&ld<=0)return false;
-        if(lmPair[0]==='down'&&ld>=0)return false;
-        if(lmPair[0]==='flat'&&ld!==0)return false;
-        var e=expertScore(r);if(!e)return false;
-        if(ex[0]==='H'&&e.h<ex[1])return false;
-        if(ex[0]==='A'&&e.a<ex[1])return false;
+        if(lmP[0]==='up'&&ld<=0) return false;
+        if(lmP[0]==='down'&&ld>=0) return false;
+        if(lmP[0]==='flat'&&ld!==0) return false;
+        var e=expertScore(r); if(!e) return false;
+        if(ex[0]==='H'&&e.h<ex[1]) return false;
+        if(ex[0]==='A'&&e.a<ex[1]) return false;
         return true;
       });
-      var n=sub.length;if(n<5)return;
-      var side=ex[0];
-      var rois=(side==='H'?sub.map(calcH):sub.map(calcA)).filter(function(v){return v!==null;});
-      lmExpert.push({lm:lmPair[1],lmKey:lmPair[0],expert:ex[2],side:side,n:n,roi:roiOf(rois)});
-    });
-  });
-
-  return{league:league,month:month,line:line,expert:expert,smart:smart,lmExpert:lmExpert};
-}
-
-// ─── CHARTS ───────────────────────────────────────
-
-function drawLeagueChart(data){
-  var top=data.league.filter(function(d){return d.n>=15;}).slice(0,14);
-  if(!top.length)return;
-  var c=initCanvas('leagueChart',180);if(!c)return;
-  var ctx=c.ctx,w=c.w,h=c.h;
-  var pL=36,pR=6,pT=10,pB=52,W=w-pL-pR,H=h-pT-pB;
-  var all=[];top.forEach(function(d){all.push(d.hroi,d.aroi);});
-  var mn=Math.min(0,Math.min.apply(null,all)),mx=Math.max(0,Math.max.apply(null,all));
-  var range=mx-mn||1;
-  var bw=W/top.length,bW=bw*0.34;
-  function yy(v){return pT+H-(v-mn)/range*H;}
-  drawZero(ctx,w,yy(0),pL,pR);drawYLabels(ctx,mn,mx,pL,pT,H,4);
-  top.forEach(function(d,i){
-    var cx=pL+i*bw+bw/2,y0=yy(0);
-    ctx.fillStyle='rgba(96,165,250,0.85)';var yH=yy(d.hroi);ctx.fillRect(cx-bW-1,Math.min(yH,y0),bW,Math.abs(yH-y0)||1);
-    ctx.fillStyle='rgba(248,113,113,0.85)';var yA=yy(d.aroi);ctx.fillRect(cx+1,Math.min(yA,y0),bW,Math.abs(yA-y0)||1);
-    ctx.save();ctx.translate(cx,h-pB+8);ctx.rotate(-Math.PI/4);
-    ctx.fillStyle='#64748b';ctx.font='8px IBM Plex Mono';ctx.textAlign='right';
-    ctx.fillText(d.cat.length>12?d.cat.slice(0,12)+'…':d.cat,0,0);ctx.restore();
-  });
-}
-
-function drawMonthChart(data){
-  var months=data.month;if(!months.length)return;
-  // ROI per month
-  var c=initCanvas('monthChart',170);
-  if(c){
-    var ctx=c.ctx,w=c.w,h=c.h;
-    var pL=36,pR=6,pT=10,pB=28,W=w-pL-pR,H=h-pT-pB;
-    var all=[];months.forEach(function(m){all.push(m.hroi,m.aroi);});
-    var mn=Math.min(0,Math.min.apply(null,all)),mx=Math.max(0,Math.max.apply(null,all));
-    var range=mx-mn||1;
-    function xx(i){return pL+i/(months.length-1||1)*W;}
-    function yy(v){return pT+H-(v-mn)/range*H;}
-    drawZero(ctx,w,yy(0),pL,pR);drawYLabels(ctx,mn,mx,pL,pT,H,4);
-    [['hroi','rgba(96,165,250,0.15)','#60a5fa'],['aroi','rgba(248,113,113,0.15)','#f87171']].forEach(function(t){
-      var key=t[0],fill=t[1],stroke=t[2];
-      ctx.beginPath();months.forEach(function(m,i){i===0?ctx.moveTo(xx(i),yy(m[key])):ctx.lineTo(xx(i),yy(m[key]));});
-      ctx.lineTo(xx(months.length-1),yy(0));ctx.lineTo(xx(0),yy(0));ctx.closePath();
-      ctx.fillStyle=fill;ctx.fill();
-      ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.beginPath();
-      months.forEach(function(m,i){i===0?ctx.moveTo(xx(i),yy(m[key])):ctx.lineTo(xx(i),yy(m[key]));});ctx.stroke();
-      ctx.fillStyle=stroke;months.forEach(function(m,i){ctx.beginPath();ctx.arc(xx(i),yy(m[key]),3,0,Math.PI*2);ctx.fill();});
-    });
-    ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';
-    months.forEach(function(m,i){if(months.length<=12||i%Math.ceil(months.length/12)===0)ctx.fillText(m.ym.slice(2),xx(i),h-6);});
-  }
-  // Cumulative P&L
-  var c2=initCanvas('monthCumChart',130);
-  if(c2){
-    var ctx=c2.ctx,w=c2.w,h=c2.h;
-    var pL=42,pR=6,pT=10,pB=20,W=w-pL-pR,H=h-pT-pB;
-    var hC=0,aC=0,hPts=[],aPts=[];
-    months.forEach(function(m){hC+=m.hroi*m.n/100;aC+=m.aroi*m.n/100;hPts.push(Math.round(hC*100)/100);aPts.push(Math.round(aC*100)/100);});
-    var all=hPts.concat(aPts);
-    var mn=Math.min(0,Math.min.apply(null,all)),mx=Math.max(0,Math.max.apply(null,all));
-    var range=mx-mn||1;
-    function xx(i){return pL+i/(months.length-1||1)*W;}
-    function yy(v){return pT+H-(v-mn)/range*H;}
-    drawZero(ctx,w,yy(0),pL,pR);
-    ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
-    ctx.fillText('$'+mx.toFixed(0),pL-4,pT+4);ctx.fillText('$'+mn.toFixed(0),pL-4,pT+H);
-    [['#60a5fa',hPts],['#f87171',aPts]].forEach(function(pair){
-      ctx.strokeStyle=pair[0];ctx.lineWidth=2;ctx.beginPath();
-      pair[1].forEach(function(v,i){i===0?ctx.moveTo(xx(i),yy(v)):ctx.lineTo(xx(i),yy(v));});ctx.stroke();
-    });
-    // End value labels
-    ctx.font='9px IBM Plex Mono';ctx.textAlign='left';
-    ctx.fillStyle='#60a5fa';ctx.fillText('H: $'+hPts[hPts.length-1].toFixed(1),pL+4,pT+10);
-    ctx.fillStyle='#f87171';ctx.fillText('A: $'+aPts[aPts.length-1].toFixed(1),pL+70,pT+10);
-    ctx.fillStyle='#64748b';ctx.textAlign='center';
-    months.forEach(function(m,i){if(months.length<=12||i%Math.ceil(months.length/12)===0)ctx.fillText(m.ym.slice(2),xx(i),h-4);});
-  }
-}
-
-function drawLineChart(data){
-  var lines=data.line;if(!lines.length)return;
-  var c=initCanvas('lineChart',200);if(!c)return;
-  var ctx=c.ctx,w=c.w,h=c.h;
-  var pL=36,pR=6,pT=10,pB=38,W=w-pL-pR,H=h-pT-pB;
-  var all=[];lines.forEach(function(d){all.push(d.hroi,d.aroi);});
-  var mn=Math.min(0,Math.min.apply(null,all)),mx=Math.max(0,Math.max.apply(null,all));
-  var range=mx-mn||1;
-  var bw=W/lines.length,bW=bw*0.36;
-  function yy(v){return pT+H-(v-mn)/range*H;}
-  drawZero(ctx,w,yy(0),pL,pR);drawYLabels(ctx,mn,mx,pL,pT,H,4);
-  lines.forEach(function(d,i){
-    var cx=pL+i*bw+bw/2,y0=yy(0);
-    ctx.fillStyle='rgba(96,165,250,0.85)';var yH=yy(d.hroi);ctx.fillRect(cx-bW-1,Math.min(yH,y0),bW,Math.abs(yH-y0)||1);
-    ctx.fillStyle='rgba(248,113,113,0.85)';var yA=yy(d.aroi);ctx.fillRect(cx+1,Math.min(yA,y0),bW,Math.abs(yA-y0)||1);
-    ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';
-    ctx.fillText((d.line>=0?'+':'')+d.line,cx,h-pB+14);
-    ctx.fillStyle='#475569';ctx.font='8px IBM Plex Mono';ctx.fillText('n'+d.n,cx,h-pB+24);
-  });
-}
-
-function drawExpertChart(data){
-  var exp=data.expert;if(!exp.length)return;
-  var c=initCanvas('expertChart',180);if(!c)return;
-  var ctx=c.ctx,w=c.w,h=c.h;
-  var pL=36,pR=6,pT=10,pB=52,W=w-pL-pR,H=h-pT-pB;
-  var labels=[],vals=[],cols=[];
-  exp.forEach(function(d){
-    var roi=d.side==='H'?d.hroi:d.aroi;
-    labels.push('E'+d.side+'≥'+d.thresh+'%');vals.push(roi);
-    cols.push(d.side==='H'?'#60a5fa':'#f87171');
-  });
-  var mn=Math.min(0,Math.min.apply(null,vals)),mx=Math.max(0,Math.max.apply(null,vals));
-  var range=mx-mn||1;var bw=W/vals.length,bW=bw*0.55;
-  function yy(v){return pT+H-(v-mn)/range*H;}
-  drawZero(ctx,w,yy(0),pL,pR);drawYLabels(ctx,mn,mx,pL,pT,H,4);
-  vals.forEach(function(roi,i){
-    var cx=pL+i*bw+bw/2,y0=yy(0),yV=yy(roi);
-    ctx.fillStyle=cols[i];ctx.globalAlpha=roi>=0?0.9:0.55;
-    ctx.fillRect(cx-bW/2,Math.min(yV,y0),bW,Math.abs(yV-y0)||1);
-    ctx.globalAlpha=1;
-    ctx.fillStyle=cols[i];ctx.font='bold 9px IBM Plex Mono';ctx.textAlign='center';
-    ctx.fillText(fmt(roi),cx,roi>=0?Math.min(yV,y0)-4:Math.max(yV,y0)+10);
-    ctx.save();ctx.translate(cx,h-pB+8);ctx.rotate(-Math.PI/4);
-    ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
-    ctx.fillText(labels[i],0,0);ctx.restore();
-  });
-}
-
-function drawSmartChart(data){
-  var sm=data.smart;if(!sm.length)return;
-  var c=initCanvas('smartChart',180);if(!c)return;
-  var ctx=c.ctx,w=c.w,h=c.h;
-  var pL=36,pR=6,pT=10,pB=68,W=w-pL-pR,H=h-pT-pB;
-  var vals=sm.map(function(d){return d.roi;});
-  var mn=Math.min(0,Math.min.apply(null,vals)),mx=Math.max(0,Math.max.apply(null,vals));
-  var range=mx-mn||1;var bw=W/sm.length,bW=bw*0.6;
-  function yy(v){return pT+H-(v-mn)/range*H;}
-  drawZero(ctx,w,yy(0),pL,pR);drawYLabels(ctx,mn,mx,pL,pT,H,4);
-  sm.forEach(function(d,i){
-    var cx=pL+i*bw+bw/2,y0=yy(0),yV=yy(d.roi);
-    var col=d.roi>=10?'#4ade80':d.roi>=0?'#fbbf24':'#f87171';
-    ctx.fillStyle=col;ctx.globalAlpha=0.85;ctx.fillRect(cx-bW/2,Math.min(yV,y0),bW,Math.abs(yV-y0)||1);ctx.globalAlpha=1;
-    ctx.fillStyle=col;ctx.font='bold 9px IBM Plex Mono';ctx.textAlign='center';
-    ctx.fillText(fmt(d.roi),cx,d.roi>=0?Math.min(yV,y0)-4:Math.max(yV,y0)+10);
-    ctx.fillStyle='#475569';ctx.font='8px IBM Plex Mono';ctx.fillText('n'+d.n,cx,pT+H+12);
-    ctx.save();ctx.translate(cx,h-pB+8);ctx.rotate(-Math.PI/3);
-    ctx.fillStyle='#64748b';ctx.font='8px IBM Plex Mono';ctx.textAlign='right';
-    ctx.fillText(d.label,0,0);ctx.restore();
-  });
-}
-
-function drawLMChart(data){
-  var items=data.lmExpert;if(!items.length)return;
-  var c=initCanvas('lmChart',220);if(!c)return;
-  var ctx=c.ctx,w=c.w,h=c.h;
-  var lmKeys=['▲ Rose','▼ Dropped','— Flat'];
-  var expKeys=['H H≥67%','H H≥83%','A A≥50%','A A≥67%'];
-  var grid={};items.forEach(function(d){grid[d.lm+'||'+d.expert]=d;});
-  var pL=68,pR=6,pT=32,pB=8;
-  var cW=(w-pL-pR)/expKeys.length,cH=(h-pT-pB)/lmKeys.length;
-  ctx.fillStyle='#64748b';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';
-  expKeys.forEach(function(k,i){ctx.fillText(k,pL+i*cW+cW/2,pT-12);});
-  lmKeys.forEach(function(lm,row){
-    ctx.fillStyle='#94a3b8';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
-    ctx.fillText(lm,pL-6,pT+row*cH+cH/2+3);
-    expKeys.forEach(function(ex,col){
-      var d=grid[lm+'||'+ex];
-      var roi=d?d.roi:null;
-      var x=pL+col*cW,y=pT+row*cH;
-      ctx.fillStyle=roi===null?'rgba(43,48,72,0.4)':roi>=15?'rgba(74,222,128,0.5)':roi>=5?'rgba(74,222,128,0.25)':roi>=0?'rgba(251,191,36,0.2)':roi>=-10?'rgba(248,113,113,0.25)':'rgba(248,113,113,0.5)';
-      ctx.fillRect(x+1,y+1,cW-2,cH-2);
-      ctx.strokeStyle='rgba(43,48,72,0.8)';ctx.lineWidth=1;ctx.strokeRect(x+1,y+1,cW-2,cH-2);
-      if(roi!==null){
-        var tc=roi>=5?'#4ade80':roi>=0?'#fbbf24':'#f87171';
-        ctx.fillStyle=tc;ctx.font='bold 11px IBM Plex Mono';ctx.textAlign='center';
-        ctx.fillText(fmt(roi),x+cW/2,y+cH/2-4);
-        ctx.fillStyle='#64748b';ctx.font='8px IBM Plex Mono';
-        ctx.fillText('n='+d.n,x+cW/2,y+cH/2+9);
-      } else {
-        ctx.fillStyle='#2b3048';ctx.font='10px IBM Plex Mono';ctx.textAlign='center';ctx.fillText('—',x+cW/2,y+cH/2+3);
+      var n=sub.length; if(n<5) return;
+      var side=ex[0], fn=side==='H'?cH:cA;
+      var rois=sub.map(fn).filter(function(x){return x!==null;});
+      var roi=roiOf(rois);
+      lmTable.push({lm:lmP[1],expert:ex[0]+' '+ex[2],side:side,n:n,roi:roi});
+      if(lmP[0]==='up'&&side==='H'&&hi<4){
+        lmHSeries.push({label:lmP[1]+' '+ex[2],color:lmHCols[hi++],pts:runPnl(sub,cH)});
+      }
+      if((lmP[0]==='flat'||lmP[0]==='down')&&side==='A'&&ai<3){
+        lmASeries.push({label:lmP[1]+' '+ex[2],color:lmACols[ai++],pts:runPnl(sub,cA)});
       }
     });
   });
+
+  return{
+    monthBounds:monthBounds,
+    leagueSeriesH:leagueSeriesH, leagueSeriesA:leagueSeriesA, leagueTable:leagueTable,
+    allHpts:allHpts, allApts:allApts, monthTable:monthTable,
+    lineSeriesH:lineSeriesH, lineSeriesA:lineSeriesA, lineTable:lineTable,
+    expHSeries:expHSeries, expASeries:expASeries, expTable:expTable,
+    smHSeries:smHSeries, smASeries:smASeries, smTable:smTable,
+    lmHSeries:lmHSeries, lmASeries:lmASeries, lmTable:lmTable,
+  };
 }
 
-// ─── RENDER FUNCTIONS ─────────────────────────────
-
-function renderLeague(data){
-  var best=data.league.filter(function(d){return d.n>=20;}).slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
-  var worst=data.league.filter(function(d){return d.n>=20;}).slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
+// ── Render tabs ──
+function renderLeague(d){
+  var best=d.leagueTable.filter(function(x){return x.n>=20;}).slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
+  var worst=d.leagueTable.filter(function(x){return x.n>=20;}).slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
   document.getElementById('leagueCards').innerHTML=
-    '<div class="rpt-card"><div class="rpt-card-label">Total Leagues</div><div class="rpt-card-val neu">'+data.league.length+'</div></div>'
-    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best (≥20)</div><div class="rpt-card-val pos" style="font-size:13px;line-height:1.3">'+best.cat+'</div><div class="rpt-card-sub">'+fmt(Math.max(best.hroi,best.aroi))+'</div></div>':'')
-    +(worst?'<div class="rpt-card"><div class="rpt-card-label">Worst (≥20)</div><div class="rpt-card-val neg" style="font-size:13px;line-height:1.3">'+worst.cat+'</div><div class="rpt-card-sub">'+fmt(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
-  document.getElementById('leagueBody').innerHTML=data.league.map(function(d){
-    var bias=d.hroi>d.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>';
-    return'<tr><td>'+d.cat+'</td><td class="num">'+d.n+'</td><td class="num '+posNeg(d.hroi)+'">'+fmt(d.hroi)+'</td><td class="num '+posNeg(d.aroi)+'">'+fmt(d.aroi)+'</td><td>'+bias+'</td></tr>';
+    '<div class="rpt-card"><div class="rpt-card-label">Leagues</div><div class="rpt-card-val neu">'+d.leagueTable.length+'</div></div>'
+    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best ≥20</div><div class="rpt-card-val pos" style="font-size:12px">'+best.cat+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
+    +(worst?'<div class="rpt-card"><div class="rpt-card-label">Worst ≥20</div><div class="rpt-card-val neg" style="font-size:12px">'+worst.cat+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
+  makeLegend('lgdLeagueH',d.leagueSeriesH); makeLegend('lgdLeagueA',d.leagueSeriesA);
+  document.getElementById('tbLeague').innerHTML=d.leagueTable.map(function(x){
+    return'<tr><td>'+x.cat+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+(x.hroi>x.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>')+'</td></tr>';
   }).join('');
-  setTimeout(function(){drawLeagueChart(data);},30);
+  setTimeout(function(){
+    drawChart('cLeagueH',d.leagueSeriesH,d.monthBounds,110);
+    drawChart('cLeagueA',d.leagueSeriesA,d.monthBounds,110);
+  },30);
 }
 
-function renderMonth(data){
-  document.getElementById('monthBody').innerHTML=data.month.map(function(d){
-    var better=d.hroi>d.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>';
-    return'<tr><td>'+d.ym+'</td><td class="num">'+d.n+'</td><td class="num '+posNeg(d.hroi)+'">'+fmt(d.hroi)+'</td><td class="num '+posNeg(d.aroi)+'">'+fmt(d.aroi)+'</td><td>'+better+'</td></tr>';
+function renderMonth(d){
+  var totH=d.allHpts[d.allHpts.length-1]||0, totA=d.allApts[d.allApts.length-1]||0;
+  var n=d.monthTable.reduce(function(s,m){return s+m.n;},0);
+  document.getElementById('monthCards').innerHTML=
+    '<div class="rpt-card"><div class="rpt-card-label">Matches</div><div class="rpt-card-val neu">'+n+'</div></div>'
+    +'<div class="rpt-card"><div class="rpt-card-label">H Total P&L</div><div class="rpt-card-val '+posNeg(totH)+'">$'+fmtPnl(totH)+'</div></div>'
+    +'<div class="rpt-card"><div class="rpt-card-label">A Total P&L</div><div class="rpt-card-val '+posNeg(totA)+'">$'+fmtPnl(totA)+'</div></div>';
+  document.getElementById('tbMonth').innerHTML=d.monthTable.map(function(x){
+    return'<tr><td>'+x.ym+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+(x.hroi>x.aroi?'<span class="pos">H</span>':'<span class="neg">A</span>')+'</td></tr>';
   }).join('');
-  setTimeout(function(){drawMonthChart(data);},30);
+  setTimeout(function(){
+    drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:d.allHpts},{label:'A Bet',color:'#60a5fa',pts:d.allApts}],d.monthBounds,120);
+  },30);
 }
 
-function renderLine(data){
-  document.getElementById('lineBody').innerHTML=data.line.map(function(d){
-    var best=d.hroi>d.aroi?'<span class="pos">H '+fmt(d.hroi)+'</span>':'<span class="neg">A '+fmt(d.aroi)+'</span>';
-    return'<tr><td>'+(d.line>=0?'+':'')+d.line+'</td><td class="num">'+d.n+'</td><td class="num '+posNeg(d.hroi)+'">'+fmt(d.hroi)+'</td><td class="num '+posNeg(d.aroi)+'">'+fmt(d.aroi)+'</td><td>'+best+'</td></tr>';
+function renderLine(d){
+  var best=d.lineTable.slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
+  document.getElementById('lineCards').innerHTML=
+    (best?'<div class="rpt-card"><div class="rpt-card-label">Best Line</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
+    +'<div class="rpt-card"><div class="rpt-card-label">Lines Total</div><div class="rpt-card-val neu">'+d.lineTable.length+'</div></div>';
+  makeLegend('lgdLineH',d.lineSeriesH); makeLegend('lgdLineA',d.lineSeriesA);
+  document.getElementById('tbLine').innerHTML=d.lineTable.map(function(x){
+    var best=x.hroi>x.aroi?'<span class="pos">H '+fmtRoi(x.hroi)+'</span>':'<span class="neg">A '+fmtRoi(x.aroi)+'</span>';
+    return'<tr><td>'+(x.line>=0?'+':'')+x.line+'</td><td class="num">'+x.n+'</td><td class="num '+posNeg(x.hroi)+'">'+fmtRoi(x.hroi)+'</td><td class="num '+posNeg(x.aroi)+'">'+fmtRoi(x.aroi)+'</td><td>'+best+'</td></tr>';
   }).join('');
-  setTimeout(function(){drawLineChart(data);},30);
+  setTimeout(function(){
+    drawChart('cLineH',d.lineSeriesH,d.monthBounds,120);
+    drawChart('cLineA',d.lineSeriesA,d.monthBounds,120);
+  },30);
 }
 
-function renderExpert(data){
-  document.getElementById('expertGrid').innerHTML=data.expert.map(function(d){
-    var br=d.side==='H'?d.hroi:d.aroi,bw=d.side==='H'?d.hwin:d.awin;
-    var v,vc;if(br>=5){v='✅ Suitable';vc='verdict-ok';}else if(br>=0){v='⚠ Marginal';vc='verdict-caution';}else{v='❌ Avoid';vc='verdict-avoid';}
-    return'<div class="exp-card"><div class="exp-card-top">Expert '+d.side+' ≥'+d.thresh+'%</div>'
-      +'<div class="exp-card-roi '+posNeg(br)+'">'+fmt(br)+' <span style="font-size:10px;color:var(--muted)">('+d.side+' bet)</span></div>'
-      +'<div class="exp-card-win">N='+d.n+' · Win '+bw+'%</div>'
+function renderExpert(d){
+  setTimeout(function(){
+    drawChart('cExpertH',d.expHSeries,d.monthBounds,120);
+    drawChart('cExpertA',d.expASeries,d.monthBounds,120);
+  },30);
+  document.getElementById('expertGrid').innerHTML=d.expTable.map(function(x){
+    var br=x.side==='H'?x.hroi:x.aroi, bw=x.side==='H'?x.hwin:x.awin;
+    var v,vc; if(br>=5){v='✅ Suitable';vc='verdict-ok';}else if(br>=0){v='⚠ Marginal';vc='verdict-caution';}else{v='❌ Avoid';vc='verdict-avoid';}
+    return'<div class="exp-card"><div class="exp-card-top">Expert '+x.side+' ≥'+x.thresh+'%</div>'
+      +'<div class="exp-card-roi '+posNeg(br)+'">'+fmtRoi(br)+' <span style="font-size:10px;color:var(--muted)">('+x.side+' bet)</span></div>'
+      +'<div class="exp-card-win">N='+x.n+' · Win '+bw+'%</div>'
       +'<div class="exp-verdict '+vc+'">'+v+'</div></div>';
   }).join('');
   document.getElementById('expertVerdict').innerHTML='<div class="rpt-table-wrap"><table class="rpt-table">'
     +'<thead><tr><th>Signal</th><th>Bet</th><th class="num">Win%</th><th class="num">ROI%</th><th>Verdict</th></tr></thead><tbody>'
-    +data.expert.map(function(d){
-      var br=d.side==='H'?d.hroi:d.aroi,bw=d.side==='H'?d.hwin:d.awin;
-      var v,vc;if(br>=5){v='✅ Suitable';vc='verdict-ok';}else if(br>=0){v='⚠ Marginal';vc='verdict-caution';}else{v='❌ Avoid';vc='verdict-avoid';}
-      return'<tr><td>Expert '+d.side+' ≥'+d.thresh+'%</td><td><span class="sm-badge '+(d.side==='H'?'sm-h':'sm-a')+'">'+d.side+'</span></td>'
-        +'<td class="num">'+bw+'%</td><td class="num '+posNeg(br)+'">'+fmt(br)+'</td>'
+    +d.expTable.map(function(x){
+      var br=x.side==='H'?x.hroi:x.aroi, bw=x.side==='H'?x.hwin:x.awin;
+      var v,vc; if(br>=5){v='✅ Suitable';vc='verdict-ok';}else if(br>=0){v='⚠ Marginal';vc='verdict-caution';}else{v='❌ Avoid';vc='verdict-avoid';}
+      return'<tr><td>Expert '+x.side+' ≥'+x.thresh+'%</td><td><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+'</span></td>'
+        +'<td class="num">'+bw+'%</td><td class="num '+posNeg(br)+'">'+fmtRoi(br)+'</td>'
         +'<td><span class="exp-verdict '+vc+'">'+v+'</span></td></tr>';
     }).join('')+'</tbody></table></div>';
-  setTimeout(function(){drawExpertChart(data);},30);
 }
 
-function renderSmart(data){
-  document.getElementById('smartGrid').innerHTML=data.smart.map(function(d){
-    var rel=d.n>=30?'✅ Reliable':d.n>=15?'⚠ Small sample':'⚠️ Very small';
-    return'<div class="sm-card"><div class="sm-card-top">'
-      +'<div class="sm-card-label">'+d.full+'</div>'
-      +'<div class="sm-card-roi '+posNeg(d.roi)+'">'+fmt(d.roi)+'</div>'
-      +'</div><div class="sm-card-meta"><span>N='+d.n+'</span>'
-      +'<span><span class="sm-badge '+(d.side==='H'?'sm-h':'sm-a')+'">'+d.side+' bet</span></span>'
-      +'<span>'+rel+'</span></div></div>';
+function renderSmart(d){
+  makeLegend('lgdSmH',d.smHSeries); makeLegend('lgdSmA',d.smASeries);
+  setTimeout(function(){
+    drawChart('cSmartH',d.smHSeries,d.monthBounds,120);
+    drawChart('cSmartA',d.smASeries,d.monthBounds,120);
+  },30);
+  document.getElementById('smartGrid').innerHTML=d.smTable.map(function(x){
+    var rel=x.n>=30?'✅ Reliable':x.n>=15?'⚠ Small sample':'⚠️ Very small';
+    return'<div class="sm-card"><div class="sm-card-top"><div class="sm-card-label">'+x.full+'</div>'
+      +'<div class="sm-card-roi '+posNeg(x.roi)+'">'+fmtRoi(x.roi)+'</div></div>'
+      +'<div class="sm-card-meta"><span>N='+x.n+'</span><span><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+' bet</span></span><span>'+rel+'</span></div></div>';
   }).join('');
-  setTimeout(function(){drawSmartChart(data);},30);
 }
 
-function renderLMExpert(data){
-  document.getElementById('lmBody').innerHTML=data.lmExpert.map(function(d){
-    var rc=d.roi>=10?'roi-high':d.roi>=0?'roi-mid':'roi-low';
-    var sig=d.roi>=10?'🔥 Strong':d.roi>=0?'👍 Positive':'❌ Negative';
-    return'<tr><td>'+d.lm+'</td><td>'+d.expert+'</td><td class="num">'+d.n+'</td>'
-      +'<td class="num '+rc+'">'+fmt(d.roi)+'</td>'
-      +'<td><span class="sm-badge '+(d.side==='H'?'sm-h':'sm-a')+'">'+d.side+'</span></td>'
+function renderLM(d){
+  makeLegend('lgdLmH',d.lmHSeries); makeLegend('lgdLmA',d.lmASeries);
+  setTimeout(function(){
+    drawChart('cLmH',d.lmHSeries,d.monthBounds,120);
+    drawChart('cLmA',d.lmASeries,d.monthBounds,120);
+  },30);
+  document.getElementById('tbLm').innerHTML=d.lmTable.map(function(x){
+    var rc=x.roi>=10?'roi-high':x.roi>=0?'roi-mid':'roi-low';
+    var sig=x.roi>=10?'🔥 Strong':x.roi>=0?'👍 Positive':'❌ Negative';
+    return'<tr><td>'+x.lm+'</td><td>'+x.expert+'</td><td class="num">'+x.n+'</td>'
+      +'<td class="num '+rc+'">'+fmtRoi(x.roi)+'</td>'
+      +'<td><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+'</span></td>'
       +'<td>'+sig+'</td></tr>';
   }).join('');
-  setTimeout(function(){drawLMChart(data);},30);
 }
 
-// ─── TAB & INIT ──────────────────────────────────
-
+// ── Tab switching ──
 function showTab(i){
-  document.querySelectorAll('.rpt-tab').forEach(function(t,idx){t.classList.toggle('active',idx===i);});
-  document.querySelectorAll('.rpt-section').forEach(function(s,idx){s.classList.toggle('active',idx===i);});
-  if(REPORT_DATA&&!chartDrawn[i]){
-    chartDrawn[i]=true;
-    var fns=[drawLeagueChart,drawMonthChart,drawLineChart,drawExpertChart,drawSmartChart,drawLMChart];
-    if(fns[i])setTimeout(function(){fns[i](REPORT_DATA);},30);
+  document.querySelectorAll('.rpt-tab').forEach(function(t,idx){ t.classList.toggle('active',idx===i); });
+  document.querySelectorAll('.rpt-section').forEach(function(s,idx){ s.classList.toggle('active',idx===i); });
+  if(RD && !drawn[i]){
+    drawn[i]=true;
+    var fns=[
+      function(){ drawChart('cLeagueH',RD.leagueSeriesH,RD.monthBounds,110); drawChart('cLeagueA',RD.leagueSeriesA,RD.monthBounds,110); },
+      function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
+      function(){ drawChart('cLineH',RD.lineSeriesH,RD.monthBounds,120); drawChart('cLineA',RD.lineSeriesA,RD.monthBounds,120); },
+      function(){ drawChart('cExpertH',RD.expHSeries,RD.monthBounds,120); drawChart('cExpertA',RD.expASeries,RD.monthBounds,120); },
+      function(){ drawChart('cSmartH',RD.smHSeries,RD.monthBounds,120); drawChart('cSmartA',RD.smASeries,RD.monthBounds,120); },
+      function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
+    ];
+    if(fns[i]) setTimeout(fns[i], 30);
   }
 }
 
+// ── Load ──
 function loadReport(){
   fetch('./data.json?v='+Date.now())
-    .then(function(r){return r.json();})
+    .then(function(r){ return r.json(); })
     .then(function(d){
-      var records=d.records||[];
-      var m=d.meta||{};
+      var records = d.records || [];
+      var m = d.meta || {};
       if(m.generated_at){
         var dt=new Date(m.generated_at);
         document.getElementById('rptUpdated').textContent='Updated '+dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       }
-      REPORT_DATA=computeReport(records);
+      RD = computeReport(records);
       document.getElementById('rptLoading').style.display='none';
       document.getElementById('tab0').classList.add('active');
-      renderLeague(REPORT_DATA);
-      renderMonth(REPORT_DATA);
-      renderLine(REPORT_DATA);
-      renderExpert(REPORT_DATA);
-      renderSmart(REPORT_DATA);
-      renderLMExpert(REPORT_DATA);
-      chartDrawn[0]=true;
+      renderLeague(RD); renderMonth(RD); renderLine(RD);
+      renderExpert(RD); renderSmart(RD); renderLM(RD);
+      drawn[0]=true;
     })
     .catch(function(e){
-      document.getElementById('rptLoading').innerHTML='<p style="color:#f87171">⚠️ Failed to load data.json: '+e.message+'</p>';
+      document.getElementById('rptLoading').innerHTML='<p style="color:#f87171">⚠️ Failed to load: '+e.message+'</p>';
     });
 }
-
 loadReport();
 </script>
 </body>
