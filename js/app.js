@@ -96,6 +96,9 @@ function applyFilters(){
       if(pf==='A-weak'&&(pl!=='A'||pa>=50))return false;
       if(pf==='A-strong'&&pa<50)return false;
       if(pf==='A-vstrong'&&pa<70)return false;
+      if(pf==='ha-close5'&&Math.abs(ph-pa)>5)return false;
+      if(pf==='ha-close10'&&Math.abs(ph-pa)>10)return false;
+      if(pf==='ha-close15'&&Math.abs(ph-pa)>15)return false;
     }
     // Expert filter
     if(ef){
@@ -132,6 +135,9 @@ function applyFilters(){
       if(ef==='low-conf-A50'){if(!lc||!e||e.a<50)return false;}
       if(ef==='low-conf-A70'){if(!lc||!e||e.a<67)return false;}
       if(ef==='low-conf-A90'){if(!lc||!e||e.a<83)return false;}
+      if(ef==='exp-ha-close5'){if(!e||Math.abs(e.h-e.a)>5)return false;}
+      if(ef==='exp-ha-close10'){if(!e||Math.abs(e.h-e.a)>10)return false;}
+      if(ef==='exp-ha-close15'){if(!e||Math.abs(e.h-e.a)>15)return false;}
     }
     // Market Lean filter
     if(mf||vf){
