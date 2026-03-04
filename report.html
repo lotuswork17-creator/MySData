@@ -428,8 +428,6 @@ function computeReport(records){
   var expTable = [];
   // expPerThresh: one entry per [side, thresh] with H bet + A bet series + baseline
   var expPerThresh = [];
-  var allHpts_ref = runPnl(results, cH);
-  var allApts_ref = runPnl(results, cA);
   ['H','A'].forEach(function(side){
     [50,67,83].forEach(function(thresh){
       var sk=side.toLowerCase();
@@ -444,7 +442,6 @@ function computeReport(records){
       expPerThresh.push({
         side:side, thresh:thresh, n:n,
         hroi:roiOf(hr), aroi:roiOf(ar),
-        seriesBaseline:{label:'Baseline',color:'#94a3b8',pts:side==='H'?allHpts_ref:allApts_ref},
         seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(sub,cH)},
         seriesA:{label:'A bet',color:'#f87171',pts:runPnl(sub,cA)},
       });
@@ -597,10 +594,9 @@ function renderExpert(d){
     return '<div class="chart-box">'
       +'<div class="chart-box-label">Expert '+ep.side+' ≥'+ep.thresh+'% (N='+ep.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
-      +'<span><span class="ld" style="background:#94a3b8"></span>Baseline</span>'
       +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
       +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
-      +'<span style="margin-left:4px">'+bestSide+'</span>'
+      +'<span style="margin-left:6px">'+bestSide+'</span>'
       +'</div>'
       +'<canvas id="'+id+'"></canvas>'
       +'</div>';
@@ -608,7 +604,7 @@ function renderExpert(d){
   setTimeout(function(){
     d.expPerThresh.forEach(function(ep){
       var id='cExp_'+ep.side+ep.thresh;
-      drawChart(id,[ep.seriesBaseline,ep.seriesH,ep.seriesA],d.monthBounds,100);
+      drawChart(id,[ep.seriesH,ep.seriesA],d.monthBounds,100);
     });
   },30);
   // Verdict cards — show H and A ROI side by side
@@ -685,7 +681,7 @@ function showTab(i){
       function(){ drawChart('cLeagueH',RD.leagueSeriesH,RD.monthBounds,110); drawChart('cLeagueA',RD.leagueSeriesA,RD.monthBounds,110); },
       function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
       function(){ RD.linePerLine.forEach(function(ln){ var id='cLine_'+ln.key.replace('.','_').replace('-','m'); drawChart(id,[ln.seriesH,ln.seriesA],RD.monthBounds,100); }); },
-      function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+ep.side+ep.thresh,[ep.seriesBaseline,ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
+      function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+ep.side+ep.thresh,[ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
       function(){ drawChart('cSmartH',RD.smHSeries,RD.monthBounds,120); drawChart('cSmartA',RD.smASeries,RD.monthBounds,120); },
       function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
     ];
