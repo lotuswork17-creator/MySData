@@ -164,17 +164,8 @@ body{display:block;padding-bottom:40px}
 <!-- TAB 4: SMART MONEY -->
 <div class="rpt-section" id="tab4">
   <div class="rpt-title">⚡ Smart Money Signals</div>
-  <div class="rpt-sub">Running P&L per signal vs baseline over time. Signals that rise above the grey baseline are working.</div>
-  <div class="chart-box">
-    <div class="chart-box-label">H Bet Signals — Cumulative P&L vs Baseline</div>
-    <div class="chart-legend" id="lgdSmH"></div>
-    <canvas id="cSmartH"></canvas>
-  </div>
-  <div class="chart-box">
-    <div class="chart-box-label">A Bet Signals — Cumulative P&L vs Baseline</div>
-    <div class="chart-legend" id="lgdSmA"></div>
-    <canvas id="cSmartA"></canvas>
-  </div>
+  <div class="rpt-sub">One chart per signal — cumulative P&L over time. Red = H bet signals, blue = A bet signals.</div>
+  <div id="smartChartsArea"></div>
   <div class="sm-grid" id="smartGrid"></div>
 </div>
 
@@ -480,10 +471,8 @@ function computeReport(records){
     var rois=sub.map(fn).filter(function(x){return x!==null;});
     return{key:d.key,label:d.label,full:d.full,n:n,roi:roiOf(rois),side:d.side,color:d.color,pts:runPnl(sub,fn)};
   });
-  var smHSeries = [{label:'Baseline (all H)',color:'#94a3b8',pts:allHpts}]
-    .concat(smTable.filter(function(d){return d.side==='H';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
-  var smASeries = [{label:'Baseline (all A)',color:'#94a3b8',pts:allApts}]
-    .concat(smTable.filter(function(d){return d.side==='A';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
+  var smHSeries = smTable.filter(function(d){return d.side==='H';});
+  var smASeries = smTable.filter(function(d){return d.side==='A';});
 
   // ── Line Move × Expert ──
   var lmTable = [];
@@ -657,10 +646,26 @@ function renderExpert(d){
 }
 
 function renderSmart(d){
-  makeLegend('lgdSmH',d.smHSeries); makeLegend('lgdSmA',d.smASeries);
+  // One chart per signal — each its own length, no baseline mismatch
+  var area = document.getElementById('smartChartsArea');
+  area.innerHTML = d.smTable.map(function(sm){
+    var id = 'cSm_'+sm.key;
+    var col = sm.side==='H' ? '#f87171' : '#60a5fa';
+    var roiNote = ' — ROI: '+fmtRoi(sm.roi);
+    var rel = sm.n>=30 ? '' : sm.n>=15 ? ' ⚠ small sample' : ' ⚠ very small';
+    return '<div class="chart-box">'
+      +'<div class="chart-box-label">'+sm.full+' (N='+sm.n+')'+roiNote+rel+'</div>'
+      +'<div class="chart-legend">'
+      +'<span><span class="ld" style="background:'+col+'"></span>'+sm.side+' bet</span>'
+      +'</div>'
+      +'<canvas id="'+id+'"></canvas>'
+      +'</div>';
+  }).join('');
   setTimeout(function(){
-    drawChart('cSmartH',d.smHSeries,d.monthBounds,120);
-    drawChart('cSmartA',d.smASeries,d.monthBounds,120);
+    d.smTable.forEach(function(sm){
+      var col = sm.side==='H' ? '#f87171' : '#60a5fa';
+      drawChart('cSm_'+sm.key, [{label:sm.side+' bet', color:col, pts:sm.pts}], d.monthBounds, 80);
+    });
   },30);
   document.getElementById('smartGrid').innerHTML=d.smTable.map(function(x){
     var rel=x.n>=30?'✅ Reliable':x.n>=15?'⚠ Small sample':'⚠️ Very small';
@@ -697,7 +702,7 @@ function showTab(i){
       function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
       function(){ RD.linePerLine.forEach(function(ln){ var id='cLine_'+ln.key.replace('.','_').replace('-','m'); drawChart(id,[ln.seriesH,ln.seriesA],RD.monthBounds,100); }); },
       function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+(ep.side==='~'?'close':ep.side)+ep.thresh,[ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
-      function(){ drawChart('cSmartH',RD.smHSeries,RD.monthBounds,120); drawChart('cSmartA',RD.smASeries,RD.monthBounds,120); },
+      function(){ RD.smTable.forEach(function(sm){ var col=sm.side==='H'?'#f87171':'#60a5fa'; drawChart('cSm_'+sm.key,[{label:sm.side+' bet',color:col,pts:sm.pts}],RD.monthBounds,80); }); },
       function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
     ];
     if(fns[i]) setTimeout(fns[i], 30);
