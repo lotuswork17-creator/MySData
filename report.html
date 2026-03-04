@@ -158,7 +158,7 @@ body{display:block;padding-bottom:40px}
   <div class="chart-box">
     <div class="chart-box-label">H Bet — Expert H Thresholds vs Baseline</div>
     <div class="chart-legend">
-      <span><span class="ld" style="background:#475569"></span>Baseline</span>
+      <span><span class="ld" style="background:#94a3b8"></span>Baseline</span>
       <span><span class="ld" style="background:#60a5fa"></span>H≥50%</span>
       <span><span class="ld" style="background:#a78bfa"></span>H≥67%</span>
       <span><span class="ld" style="background:#4ade80"></span>H≥83%</span>
@@ -168,7 +168,7 @@ body{display:block;padding-bottom:40px}
   <div class="chart-box">
     <div class="chart-box-label">A Bet — Expert A Thresholds vs Baseline</div>
     <div class="chart-legend">
-      <span><span class="ld" style="background:#475569"></span>Baseline</span>
+      <span><span class="ld" style="background:#94a3b8"></span>Baseline</span>
       <span><span class="ld" style="background:#f87171"></span>A≥50%</span>
       <span><span class="ld" style="background:#fb923c"></span>A≥67%</span>
       <span><span class="ld" style="background:#fbbf24"></span>A≥83%</span>
@@ -294,7 +294,7 @@ function drawChart(canvasId, series, monthBoundaries, chartH){
 
   // Month boundary ticks on x-axis
   if(monthBoundaries && monthBoundaries.length){
-    ctx.fillStyle = '#475569';
+    ctx.fillStyle = '#e2e8f0';
     ctx.font = '9px IBM Plex Mono';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -418,16 +418,17 @@ function computeReport(records){
   var lineKeys = Object.keys(liMap).sort(function(a,b){ return parseFloat(a)-parseFloat(b); });
   var linePerLine = lineKeys.map(function(k){
     var lv=parseFloat(k), lbl=(lv>=0?'+':'')+k;
+    var v=liMap[k], n=v.length;
+    var hr=v.map(cH).filter(function(x){return x!==null;});
+    var ar=v.map(cA).filter(function(x){return x!==null;});
+    var hroi=roiOf(hr), aroi=roiOf(ar);
     return{
-      key:k, label:lbl, n:liMap[k].length,
+      key:k, label:lbl, n:n, hroi:hroi, aroi:aroi,
       seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(liMap[k],cH)},
       seriesA:{label:'A bet',color:'#f87171',pts:runPnl(liMap[k],cA)},
     };
   });
-  var lineTable = lineKeys.map(function(k){
-    var v=liMap[k], n=v.length;
-    return{line:parseFloat(k),n:n,hroi:roiOf(v.map(cH).filter(function(x){return x!==null;})),aroi:roiOf(v.map(cA).filter(function(x){return x!==null;}))};
-  });
+  var lineTable = linePerLine.map(function(d){ return{line:parseFloat(d.key),n:d.n,hroi:d.hroi,aroi:d.aroi}; });
 
   // ── Expert ──
   var expTable = [];
@@ -445,13 +446,13 @@ function computeReport(records){
   });
   // Series: baseline + 3 thresholds, each betting on the expert's side
   var expHSeries = [
-    {label:'Baseline (all)',color:'#475569',pts:allHpts},
+    {label:'Baseline (all)',color:'#94a3b8',pts:allHpts},
     {label:'H≥50%',color:'#60a5fa',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=50;}),cH)},
     {label:'H≥67%',color:'#a78bfa',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=67;}),cH)},
     {label:'H≥83%',color:'#4ade80',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.h>=83;}),cH)},
   ];
   var expASeries = [
-    {label:'Baseline (all)',color:'#475569',pts:allApts},
+    {label:'Baseline (all)',color:'#94a3b8',pts:allApts},
     {label:'A≥50%',color:'#f87171',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=50;}),cA)},
     {label:'A≥67%',color:'#fb923c',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=67;}),cA)},
     {label:'A≥83%',color:'#fbbf24',pts:runPnl(results.filter(function(r){var e=expertScore(r);return e&&e.a>=83;}),cA)},
@@ -474,15 +475,15 @@ function computeReport(records){
     var rois=sub.map(fn).filter(function(x){return x!==null;});
     return{key:d.key,label:d.label,full:d.full,n:n,roi:roiOf(rois),side:d.side,color:d.color,pts:runPnl(sub,fn)};
   });
-  var smHSeries = [{label:'Baseline (all H)',color:'#475569',pts:allHpts}]
+  var smHSeries = [{label:'Baseline (all H)',color:'#94a3b8',pts:allHpts}]
     .concat(smTable.filter(function(d){return d.side==='H';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
-  var smASeries = [{label:'Baseline (all A)',color:'#475569',pts:allApts}]
+  var smASeries = [{label:'Baseline (all A)',color:'#94a3b8',pts:allApts}]
     .concat(smTable.filter(function(d){return d.side==='A';}).map(function(d){return{label:d.label,color:d.color,pts:d.pts};}));
 
   // ── Line Move × Expert ──
   var lmTable = [];
-  var lmHSeries = [{label:'Baseline (all H)',color:'#475569',pts:allHpts}];
-  var lmASeries = [{label:'Baseline (all A)',color:'#475569',pts:allApts}];
+  var lmHSeries = [{label:'Baseline (all H)',color:'#94a3b8',pts:allHpts}];
+  var lmASeries = [{label:'Baseline (all A)',color:'#94a3b8',pts:allApts}];
   var lmHCols = ['#60a5fa','#a78bfa','#4ade80','#fbbf24'];
   var lmACols = ['#f87171','#fb923c','#fbbf24'];
   var hi=0, ai=0;
@@ -558,18 +559,19 @@ function renderMonth(d){
 }
 
 function renderLine(d){
-  var best=d.lineTable.slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
-  var worst=d.lineTable.slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
+  // Filter n>=20 for meaningful best/worst to avoid tiny sample noise
+  var qualified=d.lineTable.filter(function(x){return x.n>=20;});
+  var best=qualified.slice().sort(function(a,b){return Math.max(b.hroi,b.aroi)-Math.max(a.hroi,a.aroi);})[0];
+  var worst=qualified.slice().sort(function(a,b){return Math.min(a.hroi,a.aroi)-Math.min(b.hroi,b.aroi);})[0];
   document.getElementById('lineCards').innerHTML=
     '<div class="rpt-card"><div class="rpt-card-label">Lines</div><div class="rpt-card-val neu">'+d.lineTable.length+'</div></div>'
-    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best Line</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
-    +(worst?'<div class="rpt-card"><div class="rpt-card-label">Worst Line</div><div class="rpt-card-val neg">'+(worst.line>=0?'+':'')+worst.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
-  // Build one chart-box per line
+    +(best?'<div class="rpt-card"><div class="rpt-card-label">Best Line (N≥20)</div><div class="rpt-card-val pos">'+(best.line>=0?'+':'')+best.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.max(best.hroi,best.aroi))+'</div></div>':'')
+    +(worst&&worst.line!==best.line?'<div class="rpt-card"><div class="rpt-card-label">Worst Line (N≥20)</div><div class="rpt-card-val neg">'+(worst.line>=0?'+':'')+worst.line+'</div><div class="rpt-card-sub">'+fmtRoi(Math.min(worst.hroi,worst.aroi))+'</div></div>':'');
+  // Build one chart-box per line — ROI comes directly from linePerLine (no lookup needed)
   var area=document.getElementById('lineChartsArea');
   area.innerHTML=d.linePerLine.map(function(ln){
-    var lbl=ln.label, id='cLine_'+ln.key.replace('.','_').replace('-','m');
-    var hRoi=d.lineTable.find(function(t){return t.line===parseFloat(ln.key);});
-    var roiNote=hRoi?(' — H: '+fmtRoi(hRoi.hroi)+'  A: '+fmtRoi(hRoi.aroi)):'';
+    var id='cLine_'+ln.key.replace('.','_').replace('-','m');
+    var roiNote=' — H: '+fmtRoi(ln.hroi)+'  A: '+fmtRoi(ln.aroi);
     return '<div class="chart-box">'
       +'<div class="chart-box-label">Line '+lbl+' (N='+ln.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
