@@ -426,7 +426,7 @@ function computeReport(records){
 
   // ── Expert ──
   var expTable = [];
-  // expPerThresh: one entry per [side, thresh] with H bet + A bet series + baseline
+  // expPerThresh: one entry per [side, thresh] with H bet + A bet series
   var expPerThresh = [];
   ['H','A'].forEach(function(side){
     [50,67,83].forEach(function(thresh){
@@ -441,10 +441,25 @@ function computeReport(records){
         hwin:Math.round(wh/n*1000)/10,awin:Math.round(wa/n*1000)/10});
       expPerThresh.push({
         side:side, thresh:thresh, n:n,
+        label:'Expert '+side+' ≥'+thresh+'%',
         hroi:roiOf(hr), aroi:roiOf(ar),
         seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(sub,cH)},
         seriesA:{label:'A bet',color:'#f87171',pts:runPnl(sub,cA)},
       });
+    });
+  });
+  // Close-call segments: H/A expert gap ≤ threshold
+  [5,10,15].forEach(function(gap){
+    var sub=results.filter(function(r){var e=expertScore(r);return e&&Math.abs(e.h-e.a)<=gap;});
+    var n=sub.length; if(!n) return;
+    var hr=sub.map(cH).filter(function(x){return x!==null;});
+    var ar=sub.map(cA).filter(function(x){return x!==null;});
+    expPerThresh.push({
+      side:'~', thresh:gap, n:n,
+      label:'H/A Close (≤'+gap+'pts)',
+      hroi:roiOf(hr), aroi:roiOf(ar),
+      seriesH:{label:'H bet',color:'#60a5fa',pts:runPnl(sub,cH)},
+      seriesA:{label:'A bet',color:'#f87171',pts:runPnl(sub,cA)},
     });
   });
 
@@ -588,11 +603,11 @@ function renderExpert(d){
   // Build one chart per threshold — baseline (grey) + H bet (blue) + A bet (red)
   var area=document.getElementById('expertChartsArea');
   area.innerHTML=d.expPerThresh.map(function(ep){
-    var id='cExp_'+ep.side+ep.thresh;
+    var id='cExp_'+(ep.side==='~'?'close':ep.side)+ep.thresh;
     var roiNote=' — H bet: '+fmtRoi(ep.hroi)+'  A bet: '+fmtRoi(ep.aroi);
     var bestSide=ep.hroi>ep.aroi?'<span class="pos">H bet leads</span>':'<span class="neg">A bet leads</span>';
     return '<div class="chart-box">'
-      +'<div class="chart-box-label">Expert '+ep.side+' ≥'+ep.thresh+'% (N='+ep.n+')'+roiNote+'</div>'
+      +'<div class="chart-box-label">'+ep.label+' (N='+ep.n+')'+roiNote+'</div>'
       +'<div class="chart-legend">'
       +'<span><span class="ld" style="background:#60a5fa"></span>H bet</span>'
       +'<span><span class="ld" style="background:#f87171"></span>A bet</span>'
@@ -611,7 +626,7 @@ function renderExpert(d){
   document.getElementById('expertGrid').innerHTML=d.expPerThresh.map(function(ep){
     var vH,vcH; if(ep.hroi>=5){vH='✅ Suitable';vcH='verdict-ok';}else if(ep.hroi>=0){vH='⚠ Marginal';vcH='verdict-caution';}else{vH='❌ Avoid';vcH='verdict-avoid';}
     var vA,vcA; if(ep.aroi>=5){vA='✅ Suitable';vcA='verdict-ok';}else if(ep.aroi>=0){vA='⚠ Marginal';vcA='verdict-caution';}else{vA='❌ Avoid';vcA='verdict-avoid';}
-    return'<div class="exp-card"><div class="exp-card-top">Expert '+ep.side+' ≥'+ep.thresh+'% · N='+ep.n+'</div>'
+    return'<div class="exp-card"><div class="exp-card-top">'+ep.label+' · N='+ep.n+'</div>'
       +'<div style="display:flex;gap:10px;margin-bottom:4px">'
       +'<div><div style="font-size:9px;color:#60a5fa;font-weight:700;margin-bottom:2px">H BET</div>'
       +'<div class="exp-card-roi '+posNeg(ep.hroi)+'">'+fmtRoi(ep.hroi)+'</div>'
@@ -631,7 +646,7 @@ function renderExpert(d){
       var vH,vcH; if(ep.hroi>=5){vH='✅ Suitable';vcH='verdict-ok';}else if(ep.hroi>=0){vH='⚠ Marginal';vcH='verdict-caution';}else{vH='❌ Avoid';vcH='verdict-avoid';}
       var vA,vcA; if(ep.aroi>=5){vA='✅ Suitable';vcA='verdict-ok';}else if(ep.aroi>=0){vA='⚠ Marginal';vcA='verdict-caution';}else{vA='❌ Avoid';vcA='verdict-avoid';}
       return'<tr>'
-        +'<td>Expert '+ep.side+' ≥'+ep.thresh+'%</td>'
+        +'<td>'+ep.label+'</td>'
         +'<td class="num">'+ep.n+'</td>'
         +'<td class="num '+posNeg(ep.hroi)+'">'+fmtRoi(ep.hroi)+'</td>'
         +'<td><span class="exp-verdict '+vcH+'">'+vH+'</span></td>'
@@ -681,7 +696,7 @@ function showTab(i){
       function(){ drawChart('cLeagueH',RD.leagueSeriesH,RD.monthBounds,110); drawChart('cLeagueA',RD.leagueSeriesA,RD.monthBounds,110); },
       function(){ drawChart('cMonth',[{label:'H Bet',color:'#f87171',pts:RD.allHpts},{label:'A Bet',color:'#60a5fa',pts:RD.allApts}],RD.monthBounds,120); },
       function(){ RD.linePerLine.forEach(function(ln){ var id='cLine_'+ln.key.replace('.','_').replace('-','m'); drawChart(id,[ln.seriesH,ln.seriesA],RD.monthBounds,100); }); },
-      function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+ep.side+ep.thresh,[ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
+      function(){ RD.expPerThresh.forEach(function(ep){ drawChart('cExp_'+(ep.side==='~'?'close':ep.side)+ep.thresh,[ep.seriesH,ep.seriesA],RD.monthBounds,100); }); },
       function(){ drawChart('cSmartH',RD.smHSeries,RD.monthBounds,120); drawChart('cSmartA',RD.smASeries,RD.monthBounds,120); },
       function(){ drawChart('cLmH',RD.lmHSeries,RD.monthBounds,120); drawChart('cLmA',RD.lmASeries,RD.monthBounds,120); },
     ];
