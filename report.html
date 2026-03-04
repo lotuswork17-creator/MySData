@@ -217,8 +217,21 @@ body{display:block;padding-bottom:40px}
   </table></div>
 </div>
 
-<script src="js/helpers.js"></script>
 <script>
+// Inlined from helpers.js — no external dependency needed
+function expertScore(r){
+  function ts(v){if(!v)return null;var u=String(v).toUpperCase();
+    if(u==='H'||u==='1H'||u==='AH')return'H';
+    if(u==='D'||u==='1D'||u==='AD')return'D';
+    if(u==='A'||u==='1A'||u==='AA')return'A';
+    return null;}
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  var tt=th+td+ta;if(!tt)return null;
+  return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
+}
+
 var RD = null; // report data
 var drawn = [false,false,false,false,false,false];
 
@@ -677,7 +690,12 @@ function loadReport(){
         var dt=new Date(m.generated_at);
         document.getElementById('rptUpdated').textContent='Updated '+dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       }
-      RD = computeReport(records);
+      try {
+        RD = computeReport(records);
+      } catch(err) {
+        document.getElementById('rptLoading').innerHTML='<p style="color:#f87171">⚠️ Compute error: '+err.message+'</p>';
+        return;
+      }
       document.getElementById('rptLoading').style.display='none';
       document.getElementById('tab0').classList.add('active');
       renderLeague(RD); renderMonth(RD); renderLine(RD);
