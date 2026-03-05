@@ -41,6 +41,54 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
+  // H Highest / A Highest — top 5 by odds, show team + odds + per-match P&L
+  var TOP = 5;
+  function highList(elId, sortFn, oddsFn, pnlFn, col){
+    var top = results.slice().sort(sortFn).slice(0, TOP);
+    var html = top.map(function(r){
+      var odds = oddsFn(r);
+      var pnl  = pnlFn(r);
+      var pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+      var pnlCls = pnl >= 0 ? 'bc-pos' : 'bc-neg';
+      var teams  = (r.TEAMH||'?') + ' v ' + (r.TEAMA||'?');
+      return '<div class="bh-row">'
+        + '<span class="bh-team" title="'+teams+'">'+teams+'</span>'
+        + '<span class="bh-odds" style="color:'+col+'">'+odds.toFixed(2)+'</span>'
+        + '<span class="bh-pnl '+pnlCls+'">'+pnlStr+'</span>'
+        + '</div>';
+    }).join('');
+    document.getElementById(elId).innerHTML = html || '—';
+  }
+
+  function hMatchPnl(r){
+    var o = asiaOutcome(r);
+    if(o==='ww') return r.ASIAH - 1;
+    if(o==='wh') return (r.ASIAH - 1) * 0.5;
+    if(o==='dd') return 0;
+    if(o==='lh') return -0.5;
+    if(o==='lw') return -1;
+    return 0;
+  }
+  function aMatchPnl(r){
+    var o = asiaOutcome(r);
+    if(o==='ww') return -1;
+    if(o==='wh') return -0.5;
+    if(o==='dd') return 0;
+    if(o==='lh') return (r.ASIAA - 1) * 0.5;
+    if(o==='lw') return r.ASIAA - 1;
+    return 0;
+  }
+
+  highList('bc-h-high',
+    function(a,b){ return b.ASIAH - a.ASIAH; },
+    function(r){ return r.ASIAH; },
+    hMatchPnl, '#f87171');
+
+  highList('bc-a-high',
+    function(a,b){ return b.ASIAA - a.ASIAA; },
+    function(r){ return r.ASIAA; },
+    aMatchPnl, '#60a5fa');
+
   // Draw chart
   var canvas=document.getElementById('betChart');
   var ctx=canvas.getContext('2d');
@@ -98,4 +146,39 @@ function renderAsiaStats(data){
     var w=(counts[k]/total*100).toFixed(2);
     return'<div class="as-bar-'+k+'" style="width:'+w+'%;transition:width .4s ease" title="'+k+': '+counts[k]+'"></div>';
   }).join('');
+
+  // JC expert counts — H, A, H+D, A+D for each of the 4 tip fields
+  function ts(v){ if(!v) return null; var s=String(v).trim().toUpperCase(); return s||null; }
+  var jcFields = [
+    { id:'jc-sum',  label:'JC Sum',   key:'JCTIPSUM'  },
+    { id:'jc-sid',  label:'JC SID',   key:'JCTIPSID'  },
+    { id:'jc-mac',  label:'SID Mac',  key:'TIPSIDMAC' },
+    { id:'jc-onid', label:'ON ID',    key:'TIPSONID'  },
+  ];
+
+  var jcHtml = jcFields.map(function(f){
+    var h=0, a=0, d=0, tot=0;
+    data.forEach(function(r){
+      var v = ts(r[f.key]);
+      if(!v) return;
+      // normalise: 1H/AH → H, 1A/AA → A, 1D/AD/1B/B → D
+      if(v==='H'||v==='1H'||v==='AH') { h++; tot++; }
+      else if(v==='A'||v==='1A'||v==='AA') { a++; tot++; }
+      else if(v==='D'||v==='1D'||v==='AD'||v==='1B'||v==='B') { d++; tot++; }
+    });
+    if(!tot) return '';
+    var hd = h + d, ad = a + d;
+    return '<div class="jc-block">'
+      + '<div class="jc-block-title">'+f.label+'</div>'
+      + '<div class="jc-counts">'
+      + '<div class="jc-item"><span class="jc-label">H </span><span class="jc-h">'+h+'</span></div>'
+      + '<div class="jc-item"><span class="jc-label">A </span><span class="jc-a">'+a+'</span></div>'
+      + '<div class="jc-item"><span class="jc-label">D </span><span class="jc-d">'+d+'</span></div>'
+      + '<div class="jc-item"><span class="jc-label">H+D </span><span class="jc-h">'+hd+'</span></div>'
+      + '<div class="jc-item"><span class="jc-label">A+D </span><span class="jc-a">'+ad+'</span></div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('asJcRow').innerHTML = jcHtml;
 }
