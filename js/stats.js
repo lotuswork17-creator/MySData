@@ -41,55 +41,7 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // H Highest / A Highest — top 5 by odds, show team + odds + per-match P&L
-  var TOP = 5;
-  function highList(elId, sortFn, oddsFn, pnlFn, col){
-    var top = results.slice().sort(sortFn).slice(0, TOP);
-    var html = top.map(function(r){
-      var odds = oddsFn(r);
-      var pnl  = pnlFn(r);
-      var pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
-      var pnlCls = pnl >= 0 ? 'bc-pos' : 'bc-neg';
-      var teams  = (r.TEAMH||'?') + ' v ' + (r.TEAMA||'?');
-      return '<div class="bh-row">'
-        + '<span class="bh-team" title="'+teams+'">'+teams+'</span>'
-        + '<span class="bh-odds" style="color:'+col+'">'+odds.toFixed(2)+'</span>'
-        + '<span class="bh-pnl '+pnlCls+'">'+pnlStr+'</span>'
-        + '</div>';
-    }).join('');
-    document.getElementById(elId).innerHTML = html || '—';
-  }
-
-  function hMatchPnl(r){
-    var o = asiaOutcome(r);
-    if(o==='ww') return r.ASIAH - 1;
-    if(o==='wh') return (r.ASIAH - 1) * 0.5;
-    if(o==='dd') return 0;
-    if(o==='lh') return -0.5;
-    if(o==='lw') return -1;
-    return 0;
-  }
-  function aMatchPnl(r){
-    var o = asiaOutcome(r);
-    if(o==='ww') return -1;
-    if(o==='wh') return -0.5;
-    if(o==='dd') return 0;
-    if(o==='lh') return (r.ASIAA - 1) * 0.5;
-    if(o==='lw') return r.ASIAA - 1;
-    return 0;
-  }
-
-  highList('bc-h-high',
-    function(a,b){ return b.ASIAH - a.ASIAH; },
-    function(r){ return r.ASIAH; },
-    hMatchPnl, '#f87171');
-
-  highList('bc-a-high',
-    function(a,b){ return b.ASIAA - a.ASIAA; },
-    function(r){ return r.ASIAA; },
-    aMatchPnl, '#60a5fa');
-
-  // Store series for redraw when panel is revealed
+    // Store series for redraw when panel is revealed
   window._betChartData = { hRunning: hRunning, aRunning: aRunning, hPnl: hPnl, aPnl: aPnl };
   drawBetChart();
 }
