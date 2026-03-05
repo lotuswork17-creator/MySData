@@ -27,7 +27,7 @@
   </div>
   <div class="filter-header">
     <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
-    <button class="filter-toggle" id="moreToggle" onclick="toggleMoreFilters()" style="margin-left:6px"><span id="moreToggleLabel">⋯ Date / Team / League</span></button>
+    <button class="filter-toggle" id="moreToggle" onclick="toggleMoreFilters()" style="margin-left:6px"><span id="moreToggleLabel">⋯ Date / Team / League / Status</span></button>
     <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
   <div class="filters" id="filtersPanel">
@@ -45,17 +45,17 @@
       </div>
       <div class="fg" style="min-width:90px;max-width:130px"><div class="fl">Search Teams</div><input type="text" id="searchInput" placeholder="Team name…"/></div>
       <div class="fg" style="min-width:90px;max-width:120px"><div class="fl">League</div><select id="catSelect"><option value="">All</option></select></div>
-    </div>
-    <div class="fg" style="min-width:90px;max-width:110px">
-      <div class="fl">Status</div>
-      <select id="statusSelect">
-        <option value="">All</option>
-        <option value="Result">Result</option>
-        <option value="PREEVE">Upcoming</option>
-        <option value="Cancel">Cancelled</option>
-        <option value="Closed">Closed</option>
-        <option value="Suspen">Suspended</option>
-      </select>
+      <div class="fg" style="min-width:90px;max-width:110px">
+        <div class="fl">Status</div>
+        <select id="statusSelect">
+          <option value="">All</option>
+          <option value="Result">Result</option>
+          <option value="PREEVE">Upcoming</option>
+          <option value="Cancel">Cancelled</option>
+          <option value="Closed">Closed</option>
+          <option value="Suspen">Suspended</option>
+        </select>
+      </div>
     </div>
     <div class="fg" style="min-width:90px;max-width:120px">
       <div class="fl">Asia Line</div>
@@ -221,7 +221,6 @@
     <div class="as-card lw"><div class="as-card-label">Loss Whole</div><div class="as-card-pct" id="as-lw-p">—</div><div class="as-card-count" id="as-lw">—</div></div>
   </div>
   <div class="as-bar-wrap" id="as-bar"></div>
-  <div class="as-jc-row" id="asJcRow"></div>
 </div>
 
 <div id="betCalc">
