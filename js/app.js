@@ -230,6 +230,7 @@ function toggleBetCalc(){
   lbl.textContent=hidden?'Hide':'Show';
   var arrow=btn.querySelector('.ft-arrow');
   if(arrow)arrow.style.transform=hidden?'':' rotate(-90deg)';
+  if(hidden) setTimeout(drawBetChart, 30);  // redraw now width is measurable
 }
 
 function toggleFilters(){
