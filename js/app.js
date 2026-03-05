@@ -242,6 +242,14 @@ function toggleFilters(){
   lbl.textContent=collapsed?'Show Filters':'Hide Filters';
 }
 
+function toggleMoreFilters(){
+  var el=document.getElementById('moreFilters');
+  var btn=document.getElementById('moreToggle');
+  var visible=el.style.display==='flex';
+  el.style.display=visible?'none':'flex';
+  btn.classList.toggle('active',!visible);
+}
+
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
   $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';$('smartSelect').value='';
