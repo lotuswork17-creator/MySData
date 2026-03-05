@@ -89,11 +89,22 @@ function renderBetCalc(data){
     function(r){ return r.ASIAA; },
     aMatchPnl, '#60a5fa');
 
+  // Store series for redraw when panel is revealed
+  window._betChartData = { hRunning: hRunning, aRunning: aRunning, hPnl: hPnl, aPnl: aPnl };
+  drawBetChart();
+}
+
+function drawBetChart(){
+  var cd = window._betChartData;
+  if(!cd) return;
+  var hRunning=cd.hRunning, aRunning=cd.aRunning, hPnl=cd.hPnl, aPnl=cd.aPnl;
+  function fmt(v){return(v>=0?'+':'')+v.toFixed(2);}
+
   // Draw chart
   var canvas=document.getElementById('betChart');
   var ctx=canvas.getContext('2d');
   var dpr=window.devicePixelRatio||1;
-  var w=canvas.parentElement.offsetWidth,h=80;
+  var w=canvas.parentElement.offsetWidth||300, h=80;
   canvas.width=w*dpr;canvas.height=h*dpr;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
   ctx.scale(dpr,dpr);
@@ -146,39 +157,4 @@ function renderAsiaStats(data){
     var w=(counts[k]/total*100).toFixed(2);
     return'<div class="as-bar-'+k+'" style="width:'+w+'%;transition:width .4s ease" title="'+k+': '+counts[k]+'"></div>';
   }).join('');
-
-  // JC expert counts — H, A, H+D, A+D for each of the 4 tip fields
-  function ts(v){ if(!v) return null; var s=String(v).trim().toUpperCase(); return s||null; }
-  var jcFields = [
-    { id:'jc-sum',  label:'JC Sum',   key:'JCTIPSUM'  },
-    { id:'jc-sid',  label:'JC SID',   key:'JCTIPSID'  },
-    { id:'jc-mac',  label:'SID Mac',  key:'TIPSIDMAC' },
-    { id:'jc-onid', label:'ON ID',    key:'TIPSONID'  },
-  ];
-
-  var jcHtml = jcFields.map(function(f){
-    var h=0, a=0, d=0, tot=0;
-    data.forEach(function(r){
-      var v = ts(r[f.key]);
-      if(!v) return;
-      // normalise: 1H/AH → H, 1A/AA → A, 1D/AD/1B/B → D
-      if(v==='H'||v==='1H'||v==='AH') { h++; tot++; }
-      else if(v==='A'||v==='1A'||v==='AA') { a++; tot++; }
-      else if(v==='D'||v==='1D'||v==='AD'||v==='1B'||v==='B') { d++; tot++; }
-    });
-    if(!tot) return '';
-    var hd = h + d, ad = a + d;
-    return '<div class="jc-block">'
-      + '<div class="jc-block-title">'+f.label+'</div>'
-      + '<div class="jc-counts">'
-      + '<div class="jc-item"><span class="jc-label">H </span><span class="jc-h">'+h+'</span></div>'
-      + '<div class="jc-item"><span class="jc-label">A </span><span class="jc-a">'+a+'</span></div>'
-      + '<div class="jc-item"><span class="jc-label">D </span><span class="jc-d">'+d+'</span></div>'
-      + '<div class="jc-item"><span class="jc-label">H+D </span><span class="jc-h">'+hd+'</span></div>'
-      + '<div class="jc-item"><span class="jc-label">A+D </span><span class="jc-a">'+ad+'</span></div>'
-      + '</div>'
-      + '</div>';
-  }).join('');
-
-  document.getElementById('asJcRow').innerHTML = jcHtml;
 }
