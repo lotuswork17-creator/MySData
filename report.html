@@ -218,6 +218,11 @@ body{display:block;padding-bottom:40px}
   </table></div>
 </div>
 
+<!-- TAB 7: JC EXPERT × ASIALINE × MARKET LEAN -->
+<div class="rpt-section" id="tab7">
+  <!-- content injected by renderJCExpert() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -249,6 +254,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-smart.js"></script>
 <script src="js/report-lm.js"></script>
 <script src="js/report-odds.js"></script>
+<script src="js/report-jcexpert.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -262,6 +268,7 @@ var TABS = [
   { label:'⚡ Smart Money',   render: renderSmart  },
   { label:'↕️ Line × Expert', render: renderLM     },
   { label:'📈 Odds Analysis', render: renderOdds   },
+  { label:'🔬 JC Expert',    render: renderJCExpert },
 ];
 
 // Build tab bar from registry
