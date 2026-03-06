@@ -115,7 +115,7 @@ function renderJCExpert(RD){
   var EXP_COLOR  ={JCTIPSUM:'#4ade80',JCTIPSID:'#60a5fa',TIPSIDMAC:'#f87171',TIPSONID:'#a78bfa'};
   var TIP_COLOR  ={H:'#f87171',D:'#a78bfa',A:'#60a5fa',HD:'#fb923c',AD:'#34d399'};
   var LEAN_LABEL ={All:'All',hLean:'H Fav ≥52%',bal:'Balance 48–52%',aLean:'A Fav ≤48%'};
-  var LINE_LABEL ={'-1':'-1','-0.75':'-¾','-0.5':'-½','-0.25':'-¼','0':'0','0.25':'+¼','0.5':'+½','0.75':'+¾','1':'+1','All':'All'};
+  var LINE_LABEL ={'-1':'-1','-0.75':'-0.75','-0.5':'-0.5','-0.25':'-0.25','0':'0','0.25':'+0.25','0.5':'+0.5','0.75':'+0.75','1':'+1','All':'All'};
   var LINES_ALL  =[-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1];
 
   var selExperts =EXPERTS.slice();
@@ -170,7 +170,7 @@ function renderJCExpert(RD){
   function filterBar(){
     function grp(label, g, opts){
       var h='<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:5px">'
-        +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:44px">'+label+'</span>';
+        +'<span style="font-size:10px;color:#e2e8f0;font-family:var(--mono);min-width:44px">'+label+'</span>';
       opts.forEach(function(o){
         var on=o.a;
         h+='<button class="jce-filter-btn" data-g="'+g+'" data-v="'+o.v+'" style="padding:2px 9px;border-radius:4px;border:1px solid '+(on?'#60a5fa':'var(--border)')+';background:'+(on?'#60a5fa22':'var(--surface)')+';color:'+(on?'#60a5fa':'var(--muted)')+';font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)">'+o.t+'</button>';
@@ -205,9 +205,9 @@ function renderJCExpert(RD){
     function tbl(rk,col,lbl){
       var h='<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:700;color:'+col+';margin-bottom:5px;font-family:var(--mono)">'+lbl+'</div>'
         +'<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11px;min-width:100%"><thead><tr>'
-        +'<th style="background:#0f172a;color:#64748b;padding:5px 8px;font-size:9px;text-align:left;white-space:nowrap">Tip</th>';
-      LINES_ALL.forEach(function(l){h+='<th style="background:#0f172a;color:#64748b;padding:5px 6px;text-align:center;font-size:9px;white-space:nowrap">'+LINE_LABEL[''+l]+'</th>';});
-      h+='<th style="background:#0f172a;color:#64748b;padding:5px 6px;text-align:center;font-size:9px">All</th></tr></thead><tbody>';
+        +'<th style="background:#0f172a;color:#e2e8f0;padding:5px 8px;font-size:9px;text-align:left;white-space:nowrap">Tip</th>';
+      LINES_ALL.forEach(function(l){h+='<th style="background:#0f172a;color:#e2e8f0;padding:5px 6px;text-align:center;font-size:9px;white-space:nowrap">'+LINE_LABEL[''+l]+'</th>';});
+      h+='<th style="background:#0f172a;color:#e2e8f0;padding:5px 6px;text-align:center;font-size:9px">All</th></tr></thead><tbody>';
       TIPS_SHOW.forEach(function(tip){
         var c=TIP_COLOR[tip];
         h+='<tr><td style="padding:4px 8px;white-space:nowrap"><span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);background:'+c+'22;color:'+c+'">'+tip+'</span></td>';
