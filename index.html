@@ -193,7 +193,10 @@
       </select>
     </div>
     <div class="fg fg-jcpick" style="min-width:320px;max-width:520px">
-      <div class="fl">JC Expert Picks</div>
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleJCPickPanel()">
+        <span>JC Expert Picks</span>
+        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;transition:transform .2s">▼</span>
+      </div>
       <div id="jcPickFilter" style="display:flex;flex-direction:column;gap:5px">
         <!-- rows injected by initJCPickFilter() -->
       </div>
