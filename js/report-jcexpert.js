@@ -7,7 +7,7 @@ function computeJCExpert(results){
   var EXPERTS = ['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID'];
   var TIPS    = ['H','D','A','HD','AD'];
   var LINES   = [-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1];
-  var LEANS   = ['hLean','bal','aLean'];
+  var LEANS   = ['hStrong','hSlight','bal','aSlight','aStrong'];
 
   function ts(v){
     if(!v) return null;
@@ -28,9 +28,11 @@ function computeJCExpert(results){
   function leanOf(r){
     if(!r.ASIAH||!r.ASIAA||r.ASIAH<=0||r.ASIAA<=0) return null;
     var ph=1/r.ASIAH, pa=1/r.ASIAA, hp=ph/(ph+pa)*100;
-    if(hp>=52) return 'hLean';
-    if(hp<=48) return 'aLean';
-    return 'bal';
+    if(hp>=55)  return 'hStrong';   // H Fav 55%+
+    if(hp>=52)  return 'hSlight';   // H Fav 52–55%
+    if(hp>=48)  return 'bal';       // Balance 48–52%
+    if(hp>=45)  return 'aSlight';   // A Fav 45–48%
+    return 'aStrong';               // A Fav <45%
   }
 
   function matchCombo(r, combo, tip){
@@ -114,7 +116,7 @@ function renderJCExpert(RD){
   var EXP_SHORT  ={JCTIPSUM:'JC Sum',JCTIPSID:'JC SID',TIPSIDMAC:'SID Mac',TIPSONID:'ON ID'};
   var EXP_COLOR  ={JCTIPSUM:'#4ade80',JCTIPSID:'#60a5fa',TIPSIDMAC:'#f87171',TIPSONID:'#a78bfa'};
   var TIP_COLOR  ={H:'#f87171',D:'#a78bfa',A:'#60a5fa',HD:'#fb923c',AD:'#34d399'};
-  var LEAN_LABEL ={All:'All',hLean:'H Fav ≥52%',bal:'Balance 48–52%',aLean:'A Fav ≤48%'};
+  var LEAN_LABEL ={All:'All',hStrong:'H Fav 55%+',hSlight:'H Fav 52–55%',bal:'Balance 48–52%',aSlight:'A Fav 45–48%',aStrong:'A Fav <45%'};
   var LINE_LABEL ={'-1':'-1','-0.75':'-0.75','-0.5':'-0.5','-0.25':'-0.25','0':'0','0.25':'+0.25','0.5':'+0.5','0.75':'+0.75','1':'+1','All':'All'};
   var LINES_ALL  =[-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1];
 
@@ -179,7 +181,14 @@ function renderJCExpert(RD){
     }
     var tA=[{v:'all',t:'All',a:selTip==='all'}].concat(['H','D','A','HD','AD'].map(function(t){return{v:t,t:t,a:selTip===t};}));
     var lnA=[{v:'all',t:'Any',a:selLine==='all'},{v:'All',t:'Combined',a:selLine==='All'}].concat(LINES_ALL.map(function(l){return{v:''+l,t:LINE_LABEL[''+l],a:selLine===''+l};}));
-    var leA=[{v:'all',t:'Any',a:selLean==='all'},{v:'hLean',t:'H Fav',a:selLean==='hLean'},{v:'bal',t:'Balance',a:selLean==='bal'},{v:'aLean',t:'A Fav',a:selLean==='aLean'}];
+    var leA=[
+      {v:'all',      t:'Any',           a:selLean==='all'},
+      {v:'hStrong',  t:'H Fav 55%+',    a:selLean==='hStrong'},
+      {v:'hSlight',  t:'H Fav 52–55%',  a:selLean==='hSlight'},
+      {v:'bal',      t:'Balance 48–52%', a:selLean==='bal'},
+      {v:'aSlight',  t:'A Fav 45–48%',  a:selLean==='aSlight'},
+      {v:'aStrong',  t:'A Fav <45%',    a:selLean==='aStrong'}
+    ];
     var nA=[10,15,20,30,50].map(function(n){return{v:''+n,t:'N≥'+n,a:minN===n};});
     var sA=[{v:'edge',t:'Edge',a:sortCol==='edge'},{v:'hroi',t:'H ROI',a:sortCol==='hroi'},{v:'aroi',t:'A ROI',a:sortCol==='aroi'},{v:'n',t:'Count',a:sortCol==='n'}];
     var vA=[{v:'heatmap',t:'⬛ Heatmap',a:viewMode==='heatmap'},{v:'table',t:'📋 Table',a:viewMode==='table'},{v:'chart',t:'📈 Charts',a:viewMode==='chart'}];
@@ -290,7 +299,7 @@ function renderJCExpert(RD){
 
     function tb(t){ var c=TIP_COLOR[t]; return '<span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);background:'+c+'22;color:'+c+'">'+t+'</span>'; }
     function lb(l){ return '<span style="font-family:var(--mono);font-size:11px;color:#cbd5e1">'+(LINE_LABEL[''+l]||l)+'</span>'; }
-    function lnb(l){ var cs={All:'#64748b',hLean:'#f87171',bal:'#fbbf24',aLean:'#60a5fa'}; var c=cs[l]||'#64748b'; return '<span style="padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;background:'+c+'18;color:'+c+'">'+LEAN_LABEL[l]+'</span>'; }
+    function lnb(l){ var cs={All:'#64748b',hStrong:'#ef4444',hSlight:'#f87171',bal:'#fbbf24',aSlight:'#60a5fa',aStrong:'#3b82f6'}; var c=cs[l]||'#64748b'; return '<span style="padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;background:'+c+'18;color:'+c+'">'+LEAN_LABEL[l]+'</span>'; }
     function ebar(e){ var MAX=40,pct=Math.min(Math.abs(e)/MAX*100,100),col=e>=0?'#f87171':'#60a5fa',left=e>=0?50:50-pct;
       return '<div style="display:flex;align-items:center;gap:5px"><div style="width:70px;height:6px;border-radius:3px;background:#1e293b;position:relative;overflow:hidden;flex-shrink:0"><div style="height:6px;position:absolute;left:'+left+'%;width:'+pct+'%;background:'+col+';border-radius:3px"></div></div><span style="font-family:var(--mono);font-size:11px;font-weight:700;min-width:44px" class="'+vcls(e)+'">'+fmt(e)+'</span></div>'; }
     function spk(hp,ap){ var W=80,H=26,p=2,all=hp.concat(ap); if(!all.length) return '';
