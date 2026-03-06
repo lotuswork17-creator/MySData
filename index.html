@@ -15,7 +15,10 @@
       <h1>TipsCompare <span>Viewer</span></h1>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span class="updated" id="updatedAt"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="report.html" style="padding:4px 12px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:11px;font-weight:600;text-decoration:none;font-family:var(--sans)">📊 Report →</a>
+        <span class="updated" id="updatedAt"></span>
+      </div>
       <div class="hstats">
         <div class="hstat" style="border-color:rgba(74,222,128,.3)">Results <b id="hResult" style="color:var(--accent)">—</b></div>
         <div class="hstat" style="border-color:rgba(96,165,250,.3)">Upcoming <b id="hPreeve" style="color:var(--accent2)">—</b></div>
@@ -195,9 +198,9 @@
     <div class="fg fg-jcpick" style="min-width:320px;max-width:520px">
       <div class="fl" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleJCPickPanel()">
         <span>JC Expert Picks</span>
-        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;transition:transform .2s">▼</span>
+        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;display:inline-block;transform:rotate(-90deg);transition:transform .2s">▼</span>
       </div>
-      <div id="jcPickFilter" style="display:flex;flex-direction:column;gap:5px">
+      <div id="jcPickFilter" style="display:none;flex-direction:column;gap:5px">
         <!-- rows injected by initJCPickFilter() -->
       </div>
     </div>
