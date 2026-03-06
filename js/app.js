@@ -31,6 +31,7 @@ function loadData(){
       applyFilters();
 
       var t;
+      initJCPickFilter();
       $('searchInput').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){pg=1;applyFilters();},300);});
       // Populate asialine dropdown
       var lines=Array.from(new Set(ALL.map(function(r){return r.ASIALINE;}).filter(function(v){return v!=null;}))).sort(function(a,b){return a-b;});
@@ -96,9 +97,6 @@ function applyFilters(){
       if(pf==='A-weak'&&(pl!=='A'||pa>=50))return false;
       if(pf==='A-strong'&&pa<50)return false;
       if(pf==='A-vstrong'&&pa<70)return false;
-      if(pf==='ha-close5'&&Math.abs(ph-pa)>5)return false;
-      if(pf==='ha-close10'&&Math.abs(ph-pa)>10)return false;
-      if(pf==='ha-close15'&&Math.abs(ph-pa)>15)return false;
     }
     // Expert filter
     if(ef){
@@ -135,9 +133,6 @@ function applyFilters(){
       if(ef==='low-conf-A50'){if(!lc||!e||e.a<50)return false;}
       if(ef==='low-conf-A70'){if(!lc||!e||e.a<67)return false;}
       if(ef==='low-conf-A90'){if(!lc||!e||e.a<83)return false;}
-      if(ef==='exp-ha-close5'){if(!e||Math.abs(e.h-e.a)>5)return false;}
-      if(ef==='exp-ha-close10'){if(!e||Math.abs(e.h-e.a)>10)return false;}
-      if(ef==='exp-ha-close15'){if(!e||Math.abs(e.h-e.a)>15)return false;}
     }
     // Market Lean filter
     if(mf||vf){
@@ -189,6 +184,8 @@ function applyFilters(){
       if(amf==='drift3'&&(ad<=0||r.ASIAA<r.ASIAALN*1.10))return false;
       if(amf==='flat'&&ad!==0)return false;
     }
+    // JC Expert Pick filter
+    if(!applyJCPickFilter(r)) return false;
     // Smart Money filter
     if(smf){
       var sgl=r.ASIALINE,sln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
@@ -230,7 +227,6 @@ function toggleBetCalc(){
   lbl.textContent=hidden?'Hide':'Show';
   var arrow=btn.querySelector('.ft-arrow');
   if(arrow)arrow.style.transform=hidden?'':' rotate(-90deg)';
-  if(hidden) setTimeout(drawBetChart, 30);  // redraw now width is measurable
 }
 
 function toggleFilters(){
@@ -243,16 +239,103 @@ function toggleFilters(){
   lbl.textContent=collapsed?'Show Filters':'Hide Filters';
 }
 
-function toggleMoreFilters(){
-  var el=document.getElementById('moreFilters');
-  var btn=document.getElementById('moreToggle');
-  var visible=el.style.display==='flex';
-  el.style.display=visible?'none':'flex';
-  btn.classList.toggle('active',!visible);
-}
-
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
   $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';$('smartSelect').value='';
+  clearJCPick();
   pg=1;applyFilters();
+}
+// ═══════════════════════════════════════════════
+// JC EXPERT PICK FILTER
+// ═══════════════════════════════════════════════
+var JC_EXPERTS = [
+  { key:'JCTIPSUM',  label:'JC Sum',  color:'#4ade80' },
+  { key:'JCTIPSID',  label:'JC SID',  color:'#60a5fa' },
+  { key:'TIPSIDMAC', label:'SID Mac', color:'#f87171' },
+  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' }
+];
+var JC_TIPS = ['H','D','A'];
+
+// State: { JCTIPSUM: 'H'|'D'|'A'|null, ... }  null = no filter
+var jcPickState = {};
+JC_EXPERTS.forEach(function(e){ jcPickState[e.key] = null; });
+
+// AND mode: all set experts must match; OR mode: any set expert matches
+var jcPickMode = 'AND';
+
+function initJCPickFilter(){
+  renderJCPickFilter();
+}
+
+function renderJCPickFilter(){
+  var wrap = document.getElementById('jcPickFilter');
+  if(!wrap) return;
+
+  // Mode toggle row
+  var modeRow = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+    +'<span style="font-size:9px;color:#64748b;font-family:monospace;min-width:36px">Logic:</span>'
+    +['AND','OR'].map(function(m){
+      var on = jcPickMode===m;
+      return '<button onclick="setJCMode(\''+m+'\')" style="padding:1px 8px;border-radius:3px;border:1px solid '+(on?'#60a5fa':'#1e293b')+';background:'+(on?'#60a5fa22':'#0f172a')+';color:'+(on?'#60a5fa':'#64748b')+';font-size:10px;font-weight:700;cursor:pointer;font-family:monospace">'+m+'</button>';
+    }).join('')
+    +'<span style="font-size:9px;color:#475569;margin-left:4px">'+(jcPickMode==='AND'?'All selected must match':'Any selected matches')+'</span>'
+    +'</div>';
+
+  // One row per expert
+  var rows = JC_EXPERTS.map(function(e){
+    var sel = jcPickState[e.key];
+    var btnStyle = function(tip){
+      var on = sel===tip;
+      var tipColor = tip==='H'?'#f87171':tip==='D'?'#a78bfa':'#60a5fa';
+      return 'padding:2px 10px;border-radius:4px;border:1px solid '+(on?tipColor:'#1e293b')+';background:'+(on?tipColor+'22':'#0f172a')+';color:'+(on?tipColor:'#475569')+';font-size:11px;font-weight:700;cursor:pointer;font-family:monospace';
+    };
+    return '<div style="display:flex;align-items:center;gap:6px">'
+      +'<span style="font-size:10px;font-weight:700;min-width:52px;color:'+e.color+';font-family:monospace">'+e.label+'</span>'
+      +JC_TIPS.map(function(tip){
+        return '<button onclick="toggleJCPick(\''+e.key+'\',\''+tip+'\')" style="'+btnStyle(tip)+'">'+tip+'</button>';
+      }).join('')
+      +(sel?'<button onclick="toggleJCPick(\''+e.key+'\',null)" style="padding:2px 6px;border-radius:3px;border:1px solid #1e293b;background:#0f172a;color:#475569;font-size:9px;cursor:pointer">✕</button>':'')
+      +'</div>';
+  }).join('');
+
+  wrap.innerHTML = modeRow + rows;
+}
+
+function toggleJCPick(expertKey, tip){
+  // Clicking the same tip again clears it
+  jcPickState[expertKey] = (jcPickState[expertKey]===tip) ? null : tip;
+  renderJCPickFilter();
+  pg=1; applyFilters();
+}
+
+function setJCMode(mode){
+  jcPickMode = mode;
+  renderJCPickFilter();
+  pg=1; applyFilters();
+}
+
+function clearJCPick(){
+  JC_EXPERTS.forEach(function(e){ jcPickState[e.key]=null; });
+  jcPickMode='AND';
+  renderJCPickFilter();
+}
+
+function applyJCPickFilter(r){
+  var active = JC_EXPERTS.filter(function(e){ return jcPickState[e.key]!==null; });
+  if(!active.length) return true;
+
+  function ts(v){
+    if(!v) return null;
+    var u=String(v).trim().toUpperCase();
+    if(u==='H'||u==='1H') return 'H';
+    if(u==='D'||u==='1D') return 'D';
+    if(u==='A'||u==='1A') return 'A';
+    return null;
+  }
+
+  if(jcPickMode==='AND'){
+    return active.every(function(e){ return ts(r[e.key])===jcPickState[e.key]; });
+  } else {
+    return active.some(function(e){ return ts(r[e.key])===jcPickState[e.key]; });
+  }
 }
