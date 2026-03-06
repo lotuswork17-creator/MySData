@@ -115,6 +115,15 @@
         <option value="low-conf-A90">Low Conf ⚠ + A ≥ 83%</option>
       </select>
     </div>
+    <div class="fg fg-jcpick" style="min-width:220px;max-width:420px">
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleJCPickPanel()">
+        <span>JC Expert Picks</span>
+        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;display:inline-block;transform:rotate(-90deg);transition:transform .2s">&#x25BC;</span>
+      </div>
+      <div id="jcPickFilter" style="display:none;flex-direction:column;gap:5px">
+        <!-- rows injected by initJCPickFilter() -->
+      </div>
+    </div>
     <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Market Lean</div>
       <select id="marketSelect">
@@ -194,15 +203,6 @@
         <option disabled>── Contrarian A Signals ──</option>
         <option value="sm7">Expert H≥83% + Line Unchanged (A bet)</option>
       </select>
-    </div>
-    <div class="fg fg-jcpick" style="min-width:320px;max-width:520px">
-      <div class="fl" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleJCPickPanel()">
-        <span>JC Expert Picks</span>
-        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;display:inline-block;transform:rotate(-90deg);transition:transform .2s">▼</span>
-      </div>
-      <div id="jcPickFilter" style="display:none;flex-direction:column;gap:5px">
-        <!-- rows injected by initJCPickFilter() -->
-      </div>
     </div>
     <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
   </div>
