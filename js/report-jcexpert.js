@@ -195,33 +195,75 @@ function renderJCExpert(RD){
     var leanKey=selLean==='all'?'All':selLean;
     var TIPS_SHOW=['H','D','A','HD','AD'];
 
-    function cell(tip,line,rk){
-      var r=allRows.find(function(x){return x.comboKey===ck&&x.tip===tip&&x.line===line&&x.lean===leanKey;});
-      if(!r||r.n<minN) return '<td style="color:#1e293b;text-align:center;font-size:10px;padding:4px 6px">—</td>';
-      var v=r[rk], bg=roiBg(v), col=v>=5?'#4ade80':v<=-5?'#f87171':'#94a3b8';
-      return '<td style="text-align:center;padding:4px 6px;'+(bg?'background:'+bg:'')+'"><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+col+'">'+fmt(v)+'</div><div style="font-size:9px;color:#475569">n='+r.n+'</div></td>';
-    }
+    var COLS_SHOW = LINES_ALL.concat(['All']);
 
-    function tbl(rk,col,lbl){
-      var h='<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:700;color:'+col+';margin-bottom:5px;font-family:var(--mono)">'+lbl+'</div>'
-        +'<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11px;min-width:100%"><thead><tr>'
-        +'<th style="background:#0f172a;color:#e2e8f0;padding:5px 8px;font-size:9px;text-align:left;white-space:nowrap">Tip</th>';
-      LINES_ALL.forEach(function(l){h+='<th style="background:#0f172a;color:#e2e8f0;padding:5px 6px;text-align:center;font-size:9px;white-space:nowrap">'+LINE_LABEL[''+l]+'</th>';});
-      h+='<th style="background:#0f172a;color:#e2e8f0;padding:5px 6px;text-align:center;font-size:9px">All</th></tr></thead><tbody>';
-      TIPS_SHOW.forEach(function(tip){
-        var c=TIP_COLOR[tip];
-        h+='<tr><td style="padding:4px 8px;white-space:nowrap"><span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);background:'+c+'22;color:'+c+'">'+tip+'</span></td>';
-        LINES_ALL.forEach(function(l){h+=cell(tip,l,rk);});
-        h+=cell(tip,'All',rk);
-        h+='</tr>';
+    // Check if a tip has ANY data across all lines
+    function tipHasData(tip){
+      return COLS_SHOW.some(function(line){
+        var r=allRows.find(function(x){return x.comboKey===ck&&x.tip===tip&&x.line===line&&x.lean===leanKey;});
+        return r && r.n>=minN;
       });
-      return h+'</tbody></table></div></div>';
     }
 
-    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
-      +'<div>'+tbl('hroi','#f87171','H-SIDE ROI')+'</div>'
-      +'<div>'+tbl('aroi','#60a5fa','A-SIDE ROI')+'</div>'
-      +'</div>';
+    function roiVal(v, col){
+      if(v===null||v===undefined) return '<span style="color:#334155">—</span>';
+      var c=v>=5?'#4ade80':v<=-5?'#f87171':'#94a3b8';
+      var bg=roiBg(v);
+      return '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+c+';'+(bg?'background:'+bg+';padding:1px 3px;border-radius:2px':'')+'">'+(v>0?'+':'')+v.toFixed(1)+'%</span>';
+    }
+
+    // Unified table: each line column has H ROI / A ROI / N stacked
+    var h='<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11px;min-width:100%"><thead>';
+
+    // Row 1: line headers spanning 1 col each
+    h+='<tr><th style="background:#0f172a;color:#e2e8f0;padding:5px 8px;font-size:9px;text-align:left;white-space:nowrap;vertical-align:bottom" rowspan="2">Tip</th>';
+    COLS_SHOW.forEach(function(l){
+      h+='<th style="background:#0f172a;color:#e2e8f0;padding:4px 6px;text-align:center;font-size:9px;white-space:nowrap;border-bottom:1px solid #1e293b">'+LINE_LABEL[''+l]+'</th>';
+    });
+    h+='</tr>';
+
+    // Row 2: H / A sub-labels under each line
+    h+='<tr>';
+    COLS_SHOW.forEach(function(){
+      h+='<th style="background:#0f172a;padding:2px 0;text-align:center;font-size:8px;white-space:nowrap">'
+        +'<span style="color:#f87171;font-family:var(--mono)">H</span>'
+        +'<span style="color:#334155;margin:0 2px">/</span>'
+        +'<span style="color:#60a5fa;font-family:var(--mono)">A</span>'
+        +'<span style="color:#334155;margin:0 2px">/</span>'
+        +'<span style="color:#94a3b8;font-family:var(--mono)">N</span>'
+        +'</th>';
+    });
+    h+='</tr></thead><tbody>';
+
+    TIPS_SHOW.forEach(function(tip){
+      if(!tipHasData(tip)) return; // hide rows with no data
+      var c=TIP_COLOR[tip];
+      h+='<tr><td style="padding:5px 8px;white-space:nowrap;background:#0f172a">'
+        +'<span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);background:'+c+'22;color:'+c+'">'+tip+'</span>'
+        +'</td>';
+      COLS_SHOW.forEach(function(line){
+        var r=allRows.find(function(x){return x.comboKey===ck&&x.tip===tip&&x.line===line&&x.lean===leanKey;});
+        if(!r||r.n<minN){
+          h+='<td style="text-align:center;padding:4px 6px;color:#1e293b">—</td>';
+        } else {
+          h+='<td style="text-align:center;padding:4px 8px;border-left:1px solid #1e293b">'
+            +'<div style="display:flex;gap:6px;align-items:center;justify-content:center;white-space:nowrap">'
+            +roiVal(r.hroi)
+            +'<span style="color:#334155">/</span>'
+            +roiVal(r.aroi)
+            +'<span style="color:#334155">/</span>'
+            +'<span style="font-family:var(--mono);font-size:10px;color:#e2e8f0">'+r.n+'</span>'
+            +'</div></td>';
+        }
+      });
+      h+='</tr>';
+    });
+
+    return '<div style="margin-bottom:4px;font-size:10px;color:#64748b;font-family:var(--mono)">'
+      +'<span style="color:#f87171">H ROI</span> / <span style="color:#60a5fa">A ROI</span> / <span style="color:#e2e8f0">N</span>'
+      +' &nbsp;·&nbsp; rows with no data hidden &nbsp;·&nbsp; lean filter: <span style="color:#e2e8f0">'+LEAN_LABEL[leanKey]+'</span>'
+      +'</div>'
+      +h+'</tbody></table></div>';
   }
 
   // ── Table
