@@ -266,9 +266,6 @@ var jcPickMode = 'AND';
 var jcPickPanelOpen = false;
 
 function initJCPickFilter(){
-  // Start collapsed
-  var wrap = document.getElementById('jcPickFilter');
-  if(wrap) wrap.style.display = 'none';
   renderJCPickFilter();
 }
 
@@ -276,17 +273,17 @@ function toggleJCPickPanel(){
   jcPickPanelOpen = !jcPickPanelOpen;
   var wrap  = document.getElementById('jcPickFilter');
   var arrow = document.getElementById('jcPickArrow');
-  if(wrap)  wrap.style.display  = jcPickPanelOpen ? 'flex' : 'none';
+  if(wrap){
+    wrap.style.display = jcPickPanelOpen ? 'flex' : 'none';
+    wrap.style.flexDirection = 'column';
+    wrap.style.gap = '5px';
+  }
   if(arrow) arrow.style.transform = jcPickPanelOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
 }
 
 function renderJCPickFilter(){
   var wrap = document.getElementById('jcPickFilter');
   if(!wrap) return;
-  // preserve open/closed state
-  wrap.style.display = jcPickPanelOpen ? 'flex' : 'none';
-  wrap.style.flexDirection = 'column';
-  wrap.style.gap = '5px';
 
   // Mode toggle row
   var modeRow = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
