@@ -262,10 +262,13 @@ function renderJCExpert(RD){
         } else {
           var cellBg=r.hroi>=5&&r.aroi>=5?'rgba(74,222,128,0.06)':r.hroi<=-5&&r.aroi<=-5?'rgba(248,113,113,0.06)':'';
           h+='<td style="text-align:center;padding:5px 10px;border-left:1px solid #1e293b;'+(cellBg?'background:'+cellBg:'')+(isAll?'border-top:2px solid #334155':'')+'">'
-            +'<div style="display:flex;gap:8px;justify-content:center;align-items:flex-start;white-space:nowrap">'
-            +'<div style="text-align:center">'+roiSpan(r.hroi)+'<br><span style="font-family:var(--mono);font-size:9px;color:#64748b">'+r.n+'</span></div>'
-            +'<span style="color:#1e293b;font-size:10px;padding-top:2px">|</span>'
-            +'<div style="text-align:center">'+roiSpan(r.aroi)+'<br><span style="font-family:var(--mono);font-size:9px;color:#64748b">'+r.n+'</span></div>'
+            +'<div style="text-align:center">'
+            +'<div style="display:flex;gap:8px;justify-content:center;align-items:center;white-space:nowrap">'
+            +roiSpan(r.hroi)
+            +'<span style="color:#1e293b;font-size:10px">|</span>'
+            +roiSpan(r.aroi)
+            +'</div>'
+            +'<div style="font-family:var(--mono);font-size:9px;color:#e2e8f0;margin-top:2px">'+r.n+'</div>'
             +'</div></td>';
         }
       });
