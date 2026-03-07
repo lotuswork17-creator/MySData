@@ -196,5 +196,6 @@ function computeReport(records){
     lm          : computeLM(results, allHpts, allApts),
     odds        : computeOdds(results),
     jcexpert    : computeJCExpert(results),
+    escore      : computeEScore(results),
   };
 }
