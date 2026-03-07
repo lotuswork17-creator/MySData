@@ -111,6 +111,10 @@ function applyFilters(){
       if(ef==='A-strong-e'){if(!e||e.a<50)return false;}
       if(ef==='A-vstrong-e'){if(!e||e.a<67)return false;}
       if(ef==='A-ultra-e'){if(!e||e.a<83)return false;}
+      if(ef==='H-max-weak'){if(!e||el!=='H'||e.h>54)return false;}
+      if(ef==='H-max-mod'){if(!e||el!=='H'||e.h<55||e.h>59)return false;}
+      if(ef==='A-max-weak'){if(!e||el!=='A'||e.a>54)return false;}
+      if(ef==='A-max-mod'){if(!e||el!=='A'||e.a<55||e.a>59)return false;}
       if(ef==='agree'){if(!e||predictLead(r)!==el)return false;}
       if(ef==='disagree'){if(!e||predictLead(r)===el||!predictLead(r))return false;}
       if(ef==='split10'){if(!e||Math.abs(e.h-e.a)>10)return false;}
