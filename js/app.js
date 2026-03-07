@@ -262,6 +262,8 @@ JC_EXPERTS.forEach(function(e){ jcPickState[e.key] = null; });
 
 // AND mode: all set experts must match; OR mode: any set expert matches
 var jcPickMode = 'AND';
+// Count-based preset: null | 'H2' | 'H3plus' | 'A2' | 'A3plus'
+var jcCountMode = null;
 
 var jcPickPanelOpen = false;
 
@@ -285,8 +287,28 @@ function renderJCPickFilter(){
   var wrap = document.getElementById('jcPickFilter');
   if(!wrap) return;
 
-  // Mode toggle row
-  var modeRow = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+  // Count preset buttons
+  var countPresets = [
+    { v:'H2',      label:'H=2 only',  desc:'Exactly 2 experts tip H, none tip D or A' },
+    { v:'H3plus',  label:'H≥3 only',  desc:'3+ experts tip H, none tip D or A' },
+    { v:'A2',      label:'A=2 only',  desc:'Exactly 2 experts tip A, none tip D or H' },
+    { v:'A3plus',  label:'A≥3 only',  desc:'3+ experts tip A, none tip D or H' },
+  ];
+  var countRow = '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #1e293b">'
+    +'<div style="font-size:9px;color:#64748b;font-family:monospace;margin-bottom:4px">COUNT PRESETS (pure signal — no mixed picks):</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px">'
+    + countPresets.map(function(p){
+        var on = jcCountMode===p.v;
+        var col = p.v[0]==='H'?'#f87171':'#60a5fa';
+        return '<button onclick="setJCCount(\''+p.v+'\')" title="'+p.desc+'" style="'
+          +'padding:3px 10px;border-radius:4px;border:1px solid '+(on?col:'#1e293b')+';'
+          +'background:'+(on?col+'22':'#0f172a')+';color:'+(on?col:'#64748b')+';'
+          +'font-size:10px;font-weight:700;cursor:pointer;font-family:monospace">'+p.label+'</button>';
+      }).join('')
+    +'</div></div>';
+
+  // Mode toggle row (only relevant when using individual picks below)
+  var modeRow = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
     +'<span style="font-size:9px;color:#64748b;font-family:monospace;min-width:36px">Logic:</span>'
     +['AND','OR'].map(function(m){
       var on = jcPickMode===m;
@@ -308,15 +330,26 @@ function renderJCPickFilter(){
       +JC_TIPS.map(function(tip){
         return '<button onclick="toggleJCPick(\''+e.key+'\',\''+tip+'\')" style="'+btnStyle(tip)+'">'+tip+'</button>';
       }).join('')
-      +(sel?'<button onclick="toggleJCPick(\''+e.key+'\',null)" style="padding:2px 6px;border-radius:3px;border:1px solid #1e293b;background:#0f172a;color:#475569;font-size:9px;cursor:pointer">✕</button>':'')
+      +(sel?'<button onclick="toggleJCPick(\''+e.key+'\',null)" style="padding:2px 6px;border-radius:3px;border:1px solid #1e293b;background:#0f172a;color:#475569;font-size:9px;cursor:pointer">&#x2715;</button>':'')
       +'</div>';
   }).join('');
 
-  wrap.innerHTML = modeRow + rows;
+  wrap.innerHTML = countRow + modeRow + rows;
+}
+
+function setJCCount(preset){
+  // Toggle off if already active
+  jcCountMode = (jcCountMode===preset) ? null : preset;
+  // Clear individual picks when using a count preset
+  if(jcCountMode){
+    JC_EXPERTS.forEach(function(e){ jcPickState[e.key]=null; });
+  }
+  renderJCPickFilter();
+  pg=1; applyFilters();
 }
 
 function toggleJCPick(expertKey, tip){
-  // Clicking the same tip again clears it
+  jcCountMode = null; // clear count preset when using individual picks
   jcPickState[expertKey] = (jcPickState[expertKey]===tip) ? null : tip;
   renderJCPickFilter();
   pg=1; applyFilters();
@@ -331,13 +364,11 @@ function setJCMode(mode){
 function clearJCPick(){
   JC_EXPERTS.forEach(function(e){ jcPickState[e.key]=null; });
   jcPickMode='AND';
+  jcCountMode=null;
   renderJCPickFilter();
 }
 
 function applyJCPickFilter(r){
-  var active = JC_EXPERTS.filter(function(e){ return jcPickState[e.key]!==null; });
-  if(!active.length) return true;
-
   function ts(v){
     if(!v) return null;
     var u=String(v).trim().toUpperCase();
@@ -346,6 +377,23 @@ function applyJCPickFilter(r){
     if(u==='A'||u==='1A') return 'A';
     return null;
   }
+
+  // Count-based preset filter
+  if(jcCountMode){
+    var tips = JC_EXPERTS.map(function(e){ return ts(r[e.key]); });
+    var nH = tips.filter(function(t){return t==='H';}).length;
+    var nD = tips.filter(function(t){return t==='D';}).length;
+    var nA = tips.filter(function(t){return t==='A';}).length;
+    if(jcCountMode==='H2')     return nH===2 && nD===0 && nA===0;
+    if(jcCountMode==='H3plus') return nH>=3  && nD===0 && nA===0;
+    if(jcCountMode==='A2')     return nA===2 && nD===0 && nH===0;
+    if(jcCountMode==='A3plus') return nA>=3  && nD===0 && nH===0;
+    return true;
+  }
+
+  // Individual pick filter
+  var active = JC_EXPERTS.filter(function(e){ return jcPickState[e.key]!==null; });
+  if(!active.length) return true;
 
   if(jcPickMode==='AND'){
     return active.every(function(e){ return ts(r[e.key])===jcPickState[e.key]; });
