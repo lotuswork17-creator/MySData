@@ -41,15 +41,22 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // ── Single panel, dual Y-axes (H left, A right)
+  // Convert cumulative P&L to running ROI% (each point = cumPnl/betsCount * 100)
+  var hRoiPts=[], aRoiPts=[];
+  sorted.forEach(function(r,i){
+    hRoiPts.push(Math.round(hRunning[i]/(i+1)*10000)/100);
+    aRoiPts.push(Math.round(aRunning[i]/(i+1)*10000)/100);
+  });
+
+  // ── Single panel, shared Y-axis ROI chart
   var wrap=document.querySelector('.bc-chart-wrap');
   wrap.style.height='auto';
   wrap.innerHTML='<canvas id="betChart" style="display:block;width:100%"></canvas>';
 
-  drawDualPanel('betChart', hRunning, aRunning, fmt(hPnl), fmt(aPnl));
+  drawRoiPanel('betChart', hRoiPts, aRoiPts, fmt(hPnl/n*100)+'%', fmt(aPnl/n*100)+'%');
 }
 
-function drawDualPanel(canvasId, hPts, aPts, hLabel, aLabel){
+function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel){
   var canvas=document.getElementById(canvasId);
   if(!canvas) return;
   var ctx=canvas.getContext('2d');
@@ -61,60 +68,42 @@ function drawDualPanel(canvasId, hPts, aPts, hLabel, aLabel){
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,w,H);
 
-  var padL=38, padR=42, padT=8, padB=16;
+  var padL=36, padR=8, padT=8, padB=16;
   var cw=w-padL-padR, ch=H-padT-padB;
-  var nPts=Math.max(hPts.length, aPts.length);
 
-  // Per-series independent scales
-  function scale(pts){
-    var mn=Math.min(0,Math.min.apply(null,pts));
-    var mx=Math.max(0,Math.max.apply(null,pts));
-    var range=mx-mn||1;
-    return {mn:mn, mx:mx, range:range,
-      y:function(v){return padT+(1-(v-mn)/range)*ch;}};
-  }
-  var hs=scale(hPts), as=scale(aPts);
+  // Single shared scale across both series
+  var allV=hPts.concat(aPts);
+  var mn=Math.min(0,Math.min.apply(null,allV));
+  var mx=Math.max(0,Math.max.apply(null,allV));
+  var range=mx-mn||1;
+  function yy(v){return padT+(1-(v-mn)/range)*ch;}
   function xx(i,len){return padL+i/((len||1)-1||1)*cw;}
 
-  // Y-axis tick helper
-  function drawYAxis(sc, side, col){
-    var ticks=4;
-    ctx.font='8px IBM Plex Mono'; ctx.fillStyle=col+'aa';
-    ctx.textBaseline='middle';
-    for(var i=0;i<=ticks;i++){
-      var v=sc.mn+(sc.mx-sc.mn)*i/ticks;
-      var y=sc.y(v);
-      ctx.textAlign=side==='left'?'right':'left';
-      var x=side==='left'?padL-3:w-padR+3;
-      ctx.fillText((v>=0?'+':'')+v.toFixed(0), x, y);
-      // gridline (only from left axis)
-      if(side==='left'){
-        ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
-      }
-    }
-  }
-
-  // Zero lines (one per series, dashed)
-  function drawZero(sc, col){
-    var y=sc.y(0);
-    ctx.strokeStyle=col+'44'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  // Gridlines + Y-axis labels (single left axis)
+  var ticks=4;
+  ctx.font='8px IBM Plex Mono'; ctx.textBaseline='middle'; ctx.textAlign='right';
+  for(var i=0;i<=ticks;i++){
+    var v=mn+(mx-mn)*i/ticks;
+    var y=yy(v);
+    ctx.fillStyle='#cbd5e1';
+    ctx.fillText((v>=0?'+':'')+v.toFixed(1)+'%', padL-3, y);
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
-    ctx.setLineDash([]);
   }
 
-  drawYAxis(hs,'left','#f87171');
-  drawYAxis(as,'right','#60a5fa');
-  drawZero(hs,'#f87171');
-  drawZero(as,'#60a5fa');
+  // Zero line (shared, single)
+  var zy=yy(0);
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(padL,zy); ctx.lineTo(padL+cw,zy); ctx.stroke();
+  ctx.setLineDash([]);
 
-  // Draw a series with fill
-  function drawSeries(pts, sc, col){
+  // Draw series with fill
+  function drawSeries(pts, col){
     if(!pts.length) return;
-    var ri=parseInt(col.slice(1,3),16), gi=parseInt(col.slice(3,5),16), bi=parseInt(col.slice(5,7),16);
+    var ri=parseInt(col.slice(1,3),16),gi=parseInt(col.slice(3,5),16),bi=parseInt(col.slice(5,7),16);
     var lastV=pts[pts.length-1];
 
-    // Gradient fill
+    // Gradient fill between line and zero
     var grad=ctx.createLinearGradient(0,padT,0,padT+ch);
     if(lastV>=0){
       grad.addColorStop(0,'rgba('+ri+','+gi+','+bi+',0.15)');
@@ -124,43 +113,39 @@ function drawDualPanel(canvasId, hPts, aPts, hLabel, aLabel){
       grad.addColorStop(1,'rgba('+ri+','+gi+','+bi+',0.15)');
     }
     ctx.beginPath();
-    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),sc.y(v)):ctx.lineTo(xx(i,pts.length),sc.y(v));});
-    ctx.lineTo(xx(pts.length-1,pts.length),sc.y(0));
-    ctx.lineTo(xx(0,pts.length),sc.y(0));
+    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),yy(v)):ctx.lineTo(xx(i,pts.length),yy(v));});
+    ctx.lineTo(xx(pts.length-1,pts.length),zy);
+    ctx.lineTo(xx(0,pts.length),zy);
     ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
 
     // Line
     ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.lineJoin='round';
     ctx.beginPath();
-    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),sc.y(v)):ctx.lineTo(xx(i,pts.length),sc.y(v));});
+    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),yy(v)):ctx.lineTo(xx(i,pts.length),yy(v));});
     ctx.stroke();
 
     // End dot
-    var ex=xx(pts.length-1,pts.length), ey=sc.y(lastV);
+    var ex=xx(pts.length-1,pts.length), ey=yy(lastV);
     ctx.beginPath(); ctx.arc(ex,ey,2.5,0,Math.PI*2);
     ctx.fillStyle=col; ctx.fill();
   }
 
-  drawSeries(hPts, hs, '#f87171');
-  drawSeries(aPts, as, '#60a5fa');
+  drawSeries(hPts,'#f87171');
+  drawSeries(aPts,'#60a5fa');
 
-  // End labels
-  ctx.font='bold 9px IBM Plex Mono'; ctx.textBaseline='middle';
-  var hLastY=hs.y(hPts[hPts.length-1]);
-  var aLastY=as.y(aPts[aPts.length-1]);
-  // Nudge labels apart if too close
-  if(Math.abs(hLastY-aLastY)<10){ hLastY-=5; aLastY+=5; }
+  // End labels (nudge apart if overlapping)
+  var hLastY=yy(hPts[hPts.length-1]);
+  var aLastY=yy(aPts[aPts.length-1]);
+  if(Math.abs(hLastY-aLastY)<12){ hLastY-=6; aLastY+=6; }
+  ctx.font='bold 9px IBM Plex Mono'; ctx.textBaseline='middle'; ctx.textAlign='right';
   ctx.fillStyle=hPts[hPts.length-1]>=0?'#4ade80':'#f87171';
-  ctx.textAlign='right'; ctx.fillText('H '+hLabel, padL+cw-2, hLastY-6);
+  ctx.fillText('H '+hLabel, padL+cw-2, hLastY-6);
   ctx.fillStyle=aPts[aPts.length-1]>=0?'#4ade80':'#60a5fa';
   ctx.fillText('A '+aLabel, padL+cw-2, aLastY+6);
 
-  // Axis labels
-  ctx.font='7px IBM Plex Mono';
-  ctx.fillStyle='#f87171aa'; ctx.textAlign='center';
-  ctx.fillText('H', padL/2, H-4);
-  ctx.fillStyle='#60a5faaa';
-  ctx.fillText('A', w-padR/2, H-4);
+  // Axis label
+  ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='center';
+  ctx.fillText('ROI %', padL/2, H-4);
 }
 
 function renderAsiaStats(data){
