@@ -289,10 +289,10 @@ function renderJCPickFilter(){
 
   // Count preset buttons
   var countPresets = [
-    { v:'H2',      label:'H=2 only',  desc:'Exactly 2 experts tip H, none tip D or A' },
-    { v:'H3plus',  label:'H≥3 only',  desc:'3+ experts tip H, none tip D or A' },
-    { v:'A2',      label:'A=2 only',  desc:'Exactly 2 experts tip A, none tip D or H' },
-    { v:'A3plus',  label:'A≥3 only',  desc:'3+ experts tip A, none tip D or H' },
+    { v:'H2pure',  label:'H≥2 pure',  desc:'2+ experts tip H, none tip D or A' },
+    { v:'H3plus',  label:'H≥3',       desc:'3+ experts tip H (D/A allowed)' },
+    { v:'A2pure',  label:'A≥2 pure',  desc:'2+ experts tip A, none tip D or H' },
+    { v:'A3plus',  label:'A≥3',       desc:'3+ experts tip A (D/H allowed)' },
   ];
   var countRow = '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #1e293b">'
     +'<div style="font-size:9px;color:#64748b;font-family:monospace;margin-bottom:4px">COUNT PRESETS (pure signal — no mixed picks):</div>'
@@ -384,10 +384,10 @@ function applyJCPickFilter(r){
     var nH = tips.filter(function(t){return t==='H';}).length;
     var nD = tips.filter(function(t){return t==='D';}).length;
     var nA = tips.filter(function(t){return t==='A';}).length;
-    if(jcCountMode==='H2')     return nH===2 && nD===0 && nA===0;
-    if(jcCountMode==='H3plus') return nH>=3  && nD===0 && nA===0;
-    if(jcCountMode==='A2')     return nA===2 && nD===0 && nH===0;
-    if(jcCountMode==='A3plus') return nA>=3  && nD===0 && nH===0;
+    if(jcCountMode==='H2pure') return nH>=2 && nD===0 && nA===0;
+    if(jcCountMode==='H3plus') return nH>=3;
+    if(jcCountMode==='A2pure') return nA>=2 && nD===0 && nH===0;
+    if(jcCountMode==='A3plus') return nA>=3;
     return true;
   }
 
