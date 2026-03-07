@@ -41,9 +41,11 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // Convert cumulative P&L to running ROI% (each point = cumPnl/betsCount * 100)
+  // Skip first MIN_BETS to avoid early high-volatility spike
+  var MIN_BETS = 30;
   var hRoiPts=[], aRoiPts=[];
   sorted.forEach(function(r,i){
+    if(i < MIN_BETS) return;
     hRoiPts.push(Math.round(hRunning[i]/(i+1)*10000)/100);
     aRoiPts.push(Math.round(aRunning[i]/(i+1)*10000)/100);
   });
@@ -53,10 +55,10 @@ function renderBetCalc(data){
   wrap.style.height='auto';
   wrap.innerHTML='<canvas id="betChart" style="display:block;width:100%"></canvas>';
 
-  drawRoiPanel('betChart', hRoiPts, aRoiPts, fmt(hPnl/n*100)+'%', fmt(aPnl/n*100)+'%');
+  drawRoiPanel('betChart', hRoiPts, aRoiPts, fmt(hPnl/n*100)+'%', fmt(aPnl/n*100)+'%', MIN_BETS);
 }
 
-function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel){
+function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, minBets){
   var canvas=document.getElementById(canvasId);
   if(!canvas) return;
   var ctx=canvas.getContext('2d');
@@ -144,8 +146,8 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel){
   ctx.fillText('A '+aLabel, padL+cw-2, aLastY+6);
 
   // Axis label
-  ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='center';
-  ctx.fillText('ROI %', padL/2, H-4);
+  ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
+  ctx.fillText('ROI %  (first '+(minBets||0)+' bets excluded)', padL+2, H-4);
 }
 
 function renderAsiaStats(data){
