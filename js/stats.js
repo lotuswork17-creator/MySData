@@ -42,7 +42,7 @@ function renderBetCalc(data){
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
   // Skip first MIN_BETS to avoid early high-volatility spike
-  var MIN_BETS = 30;
+  var MIN_BETS = 50;
   var hRoiPts=[], aRoiPts=[];
   sorted.forEach(function(r,i){
     if(i < MIN_BETS) return;
