@@ -111,7 +111,7 @@ function renderEScore(RD){
   function fmtPlain(v){ return v===null?'—':(v>0?'+':'')+v.toFixed(1)+'%'; }
   function fmtColor(v){
     if(v===null||v===undefined) return '<span style="color:#334155">—</span>';
-    var c = v>=5?'#4ade80':v<=-5?'#f87171':'#94a3b8';
+    var c = v>=5?'#4ade80':v<=-5?'#f87171':'#e2e8f0';
     return '<span style="color:'+c+';font-weight:700">'+(v>0?'+':'')+v.toFixed(1)+'%</span>';
   }
   function roiBg(v){
@@ -134,7 +134,7 @@ function renderEScore(RD){
     return '';
   }
   function th(label, color, align){
-    return '<th style="background:#0f172a;color:'+(color||'#94a3b8')+';padding:5px 9px;'
+    return '<th style="background:#0f172a;color:'+(color||'#e2e8f0')+';padding:5px 9px;'
       +'text-align:'+(align||'right')+';font-size:9px;font-family:var(--mono);'
       +'white-space:nowrap;border-bottom:1px solid #1e293b">'+label+'</th>';
   }
@@ -142,7 +142,7 @@ function renderEScore(RD){
   // ── Generic band table
   function bandTable(rows){
     var vis = rows.filter(function(r){return r.n>=MIN;});
-    if(!vis.length) return '<p style="color:#475569;font-size:11px;font-family:var(--mono)">Insufficient data.</p>';
+    if(!vis.length) return '<p style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">Insufficient data.</p>';
     return '<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>'
       +th('Band','#e2e8f0','left')+th('N','#e2e8f0')+th('H ROI','#f87171')+th('A ROI','#60a5fa')+th('H\u2212A','#fbbf24')+th('\u2605','#fbbf24','center')
       +'</tr></thead><tbody>'
@@ -150,7 +150,7 @@ function renderEScore(RD){
         var edge = b.hroi!==null&&b.aroi!==null ? Math.round((b.hroi-b.aroi)*10)/10 : null;
         return '<tr>'
           +'<td style="padding:4px 9px;font-family:var(--mono);font-weight:700;color:#e2e8f0;text-align:left">'+b.label+'</td>'
-          +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);color:#94a3b8">'+b.n+'</td>'
+          +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);color:#e2e8f0">'+b.n+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(b.hroi)+'">'+fmtColor(b.hroi)+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(b.aroi)+'">'+fmtColor(b.aroi)+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(edge)+'">'+fmtColor(edge)+'</td>'
@@ -163,7 +163,7 @@ function renderEScore(RD){
   // ── Below-threshold table
   function belowTable(rows, contraKey){
     var vis = rows.filter(function(r){return r.n>=MIN;});
-    if(!vis.length) return '<p style="color:#475569;font-size:11px;font-family:var(--mono)">Insufficient data.</p>';
+    if(!vis.length) return '<p style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">Insufficient data.</p>';
     var contraCol = contraKey==='aroi'?'#60a5fa':'#f87171';
     var contraLabel = contraKey==='aroi'?'Contra A ROI':'Contra H ROI';
     return '<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>'
@@ -174,7 +174,7 @@ function renderEScore(RD){
         var contra = r[contraKey];
         return '<tr style="'+(contra!==null&&contra>=5?'background:rgba(74,222,128,0.07)':contra!==null&&contra<=-5?'background:rgba(248,113,113,0.07)':'')+'">'
           +'<td style="padding:4px 9px;font-family:var(--mono);font-weight:700;color:#e2e8f0;text-align:left">&lt;'+r.thresh+'%</td>'
-          +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);color:#94a3b8">'+r.n+'</td>'
+          +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);color:#e2e8f0">'+r.n+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(r.hroi)+'">'+fmtColor(r.hroi)+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(r.aroi)+'">'+fmtColor(r.aroi)+'</td>'
           +'<td style="padding:4px 9px;text-align:right;font-family:var(--mono);'+roiBg(edge)+'">'+fmtColor(edge)+'</td>'
@@ -214,7 +214,7 @@ function renderEScore(RD){
         ctx.fillStyle=b.aroi>=0?'rgba(96,165,250,0.75)':'rgba(96,165,250,0.3)';
         ctx.fillRect(x+bw+2,Math.min(y,zero),bw,Math.max(1,bh));
       }
-      ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#475569';
+      ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#cbd5e1';
       ctx.textAlign='center'; ctx.textBaseline='top';
       if(i%2===0) ctx.fillText(b.lo+'%',x+slot/2,H-pB+2);
     });
@@ -226,10 +226,10 @@ function renderEScore(RD){
     return '<div style="background:#0f172a;border-radius:8px;padding:14px;border-left:3px solid '+accentCol+';'+(good?'box-shadow:0 0 0 1px rgba(74,222,128,0.12)':'')+'">'
       +'<div style="font-size:9px;font-weight:700;color:'+accentCol+';font-family:var(--mono);letter-spacing:.06em;margin-bottom:6px">'+title+'</div>'
       +'<div style="font-size:22px;font-weight:700;color:#e2e8f0;font-family:var(--mono);margin-bottom:4px">'+bandLabel+'</div>'
-      +'<div style="font-size:11px;color:#94a3b8;font-family:var(--mono);margin-bottom:8px">'+roiLabel
-        +' <b style="color:'+(roiVal!==null&&roiVal>=5?'#4ade80':roiVal!==null&&roiVal<=-5?'#f87171':'#94a3b8')+'">'+fmtPlain(roiVal)+'</b>'
+      +'<div style="font-size:11px;color:#e2e8f0;font-family:var(--mono);margin-bottom:8px">'+roiLabel
+        +' <b style="color:'+(roiVal!==null&&roiVal>=5?'#4ade80':roiVal!==null&&roiVal<=-5?'#f87171':'#e2e8f0')+'">'+fmtPlain(roiVal)+'</b>'
         +' <span style="color:#334155">&nbsp;n='+n+'</span></div>'
-      +'<div style="font-size:9px;color:#475569;font-family:var(--mono);padding:5px 8px;background:#070d18;border-radius:4px">'+filterHint+'</div>'
+      +'<div style="font-size:9px;color:#cbd5e1;font-family:var(--mono);padding:5px 8px;background:#070d18;border-radius:4px">'+filterHint+'</div>'
       +'</div>';
   }
 
@@ -263,7 +263,7 @@ function renderEScore(RD){
   // ── Section label helper
   function secHead(letter, title, color, note){
     return '<div style="font-size:10px;font-weight:700;color:'+color+';font-family:var(--mono);letter-spacing:.05em;margin-bottom:4px">'+letter+' · '+title+'</div>'
-      +(note?'<div style="font-size:9px;color:#64748b;font-family:var(--mono);margin-bottom:7px">'+note+'</div>':'');
+      +(note?'<div style="font-size:9px;color:#cbd5e1;font-family:var(--mono);margin-bottom:7px">'+note+'</div>':'');
   }
 
   el.innerHTML =
@@ -272,12 +272,12 @@ function renderEScore(RD){
     +'Thresholds update automatically as data grows. &nbsp;'
     +'Baseline: <span style="color:#f87171">H ROI '+fmtPlain(D.allHroi)+'</span> &nbsp;'
     +'<span style="color:#60a5fa">A ROI '+fmtPlain(D.allAroi)+'</span> &nbsp;'
-    +'<span style="color:#475569;font-size:9px">(min n='+MIN+' to show row, n='+MIN_S+' for suggestions)</span></div>'
+    +'<span style="color:#cbd5e1;font-size:9px">(min n='+MIN+' to show row, n='+MIN_S+' for suggestions)</span></div>'
 
     // Suggestion cards
     +'<div style="margin-bottom:22px">'
     +'<div style="font-size:10px;font-weight:700;color:#fbbf24;font-family:var(--mono);letter-spacing:.05em;margin-bottom:10px">'
-    +'💡 AUTO-SUGGESTED FILTER VALUES <span style="font-size:9px;color:#64748b;font-weight:400">— recomputed live from all '+D.n+' records</span></div>'
+    +'💡 AUTO-SUGGESTED FILTER VALUES <span style="font-size:9px;color:#cbd5e1;font-weight:400">— recomputed live from all '+D.n+' records</span></div>'
     +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+cards+'</div></div>'
 
     // Row 1: A+B band tables
@@ -285,13 +285,13 @@ function renderEScore(RD){
     +'<div>'
     +secHead('A','H EXPERT % — ALL RECORDS','#f87171','Every record where H score falls in band, regardless of who leads')
     +barChart('esb-bar-h')
-    +'<div style="font-size:8px;color:#475569;font-family:var(--mono);margin-bottom:6px"><span style="color:#f87171">■</span> H ROI &nbsp;<span style="color:#60a5fa">■</span> A ROI</div>'
+    +'<div style="font-size:8px;color:#cbd5e1;font-family:var(--mono);margin-bottom:6px"><span style="color:#f87171">■</span> H ROI &nbsp;<span style="color:#60a5fa">■</span> A ROI</div>'
     +bandTable(D.hBands)
     +'</div>'
     +'<div>'
     +secHead('B','A EXPERT % — ALL RECORDS','#60a5fa','Every record where A score falls in band, regardless of who leads')
     +barChart('esb-bar-a')
-    +'<div style="font-size:8px;color:#475569;font-family:var(--mono);margin-bottom:6px"><span style="color:#f87171">■</span> H ROI &nbsp;<span style="color:#60a5fa">■</span> A ROI</div>'
+    +'<div style="font-size:8px;color:#cbd5e1;font-family:var(--mono);margin-bottom:6px"><span style="color:#f87171">■</span> H ROI &nbsp;<span style="color:#60a5fa">■</span> A ROI</div>'
     +bandTable(D.aBands)
     +'</div>'
     +'</div>'
