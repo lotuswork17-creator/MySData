@@ -45,11 +45,15 @@ function renderBetCalc(data){
   var WINDOW = 100;
   var hRoiPts=[], aRoiPts=[];
   var start = Math.max(0, sorted.length - WINDOW);
+  var winCount=0, hWinPnl=0, aWinPnl=0;
   sorted.forEach(function(r,i){
     if(i < start) return;
-    // ROI% calculated over the full history up to this point (not just the window)
-    hRoiPts.push(Math.round(hRunning[i]/(i+1)*10000)/100);
-    aRoiPts.push(Math.round(aRunning[i]/(i+1)*10000)/100);
+    winCount++;
+    hWinPnl += hRunning[i] - (i > 0 ? hRunning[i-1] : 0);
+    aWinPnl += aRunning[i] - (i > 0 ? aRunning[i-1] : 0);
+    // ROI% over the window only so Y-axis fits last 100 values
+    hRoiPts.push(Math.round(hWinPnl/winCount*10000)/100);
+    aRoiPts.push(Math.round(aWinPnl/winCount*10000)/100);
   });
 
   // ── Single panel, shared Y-axis ROI chart
