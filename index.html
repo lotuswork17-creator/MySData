@@ -26,10 +26,12 @@
     </div>
   </div>
   <div class="filter-header">
-    <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
-    <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
+    <button class="filter-toggle" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Show Filters</span> <span class="ft-arrow" style="transform:rotate(-90deg)">▼</span></button>
+    <span id="resultsInline" style="display:inline;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
-  <div class="filters" id="filtersPanel">
+
+  <!-- Secondary filters: collapsed by default -->
+  <div class="filters collapsed" id="filtersPanel">
     <div class="fg" style="min-width:100px;max-width:130px">
       <div class="fl">Date Range</div>
       <select id="dateRangeSelect">
@@ -54,7 +56,10 @@
         <option value="Suspen">Suspended</option>
       </select>
     </div>
-    <div class="fg" style="min-width:90px;max-width:120px">
+  </div>
+
+  <!-- Main filters: always visible -->
+  <div class="filters" id="filtersMain">
       <div class="fl">Asia Line</div>
       <select id="asialineSelect"><option value="">All Lines</option></select>
     </div>
