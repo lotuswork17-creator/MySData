@@ -129,14 +129,15 @@ canvas#betChart{width:100%;height:80px}
   .hstat{font-size:9px;padding:2px 6px}
   .updated{font-size:9px}
 
-  /* Filters: 2-column grid on mobile */
-  .filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:5px}
+  /* Filters: auto-fill, min 100px → 3 per row on most phones */
+  .filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px;margin-bottom:5px}
   .filters.collapsed{display:none}
   .fg{min-width:0}
-  input,select{font-size:12px;padding:6px 8px}
+  input,select{font-size:11px;padding:5px 7px}
   .fl{font-size:9px}
 
-  /* JC Expert Picks spans full width */
+  /* Expert Signal & JC Expert Picks: wider, span 2 cols */
+  .fg-expert{grid-column:span 2}
   .fg-jcpick{grid-column:1/-1}
   /* Smart Money spans full width */
   .fg-smart{grid-column:1/-1}
