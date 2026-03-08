@@ -27,19 +27,6 @@
     </div>
   </div>
 
-  <!-- Toggle row: two separate controls -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-    <button class="filter-toggle-secondary" id="mainFilterToggle" onclick="toggleMainFilters()">
-      <span class="ft-arrow" id="mainFilterArrow" style="transition:transform .2s;display:inline-block">▼</span>
-      <span id="mainFilterLabel">Hide Filters</span>
-    </button>
-    <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
-      <span class="ft-arrow" id="secFilterArrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
-      <span id="filterToggleLabel">More Filters</span>
-    </button>
-    <button class="btn-clear" onclick="clearFilters()" style="margin-left:auto">&#x2715; Clear</button>
-  </div>
-
   <!-- Secondary filters: collapsed by default -->
   <div class="filters collapsed" id="filtersPanel">
     <div class="fg" style="min-width:100px;max-width:130px">
@@ -224,6 +211,17 @@
         <option disabled>── Contrarian A Signals ──</option>
         <option value="sm7">Expert H≥83% + Line Unchanged (A bet)</option>
       </select>
+    </div>
+    <div class="fg" style="flex:0 0 auto;min-width:auto;display:flex;flex-direction:column;gap:4px;justify-content:flex-end;padding-bottom:2px">
+      <button class="filter-toggle-secondary" id="mainFilterToggle" onclick="toggleMainFilters()">
+        <span class="ft-arrow" id="mainFilterArrow" style="transition:transform .2s;display:inline-block">▼</span>
+        <span id="mainFilterLabel">Hide</span>
+      </button>
+      <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
+        <span class="ft-arrow" id="secFilterArrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
+        <span id="filterToggleLabel">More</span>
+      </button>
+      <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
     </div>
   </div>
 </header>
