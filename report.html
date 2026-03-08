@@ -227,6 +227,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderEScore() -->
 </div>
 
+<div class="rpt-section" id="tab9">
+  <!-- content injected by renderML() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -261,6 +265,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-odds.js"></script>
 <script src="js/report-jcexpert.js"></script>
 <script src="js/report-escore.js"></script>
+<script src="js/report-ml.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -276,6 +281,7 @@ var TABS = [
   { label:'📈 Odds Analysis', render: renderOdds   },
   { label:'🔬 JC Expert',    render: renderJCExpert },
   { label:'📉 Expert Bands', render: renderEScore },
+  { label:'🤖 ML Model',    render: renderML },
 ];
 
 // Build tab bar from registry
