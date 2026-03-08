@@ -232,16 +232,22 @@ function toggleBetCalc(){
   if(arrow)arrow.style.transform=hidden?'':' rotate(-90deg)';
 }
 
+function toggleMainFilters(){
+  var panel=document.getElementById('filtersMain');
+  var arrow=document.getElementById('mainFilterArrow');
+  var lbl=document.getElementById('mainFilterLabel');
+  var collapsed=panel.classList.toggle('collapsed');
+  if(arrow) arrow.style.transform=collapsed?'rotate(-90deg)':'rotate(0deg)';
+  if(lbl) lbl.textContent=collapsed?'Show Filters':'Hide Filters';
+}
+
 function toggleFilters(){
   var panel=document.getElementById('filtersPanel');
-  var btn=document.getElementById('filterToggle');
+  var arrow=document.getElementById('secFilterArrow');
   var lbl=document.getElementById('filterToggleLabel');
-  var arrow=btn&&btn.querySelector('.ft-arrow');
   var collapsed=panel.classList.toggle('collapsed');
-  btn.classList.toggle('collapsed',collapsed);
-  btn.classList.toggle('active',!collapsed);
-  lbl.textContent=collapsed?'Show Filters':'Hide Filters';
   if(arrow) arrow.style.transform=collapsed?'rotate(-90deg)':'rotate(0deg)';
+  if(lbl) lbl.textContent=collapsed?'More Filters':'Less Filters';
 }
 
 function clearFilters(){
