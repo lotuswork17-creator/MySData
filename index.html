@@ -25,9 +25,12 @@
       </div>
     </div>
   </div>
-  <div class="filter-header">
-    <button class="filter-toggle" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Show Filters</span> <span class="ft-arrow" style="transform:rotate(-90deg)">▼</span></button>
-    <span id="resultsInline" style="display:inline;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
+  <div class="filters-secondary-row">
+    <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
+      <span class="ft-arrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
+      <span id="filterToggleLabel">More Filters</span>
+    </button>
+    <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
 
   <!-- Secondary filters: collapsed by default -->
@@ -60,6 +63,7 @@
 
   <!-- Main filters: always visible -->
   <div class="filters" id="filtersMain">
+    <div class="fg" style="min-width:90px;max-width:120px">
       <div class="fl">Asia Line</div>
       <select id="asialineSelect"><option value="">All Lines</option></select>
     </div>
