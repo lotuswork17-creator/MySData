@@ -237,10 +237,14 @@ function toggleFilters(){
   var panel=document.getElementById('filtersPanel');
   var btn=document.getElementById('filterToggle');
   var lbl=document.getElementById('filterToggleLabel');
+  var inline=document.getElementById('resultsInline');
+  var arrow=btn.querySelector('.ft-arrow');
   var collapsed=panel.classList.toggle('collapsed');
   btn.classList.toggle('collapsed',collapsed);
   btn.classList.toggle('active',!collapsed);
   lbl.textContent=collapsed?'Show Filters':'Hide Filters';
+  if(inline) inline.style.display=collapsed?'inline':'none';
+  if(arrow) arrow.style.transform=collapsed?'rotate(-90deg)':'rotate(0deg)';
 }
 
 function clearFilters(){
