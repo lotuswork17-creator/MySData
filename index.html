@@ -22,15 +22,9 @@
       <div class="hstats">
         <div class="hstat" style="border-color:rgba(74,222,128,.3)">Results <b id="hResult" style="color:var(--accent)">—</b></div>
         <div class="hstat" style="border-color:rgba(96,165,250,.3)">Upcoming <b id="hPreeve" style="color:var(--accent2)">—</b></div>
+        <div class="hstat" style="border-color:rgba(148,163,184,.2)">Filtered <b id="showCount" style="color:var(--accent2)">—</b> / <b id="totalCount" style="color:var(--muted)">—</b></div>
       </div>
     </div>
-  </div>
-  <div class="filters-secondary-row">
-    <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
-      <span class="ft-arrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
-      <span id="filterToggleLabel">More Filters</span>
-    </button>
-    <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
   </div>
 
   <!-- Secondary filters: collapsed by default -->
@@ -219,6 +213,12 @@
       </select>
     </div>
     <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
+    <div class="fg" style="flex:0 0 auto;min-width:auto;justify-content:flex-end;padding-top:16px">
+      <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
+        <span class="ft-arrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
+        <span id="filterToggleLabel">More</span>
+      </button>
+    </div>
   </div>
 </header>
 
