@@ -244,6 +244,45 @@ function computeML(results){
     else tn++;
   });
 
+  // ── Upcoming predictions ──
+  var upcoming = results.filter(function(r){
+    return r.STATUS==='PREEVE' && r.ASIALINE != null && r.ASIAH && r.ASIAA;
+  });
+  upcoming.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||'') || (a.TIME||0)-(b.TIME||0); });
+
+  // Compute expected ROI for a bet side using test-set calibration
+  // Use the ROI at >=50% threshold as baseline estimate
+  var baseRoiH = roiResults[0].res.h.roi;
+  var baseRoiA = roiResults[0].res.a.roi;
+
+  var predictions = upcoming.map(function(r){
+    var x = extractFeatures(r);
+    var pH = predictProb(model, x);
+    var pA = 1 - pH;
+    var rec = pH >= 0.60 ? 'H' : pA >= 0.60 ? 'A' : 'SKIP';
+    // Expected ROI: scale from test-set calibration at confidence level
+    // Higher confidence → interpolate toward best threshold ROI
+    var conf = Math.max(pH, pA);
+    var threshIdx = Math.min(3, Math.floor((conf - 0.50) / 0.05));
+    var roiH_est = roiResults[Math.min(threshIdx, roiResults.length-1)].res.h.roi;
+    var roiA_est = roiResults[Math.min(threshIdx, roiResults.length-1)].res.a.roi;
+    var expRoi = rec==='H' ? roiH_est : rec==='A' ? roiA_est : 0;
+
+    // Feature contributions (raw values for display)
+    var featureVals = FEATURE_NAMES.map(function(name, j){
+      return { name: name, raw: x[j],
+        contrib: model.w[j] * (x[j]-model.mu[j]) / (model.sd[j]||1) };
+    });
+    featureVals.sort(function(a,b){ return Math.abs(b.contrib)-Math.abs(a.contrib); });
+
+    return {
+      r: r, pH: pH, pA: pA, rec: rec, expRoi: expRoi,
+      conf: conf, featureVals: featureVals
+    };
+  });
+  // Sort by confidence descending
+  predictions.sort(function(a,b){ return b.conf - a.conf; });
+
   return {
     nTotal: n, nTrain: train.length, nTest: test.length,
     trainAcc: accuracy(train),
@@ -258,7 +297,8 @@ function computeML(results){
     confusion: { tp:tp, fp:fp, tn:tn, fn:fn },
     trainPct: Math.round(0.75*100),
     testSamples: test,
-    model: model
+    model: model,
+    predictions: predictions
   };
 }
 
@@ -368,6 +408,9 @@ function renderML(RD){
   h += '• <b style="color:#e2e8f0">Limitation:</b> 1,700 records is modest for ML. Expect variance in results across retraining.<br>';
   h += '• <b style="color:#e2e8f0">Next steps:</b> XGBoost or ensemble methods would likely improve accuracy by 2–5%.';
   h += '</div></div>';
+
+  // ── Upcoming predictions ──
+  h += renderMLPredictionsHTML(ml.predictions, ml.testAcc);
 
   el.innerHTML = h;
 
@@ -500,4 +543,129 @@ function drawRoiCurveChart(hPts, aPts){
   ctx.fillText('H', padL+20, padT+1);
   ctx.fillStyle='#f87171'; ctx.fillRect(padL+30,padT,18,2);
   ctx.fillText('A', padL+50, padT+1);
+}
+
+// ── Predictions HTML builder (shared by report tab + index widget) ──
+function renderMLPredictionsHTML(predictions, testAcc){
+  if(!predictions || !predictions.length){
+    return '<div style="padding:14px;color:#64748b;font-size:12px">No upcoming matches with sufficient data.</div>';
+  }
+
+  var recColor = function(rec){ return rec==='H'?'#60a5fa': rec==='A'?'#f87171':'#64748b'; };
+  var recBg    = function(rec){ return rec==='H'?'rgba(96,165,250,.15)': rec==='A'?'rgba(248,113,113,.15)':'rgba(100,116,139,.1)'; };
+  var confBar  = function(pct, col){
+    return '<div style="height:6px;border-radius:3px;background:var(--border);margin-top:3px">'+
+           '<div style="width:'+Math.round(pct*100)+'%;height:100%;background:'+col+';border-radius:3px"></div></div>';
+  };
+
+  var h = '';
+  h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
+  h += '<div class="rpt-title">🎯 Upcoming Match Predictions</div>';
+  h += '<div class="rpt-sub">Model trained on historical data. Confidence = predicted probability. Bet recommended at ≥60%. ';
+  h += 'Est. ROI derived from test-set backtest at same confidence threshold. ';
+  h += 'Model test accuracy: <b style="color:#4ade80">'+(testAcc*100).toFixed(1)+'%</b>. Use as one signal, not sole basis for betting.</div>';
+
+  predictions.forEach(function(p, idx){
+    var r = p.r;
+    var date = r.DATE || '';
+    var time = r.TIME ? String(r.TIME).padStart(4,'0').replace(/(\d\d)(\d\d)/,'$1:$2') : '';
+    var league = r.CATEGORY || '';
+    var rec = p.rec;
+    var isSkip = rec === 'SKIP';
+
+    h += '<div style="background:var(--surface2);border:1px solid '+(isSkip?'var(--border)':recColor(rec)+'55')+';border-radius:10px;padding:12px;margin-bottom:8px">';
+
+    // Header row: match info + recommendation badge
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">';
+    h += '<div>';
+    h += '<div style="font-size:12px;font-weight:700;color:#e2e8f0">'+r.TEAMH+' <span style="color:#64748b">vs</span> '+r.TEAMA+'</div>';
+    h += '<div style="font-size:10px;color:#64748b;font-family:var(--mono);margin-top:2px">'+date+' '+time+' · '+league+'</div>';
+    h += '<div style="font-size:10px;color:#94a3b8;margin-top:2px">Line: <b style="color:#e2e8f0">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</b> · H odds: <b style="color:#e2e8f0">'+(r.ASIAH||'—')+'</b> · A odds: <b style="color:#e2e8f0">'+(r.ASIAA||'—')+'</b></div>';
+    h += '</div>';
+    h += '<div style="text-align:right;flex-shrink:0">';
+    h += '<div style="display:inline-block;padding:4px 10px;border-radius:6px;background:'+recBg(rec)+';border:1px solid '+recColor(rec)+'44;font-size:12px;font-weight:800;color:'+recColor(rec)+'">'+rec+'</div>';
+    if(!isSkip){
+      var roiSign = p.expRoi >= 0 ? '+' : '';
+      h += '<div style="font-size:10px;font-family:var(--mono);color:#94a3b8;margin-top:3px">Est ROI <span style="color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+roiSign+p.expRoi.toFixed(1)+'%</span></div>';
+    }
+    h += '</div>';
+    h += '</div>';
+
+    // Confidence bars
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    h += '<div><div style="font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.04em">H Confidence</div>';
+    h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#60a5fa">'+Math.round(p.pH*100)+'%</div>';
+    h += confBar(p.pH, '#60a5fa')+'</div>';
+    h += '<div><div style="font-size:9px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.04em">A Confidence</div>';
+    h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171">'+Math.round(p.pA*100)+'%</div>';
+    h += confBar(p.pA, '#f87171')+'</div>';
+    h += '</div>';
+
+    // Feature contributions (collapsible)
+    var detailId = 'mlf_'+idx;
+    h += '<div style="margin-top:4px">';
+    h += '<button onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" '+
+         'style="font-size:9px;color:#64748b;background:none;border:none;cursor:pointer;padding:0;font-family:var(--mono)">▶ Feature breakdown</button>';
+    h += '<div id="'+detailId+'" style="display:none;margin-top:6px">';
+    h += '<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Top Drivers (contribution to H prediction)</div>';
+    var maxC = Math.max.apply(null, p.featureVals.map(function(f){ return Math.abs(f.contrib); }))||1;
+    p.featureVals.forEach(function(f){
+      var pct = Math.abs(f.contrib)/maxC*100;
+      var col = f.contrib > 0 ? '#60a5fa' : '#f87171';
+      var dir = f.contrib > 0 ? '▲H' : '▼A';
+      // Format raw value readably
+      var rawDisp;
+      if(f.name==='Market Implied H%'||f.name==='Predict H%'||f.name==='Predict A%') rawDisp=(f.raw*100).toFixed(0)+'%';
+      else rawDisp=f.raw.toFixed(3);
+      h += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">';
+      h += '<div style="font-size:9px;color:#64748b;width:110px;flex-shrink:0;text-align:right">'+f.name+'</div>';
+      h += '<div style="width:8px;font-size:8px;color:'+col+';flex-shrink:0;text-align:center">'+dir+'</div>';
+      h += '<div style="flex:1;background:var(--border);border-radius:2px;height:8px">';
+      h += '<div style="width:'+pct.toFixed(0)+'%;height:100%;background:'+col+';border-radius:2px"></div></div>';
+      h += '<div style="font-size:9px;font-family:var(--mono);color:#94a3b8;width:40px;text-align:right">'+rawDisp+'</div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+
+    h += '</div>'; // match card
+  });
+
+  h += '</div>';
+  return h;
+}
+
+// ── Index page widget (compact) ──
+function renderMLIndexWidget(mlPredictions, containerId){
+  var el = document.getElementById(containerId);
+  if(!el || !mlPredictions || !mlPredictions.length) return;
+
+  // Show only top 5 highest-confidence non-skip picks
+  var top = mlPredictions.filter(function(p){ return p.rec!=='SKIP'; }).slice(0,5);
+  if(!top.length){ el.innerHTML='<div style="font-size:11px;color:#64748b;padding:8px">No high-confidence picks today.</div>'; return; }
+
+  var recColor = function(rec){ return rec==='H'?'#60a5fa':'#f87171'; };
+  var h = '';
+  h += '<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 ML Picks (Top '+top.length+' upcoming)</div>';
+
+  top.forEach(function(p){
+    var r = p.r;
+    var roiSign = p.expRoi >= 0 ? '+' : '';
+    h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">';
+    // Bet badge
+    h += '<div style="font-size:10px;font-weight:800;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:'+recColor(p.rec)+'22;color:'+recColor(p.rec)+';flex-shrink:0;border:1px solid '+recColor(p.rec)+'44">'+p.rec+'</div>';
+    // Match
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.TEAMH+' vs '+r.TEAMA+'</div>';
+    h += '<div style="font-size:9px;color:#64748b;font-family:var(--mono)">'+(r.DATE||'')+' · Line '+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</div>';
+    h += '</div>';
+    // Confidence + ROI
+    h += '<div style="text-align:right;flex-shrink:0">';
+    h += '<div style="font-size:12px;font-weight:800;font-family:var(--mono);color:'+recColor(p.rec)+'">'+Math.round(Math.max(p.pH,p.pA)*100)+'%</div>';
+    h += '<div style="font-size:9px;color:'+(p.expRoi>=0?'#4ade80':'#f87171')+';font-family:var(--mono)">'+roiSign+p.expRoi.toFixed(1)+'%</div>';
+    h += '</div>';
+    h += '</div>';
+  });
+
+  h += '<div style="margin-top:5px;text-align:right"><a href="report.html#ml" style="font-size:9px;color:#60a5fa;text-decoration:none;font-family:var(--mono)">Full predictions in Report →</a></div>';
+  el.innerHTML = h;
 }
