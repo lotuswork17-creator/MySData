@@ -212,17 +212,19 @@
         <option value="sm7">Expert H≥83% + Line Unchanged (A bet)</option>
       </select>
     </div>
-    <div class="filter-actions">
-      <button class="filter-toggle-secondary" id="mainFilterToggle" onclick="toggleMainFilters()">
-        <span class="ft-arrow" id="mainFilterArrow" style="transition:transform .2s;display:inline-block">▼</span>
-        <span id="mainFilterLabel">Hide</span>
-      </button>
-      <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
-        <span class="ft-arrow" id="secFilterArrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
-        <span id="filterToggleLabel">More</span>
-      </button>
-      <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
-    </div>
+  </div>
+
+  <!-- Persistent control bar — always visible -->
+  <div class="filter-actions">
+    <button class="filter-toggle-secondary" id="mainFilterToggle" onclick="toggleMainFilters()">
+      <span class="ft-arrow" id="mainFilterArrow" style="transition:transform .2s;display:inline-block">▼</span>
+      <span id="mainFilterLabel">Hide</span>
+    </button>
+    <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
+      <span class="ft-arrow" id="secFilterArrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
+      <span id="filterToggleLabel">More</span>
+    </button>
+    <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
   </div>
 </header>
 
