@@ -1,0 +1,503 @@
+// ═══════════════════════════════════════════════════════════════
+// TAB 10: ML MODEL — Logistic Regression (Asia H/A)
+// In-browser training: no external libs needed
+// ═══════════════════════════════════════════════════════════════
+
+// ── Helpers ─────────────────────────────────────────────────────
+function sigmoid(x){ return 1/(1+Math.exp(-Math.max(-30,Math.min(30,x)))); }
+
+function hcapOutcome(gh, ga, line){
+  var adj = gh - ga - line;
+  if(adj > 0.01) return 'H';
+  if(adj < -0.01) return 'A';
+  return 'P';
+}
+
+function extractFeatures(r){
+  // 12 numeric features — all pre-match
+  var asiah  = r.ASIAH  || 0;
+  var asiaa  = r.ASIAA  || 0;
+  var asiahn = r.ASIAHLN || asiah;
+  var asiaan = r.ASIAALN || asiaa;
+  var linen  = r.ASIALINELN || r.ASIALINE || 0;
+  var line   = r.ASIALINE || 0;
+
+  // Implied H probability from closing odds (normalised to remove vig)
+  var vigH = asiah > 0 ? 1/asiah : 0.5;
+  var vigA = asiaa > 0 ? 1/asiaa : 0.5;
+  var total = vigH + vigA || 1;
+  var impliedH = vigH / total;   // 0–1
+
+  return [
+    line,                              // handicap line (H gives +ve = favoured)
+    impliedH,                          // market implied H prob (closing)
+    (line - linen),                    // line movement (+ = H got worse)
+    (asiah - asiahn),                  // H odds drift (+ = H lengthened = money on A)
+    (asiaa - asiaan),                  // A odds drift (+ = A lengthened = money on H)
+    (r.PREDICTH || 0) / 100,          // model H%
+    (r.PREDICTA || 0) / 100,          // model A%
+    Math.min((r.GEMH || 0), 9) / 9,   // GEM expert H votes (normalised)
+    Math.min((r.GEMA || 0), 9) / 9,   // GEM expert A votes
+    Math.min((r.GPTH || 0), 8) / 8,   // GPT H votes
+    Math.min((r.GPTA || 0), 7) / 7,   // GPT A votes
+    // H form advantage: (H home wins - H home losses) vs (A away wins - A away losses)
+    ((r.REC3MHH||0) - (r.REC3MHA||0) - (r.REC3MAA||0) + (r.REC3MAH||0)) / 10
+  ];
+}
+
+var FEATURE_NAMES = [
+  'Asia Line', 'Market Implied H%', 'Line Move', 'H Odds Drift',
+  'A Odds Drift', 'Predict H%', 'Predict A%',
+  'GEM H Votes', 'GEM A Votes', 'GPT H Votes', 'GPT A Votes',
+  'Form Advantage'
+];
+
+// ── Logistic Regression (mini-batch SGD) ────────────────────────
+function trainLogReg(X, y, opts){
+  opts = opts || {};
+  var lr    = opts.lr    || 0.05;
+  var epochs= opts.epochs|| 400;
+  var reg   = opts.reg   || 0.001;  // L2 regularisation
+  var n = X.length, d = X[0].length;
+  var w = new Array(d).fill(0);
+  var b = 0;
+
+  // Standardise features
+  var mu = new Array(d).fill(0), sd = new Array(d).fill(1);
+  for(var j=0;j<d;j++){
+    var s=0; for(var i=0;i<n;i++) s+=X[i][j]; mu[j]=s/n;
+    var v=0; for(var i=0;i<n;i++) v+=Math.pow(X[i][j]-mu[j],2); sd[j]=Math.sqrt(v/n)||1;
+  }
+  var Xs = X.map(function(xi){
+    return xi.map(function(v,j){ return (v-mu[j])/sd[j]; });
+  });
+
+  for(var ep=0;ep<epochs;ep++){
+    var dw = new Array(d).fill(0), db = 0;
+    for(var i=0;i<n;i++){
+      var pred = sigmoid(Xs[i].reduce(function(s,v,j){ return s+v*w[j]; },b));
+      var err = pred - y[i];
+      for(var j=0;j<d;j++) dw[j] += err * Xs[i][j];
+      db += err;
+    }
+    for(var j=0;j<d;j++) w[j] = w[j] - lr*(dw[j]/n + reg*w[j]);
+    b -= lr * db/n;
+  }
+  return { w:w, b:b, mu:mu, sd:sd };
+}
+
+function predictProb(model, xi){
+  var z = model.b;
+  for(var j=0;j<model.w.length;j++){
+    z += model.w[j] * (xi[j]-model.mu[j])/model.sd[j];
+  }
+  return sigmoid(z);
+}
+
+// ── Main compute ─────────────────────────────────────────────────
+function computeML(results){
+  // Filter to completed matches with scores
+  var data = results.filter(function(r){
+    return r.STATUS==='Result' &&
+           typeof r.RESULTH === 'number' && r.RESULTH >= 0 &&
+           typeof r.RESULTA === 'number' && r.RESULTA >= 0 &&
+           r.ASIALINE != null && r.ASIAH && r.ASIAA;
+  });
+
+  // Sort by date (temporal split)
+  data.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||''); });
+
+  // Build samples (exclude pushes from training)
+  var samples = [];
+  data.forEach(function(r){
+    var o = hcapOutcome(r.RESULTH, r.RESULTA, r.ASIALINE);
+    if(o === 'P') return; // skip pushes
+    samples.push({
+      x: extractFeatures(r),
+      y: o === 'H' ? 1 : 0,  // 1=H wins, 0=A wins
+      r: r,
+      outcome: o,
+      date: r.DATE
+    });
+  });
+
+  var n = samples.length;
+  // Temporal split: 75% train, 25% test
+  var splitIdx = Math.floor(n * 0.75);
+  var train = samples.slice(0, splitIdx);
+  var test  = samples.slice(splitIdx);
+
+  var Xtr = train.map(function(s){ return s.x; });
+  var ytr = train.map(function(s){ return s.y; });
+
+  // Train model
+  var model = trainLogReg(Xtr, ytr, { lr:0.08, epochs:500, reg:0.002 });
+
+  // Predict on test set
+  test.forEach(function(s){
+    s.pH = predictProb(model, s.x);
+    s.pA = 1 - s.pH;
+    s.pred = s.pH >= 0.5 ? 'H' : 'A';
+    s.correct = s.pred === s.outcome;
+  });
+  train.forEach(function(s){
+    s.pH = predictProb(model, s.x);
+    s.pA = 1 - s.pH;
+    s.pred = s.pH >= 0.5 ? 'H' : 'A';
+    s.correct = s.pred === s.outcome;
+  });
+
+  // ── Accuracy metrics ──
+  function accuracy(set){
+    var correct = set.filter(function(s){ return s.correct; }).length;
+    return correct / set.length;
+  }
+  function classAcc(set, cls){
+    var sub = set.filter(function(s){ return s.outcome===cls; });
+    var correct = sub.filter(function(s){ return s.pred===cls; }).length;
+    return { acc: sub.length ? correct/sub.length : 0, n: sub.length };
+  }
+
+  // ── ROI backtest ──
+  // Strategy: bet H when pH >= threshold, bet A when pA >= threshold
+  function roiBacktest(set, threshold){
+    var hBets=0, hWin=0, hPnl=0;
+    var aBets=0, aWin=0, aPnl=0;
+
+    set.forEach(function(s){
+      var odds = s.r;
+      if(s.pH >= threshold){
+        hBets++;
+        var o = s.outcome;
+        if(o==='H'){ hWin++; hPnl += (odds.ASIAH||1.9) - 1; }
+        else { hPnl -= 1; }
+      }
+      if(s.pA >= threshold){
+        aBets++;
+        var o = s.outcome;
+        if(o==='A'){ aWin++; aPnl += (odds.ASIAA||1.9) - 1; }
+        else { aPnl -= 1; }
+      }
+    });
+
+    return {
+      h: { bets:hBets, wins:hWin, pnl:hPnl, roi: hBets ? hPnl/hBets*100 : 0 },
+      a: { bets:aBets, wins:aWin, pnl:aPnl, roi: aBets ? aPnl/aBets*100 : 0 }
+    };
+  }
+
+  var thresholds = [0.50, 0.55, 0.60, 0.65, 0.70];
+  var roiResults = thresholds.map(function(t){
+    return { t: t, res: roiBacktest(test, t) };
+  });
+
+  // ── ROI curve (cumulative, sorted by confidence) ──
+  var roiCurveH = [], roiCurveA = [];
+  var sortedH = test.slice().sort(function(a,b){ return b.pH-a.pH; });
+  var sortedA = test.slice().sort(function(a,b){ return b.pA-a.pA; });
+  var cumH=0, cumA=0;
+  sortedH.forEach(function(s,i){
+    cumH += s.outcome==='H' ? (s.r.ASIAH||1.9)-1 : -1;
+    roiCurveH.push(Math.round(cumH/(i+1)*10000)/100);
+  });
+  sortedA.forEach(function(s,i){
+    cumA += s.outcome==='A' ? (s.r.ASIAA||1.9)-1 : -1;
+    roiCurveA.push(Math.round(cumA/(i+1)*10000)/100);
+  });
+
+  // ── Feature importance (permutation-based on test) ──
+  function baseAcc(set){
+    return set.filter(function(s){ return s.correct; }).length / set.length;
+  }
+  var base = baseAcc(test);
+  var importance = FEATURE_NAMES.map(function(name, j){
+    // Permute feature j and measure accuracy drop
+    var shuffled = test.map(function(s){
+      var xp = s.x.slice();
+      xp[j] = 0; // zero out (mean after standardisation)
+      var pH = predictProb(model, xp);
+      return pH >= 0.5 ? 'H' : 'A';
+    });
+    var acc2 = shuffled.filter(function(pred,i){ return pred===test[i].outcome; }).length / test.length;
+    return { name: name, drop: Math.round((base - acc2)*10000)/100 };
+  });
+  importance.sort(function(a,b){ return b.drop - a.drop; });
+
+  // ── Calibration (predicted prob vs actual win rate in buckets) ──
+  var buckets = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
+  var calibH = [];
+  for(var bi=0;bi<buckets.length-1;bi++){
+    var lo=buckets[bi], hi=buckets[bi+1];
+    var sub = test.filter(function(s){ return s.pH>=lo && s.pH<hi; });
+    if(sub.length >= 5){
+      var actualWin = sub.filter(function(s){ return s.outcome==='H'; }).length / sub.length;
+      calibH.push({ mid: (lo+hi)/2, predicted: (lo+hi)/2, actual: actualWin, n: sub.length });
+    }
+  }
+
+  // ── Confusion matrix ──
+  var tp=0,fp=0,tn=0,fn=0;
+  test.forEach(function(s){
+    if(s.pred==='H' && s.outcome==='H') tp++;
+    else if(s.pred==='H' && s.outcome==='A') fp++;
+    else if(s.pred==='A' && s.outcome==='H') fn++;
+    else tn++;
+  });
+
+  return {
+    nTotal: n, nTrain: train.length, nTest: test.length,
+    trainAcc: accuracy(train),
+    testAcc: accuracy(test),
+    hAccTrain: classAcc(train,'H'), aAccTrain: classAcc(train,'A'),
+    hAccTest: classAcc(test,'H'),   aAccTest: classAcc(test,'A'),
+    roiResults: roiResults,
+    roiCurveH: roiCurveH,
+    roiCurveA: roiCurveA,
+    importance: importance,
+    calibH: calibH,
+    confusion: { tp:tp, fp:fp, tn:tn, fn:fn },
+    trainPct: Math.round(0.75*100),
+    testSamples: test,
+    model: model
+  };
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderML(RD){
+  var el = document.getElementById('tab9');
+  if(!el) return;
+  var ml = RD.ml;
+  if(!ml){ el.innerHTML='<p style="color:#f87171;padding:14px">ML data not available.</p>'; return; }
+
+  var fmt = function(v,d){ return (v>=0?'+':'')+v.toFixed(d===undefined?1:d)+'%'; };
+  var fmtN = function(v){ return (v>=0?'+':'')+v.toFixed(2); };
+  var cls = function(v){ return v>0.5?'pos':v<-0.5?'neg':'neu'; };
+
+  var h = '';
+
+  h += '<div class="rpt-title">🤖 ML Model — Asia Handicap Predictor</div>';
+  h += '<div class="rpt-sub">Logistic Regression trained on '+ml.nTrain+' matches ('+ml.trainPct+'% oldest), tested on '+ml.nTest+' matches (25% most recent). Pushes excluded. Target: H or A covers handicap.</div>';
+
+  // ── Summary cards ──
+  var testH = ml.hAccTest, testA = ml.aAccTest;
+  var cm = ml.confusion;
+  var precision = (cm.tp+cm.fp) ? cm.tp/(cm.tp+cm.fp) : 0;
+  var recall    = (cm.tp+cm.fn) ? cm.tp/(cm.tp+cm.fn) : 0;
+
+  h += '<div class="rpt-cards">';
+  h += card('Test Accuracy', (ml.testAcc*100).toFixed(1)+'%', 'vs '+(ml.trainAcc*100).toFixed(1)+'% train', ml.testAcc>0.52?'pos':'neu');
+  h += card('H Precision', (precision*100).toFixed(1)+'%', 'when model says H', precision>0.52?'pos':'neu');
+  h += card('H Recall', (recall*100).toFixed(1)+'%', 'of true H wins caught', recall>0.4?'pos':'neu');
+  h += card('Baseline', '50.0%', 'random 50/50', 'neu');
+  h += '</div>';
+
+  // ── Confusion matrix ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">Confusion Matrix (Test Set)</div>';
+  h += '<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:1px;margin-bottom:14px;max-width:320px">';
+  h += '<div style="font-size:9px;color:#64748b;padding:4px 8px"></div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2);text-align:center">Pred H</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2);text-align:center">Pred A</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2)">True H</div>';
+  h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#4ade80;padding:6px 8px;background:#0f1a12;text-align:center">'+cm.tp+'</div>';
+  h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171;padding:6px 8px;background:#1a0f0f;text-align:center">'+cm.fn+'</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2)">True A</div>';
+  h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171;padding:6px 8px;background:#1a0f0f;text-align:center">'+cm.fp+'</div>';
+  h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#4ade80;padding:6px 8px;background:#0f1a12;text-align:center">'+cm.tn+'</div>';
+  h += '</div>';
+
+  // ── ROI backtest table ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">ROI Backtest by Confidence Threshold (Test Set)</div>';
+  h += '<div class="rpt-table-wrap"><table class="rpt-table">';
+  h += '<thead><tr><th>Min Confidence</th><th class="num">H Bets</th><th class="num">H Wins</th><th class="num">H ROI</th><th class="num">A Bets</th><th class="num">A Wins</th><th class="num">A ROI</th></tr></thead><tbody>';
+  ml.roiResults.forEach(function(row){
+    var rh=row.res.h, ra=row.res.a;
+    var t=(row.t*100).toFixed(0)+'%';
+    h += '<tr>';
+    h += '<td style="color:#94a3b8">≥ '+t+'</td>';
+    h += '<td class="num">'+rh.bets+'</td>';
+    h += '<td class="num">'+rh.wins+'</td>';
+    h += '<td class="num '+cls(rh.roi)+'">'+fmt(rh.roi)+'</td>';
+    h += '<td class="num">'+ra.bets+'</td>';
+    h += '<td class="num">'+ra.wins+'</td>';
+    h += '<td class="num '+cls(ra.roi)+'">'+fmt(ra.roi)+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // ── Feature importance chart ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:8px">Feature Importance (Accuracy Drop When Removed)</div>';
+  var maxDrop = Math.max.apply(null, ml.importance.map(function(x){ return Math.abs(x.drop); }))||1;
+  h += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px">';
+  ml.importance.forEach(function(f){
+    var pct = Math.max(0, f.drop/maxDrop*100);
+    var color = f.drop > 0.5 ? '#60a5fa' : f.drop > 0 ? '#94a3b8' : '#f87171';
+    h += '<div style="display:flex;align-items:center;gap:8px">';
+    h += '<div style="font-size:10px;color:#94a3b8;width:130px;text-align:right;flex-shrink:0">'+f.name+'</div>';
+    h += '<div style="flex:1;background:var(--border);border-radius:3px;height:14px;position:relative">';
+    h += '<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:3px"></div></div>';
+    h += '<div style="font-size:10px;font-family:var(--mono);color:'+color+';width:50px">'+
+          (f.drop>=0?'+':'')+f.drop.toFixed(2)+'%</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // ── Calibration chart ──
+  if(ml.calibH.length > 2){
+    h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">Calibration — Predicted H% vs Actual Win Rate</div>';
+    h += '<div class="chart-box" style="margin-bottom:14px">';
+    h += '<canvas id="mlCalibChart" style="width:100%;display:block"></canvas>';
+    h += '<div style="font-size:9px;color:#64748b;margin-top:4px">A well-calibrated model follows the diagonal. Above = overconfident on H, Below = underconfident.</div>';
+    h += '</div>';
+  }
+
+  // ── ROI curve chart ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">ROI Curve — Betting Top-N by Confidence (Test Set)</div>';
+  h += '<div class="chart-box">';
+  h += '<canvas id="mlRoiChart" style="width:100%;display:block"></canvas>';
+  h += '<div style="font-size:9px;color:#64748b;margin-top:4px">Matches sorted by model confidence. Left = highest confidence. A falling curve = confident picks don\'t outperform.</div>';
+  h += '</div>';
+
+  // ── Notes ──
+  h += '<div style="margin-top:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">';
+  h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Model Notes</div>';
+  h += '<div style="font-size:11px;color:#94a3b8;line-height:1.7">';
+  h += '• <b style="color:#e2e8f0">Algorithm:</b> Logistic Regression with L2 regularisation (ridge), trained via mini-batch SGD<br>';
+  h += '• <b style="color:#e2e8f0">Split:</b> Strict temporal split — older 75% for training, newest 25% for testing. No data leakage.<br>';
+  h += '• <b style="color:#e2e8f0">Features:</b> 12 pre-match signals (odds, line movement, expert votes, form)<br>';
+  h += '• <b style="color:#e2e8f0">Target:</b> Binary — H covers handicap (1) or A covers (0). Pushes excluded.<br>';
+  h += '• <b style="color:#e2e8f0">Limitation:</b> 1,700 records is modest for ML. Expect variance in results across retraining.<br>';
+  h += '• <b style="color:#e2e8f0">Next steps:</b> XGBoost or ensemble methods would likely improve accuracy by 2–5%.';
+  h += '</div></div>';
+
+  el.innerHTML = h;
+
+  // Draw charts
+  setTimeout(function(){
+    drawCalibChart(ml.calibH);
+    drawRoiCurveChart(ml.roiCurveH, ml.roiCurveA);
+  }, 50);
+}
+
+function card(label, val, sub, cls){
+  return '<div class="rpt-card"><div class="rpt-card-label">'+label+'</div>'+
+         '<div class="rpt-card-val '+cls+'">'+val+'</div>'+
+         '<div class="rpt-card-sub">'+sub+'</div></div>';
+}
+
+function drawCalibChart(calibH){
+  var canvas = document.getElementById('mlCalibChart');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio||1;
+  var W = canvas.parentElement.offsetWidth||300;
+  var H = 140;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.scale(dpr,dpr);
+
+  var padL=36, padR=10, padT=10, padB=22;
+  var cw=W-padL-padR, ch=H-padT-padB;
+
+  // Grid
+  ctx.font='8px IBM Plex Mono'; ctx.textBaseline='middle'; ctx.textAlign='right';
+  for(var i=0;i<=4;i++){
+    var v=i/4, y=padT+(1-v)*ch;
+    ctx.fillStyle='#64748b';
+    ctx.fillText((v*100).toFixed(0)+'%', padL-3, y);
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+  }
+  // X axis
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(var i=0;i<=4;i++){
+    var x=padL+i/4*cw;
+    ctx.fillStyle='#64748b';
+    ctx.fillText((i*25)+'%', x, padT+ch+4);
+  }
+
+  // Diagonal (perfect calibration)
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(padL,padT+ch); ctx.lineTo(padL+cw,padT); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Calibration points
+  calibH.forEach(function(pt){
+    var x = padL + pt.mid * cw;
+    var y = padT + (1-pt.actual)*ch;
+    var r = Math.max(3, Math.min(8, pt.n/15));
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle='rgba(96,165,250,0.7)'; ctx.fill();
+    ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Connect dots
+  ctx.beginPath(); ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1.5;
+  calibH.forEach(function(pt,i){
+    var x=padL+pt.mid*cw, y=padT+(1-pt.actual)*ch;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+function drawRoiCurveChart(hPts, aPts){
+  var canvas = document.getElementById('mlRoiChart');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio||1;
+  var W = canvas.parentElement.offsetWidth||300;
+  var H = 120;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.scale(dpr,dpr);
+
+  var padL=36, padR=50, padT=10, padB=18;
+  var cw=W-padL-padR, ch=H-padT-padB;
+
+  var allV = hPts.concat(aPts);
+  var mn = Math.min(0, Math.min.apply(null,allV));
+  var mx = Math.max(0, Math.max.apply(null,allV));
+  var range = mx-mn||1;
+  function yy(v){ return padT+(1-(v-mn)/range)*ch; }
+  function xx(i,len){ return padL+i/((len-1)||1)*cw; }
+
+  // Grid
+  ctx.font='8px IBM Plex Mono'; ctx.textBaseline='middle'; ctx.textAlign='right';
+  for(var i=0;i<=4;i++){
+    var v=mn+(mx-mn)*i/4, y=yy(v);
+    ctx.fillStyle='#64748b';
+    ctx.fillText((v>=0?'+':'')+v.toFixed(1)+'%', padL-3, y);
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+  }
+
+  // Zero line
+  var zy=yy(0);
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(padL,zy); ctx.lineTo(padL+cw,zy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  function drawLine(pts, color){
+    if(!pts.length) return;
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    pts.forEach(function(v,i){
+      var x=xx(i,pts.length), y=yy(v);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    // End label
+    var last=pts[pts.length-1];
+    ctx.font='9px IBM Plex Mono'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle=color;
+    ctx.fillText((last>=0?'+':'')+last.toFixed(1)+'%', padL+cw+3, yy(last));
+  }
+
+  drawLine(hPts, '#60a5fa');
+  drawLine(aPts, '#f87171');
+
+  // Legend
+  ctx.font='9px IBM Plex Mono'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillStyle='#60a5fa'; ctx.fillRect(padL,padT,18,2);
+  ctx.fillText('H', padL+20, padT+1);
+  ctx.fillStyle='#f87171'; ctx.fillRect(padL+30,padT,18,2);
+  ctx.fillText('A', padL+50, padT+1);
+}
