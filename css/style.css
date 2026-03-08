@@ -139,8 +139,8 @@ canvas#betChart{width:100%;height:80px}
   /* Expert Signal & JC Expert Picks: wider, span 2 cols */
   .fg-expert{grid-column:span 2}
   .fg-jcpick{grid-column:1/-1}
-  /* Smart Money spans full width */
-  .fg-smart{grid-column:1/-1}
+  /* Smart Money spans 2 cols only */
+  .fg-smart{grid-column:span 2}
 
   /* Action buttons row: always visible below filters */
   .filter-actions{flex-direction:row;gap:5px;padding:4px 0 2px}
