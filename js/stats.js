@@ -41,15 +41,13 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // Show last 100 bets on X-axis, Y = true running ROI from ALL records
-  // Point 1 = ROI after record (n-99), point 100 = ROI after all n records
+  // Last 100 points of the overall running ROI (Y-axis auto-zoomed to the range)
   var WINDOW = 100;
   var start = Math.max(0, sorted.length - WINDOW);
   var hRoiPts = [], aRoiPts = [];
   for(var i = start; i < sorted.length; i++){
-    var nSoFar = i + 1;
-    hRoiPts.push(Math.round(hRunning[i] / nSoFar * 10000) / 100);
-    aRoiPts.push(Math.round(aRunning[i] / nSoFar * 10000) / 100);
+    hRoiPts.push(Math.round(hRunning[i] / (i+1) * 10000) / 100);
+    aRoiPts.push(Math.round(aRunning[i] / (i+1) * 10000) / 100);
   }
 
   // ── Single panel, shared Y-axis ROI chart
@@ -81,8 +79,10 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
 
   // Single shared scale across both series
   var allV=hPts.concat(aPts);
-  var mn=Math.min(0,Math.min.apply(null,allV));
-  var mx=Math.max(0,Math.max.apply(null,allV));
+  var dataMn=Math.min.apply(null,allV), dataMx=Math.max.apply(null,allV);
+  var pad=(dataMx-dataMn)*0.15||0.1;  // 15% padding each side
+  var mn=dataMn-pad;
+  var mx=dataMx+pad;
   var range=mx-mn||1;
   function yy(v){return padT+(1-(v-mn)/range)*ch;}
   function xx(i,len){return padL+i/((len||1)-1||1)*cw;}
@@ -153,7 +153,7 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
 
   // Axis label
   ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
-  ctx.fillText('Running ROI%  (showing last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets)', padL+2, H-4);
+  ctx.fillText('Running ROI% (all records, last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' shown)', padL+2, H-4);
 }
 
 function renderAsiaStats(data){
