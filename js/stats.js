@@ -41,33 +41,27 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // Show only the last 100 bets for clear trend reading
+  // Show last 100 bets on X-axis, Y = true running ROI from ALL records
+  // Point 1 = ROI after record (n-99), point 100 = ROI after all n records
   var WINDOW = 100;
-  var hRoiPts=[], aRoiPts=[];
   var start = Math.max(0, sorted.length - WINDOW);
-  var winCount=0, hWinPnl=0, aWinPnl=0;
-  sorted.forEach(function(r,i){
-    if(i < start) return;
-    winCount++;
-    // Delta P&L for this single bet
-    var hDelta = hRunning[i] - (i > 0 ? hRunning[i-1] : 0);
-    var aDelta = aRunning[i] - (i > 0 ? aRunning[i-1] : 0);
-    hWinPnl += hDelta;
-    aWinPnl += aDelta;
-    // ROI% = cumulative P&L over window / number of bets in window
-    // Skip first 4 points (too few bets = ±100% swings distort Y-axis)
-    if(winCount >= 5){
-      hRoiPts.push(Math.round(hWinPnl/winCount*10000)/100);
-      aRoiPts.push(Math.round(aWinPnl/winCount*10000)/100);
-    }
-  });
+  var hRoiPts = [], aRoiPts = [];
+  for(var i = start; i < sorted.length; i++){
+    var nSoFar = i + 1;
+    hRoiPts.push(Math.round(hRunning[i] / nSoFar * 10000) / 100);
+    aRoiPts.push(Math.round(aRunning[i] / nSoFar * 10000) / 100);
+  }
 
   // ── Single panel, shared Y-axis ROI chart
   var wrap=document.querySelector('.bc-chart-wrap');
   wrap.style.height='auto';
   wrap.innerHTML='<canvas id="betChart" style="display:block;width:100%"></canvas>';
 
-  drawRoiPanel('betChart', hRoiPts, aRoiPts, fmt(hPnl/n*100)+'%', fmt(aPnl/n*100)+'%', WINDOW, sorted.length);
+  var hFinal = hRoiPts[hRoiPts.length-1];
+  var aFinal = aRoiPts[aRoiPts.length-1];
+  var hWinLabel = (hFinal>=0?'+':'')+hFinal.toFixed(1)+'%';
+  var aWinLabel = (aFinal>=0?'+':'')+aFinal.toFixed(1)+'%';
+  drawRoiPanel('betChart', hRoiPts, aRoiPts, hWinLabel, aWinLabel, WINDOW, sorted.length);
 }
 
 function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
@@ -159,7 +153,7 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
 
   // Axis label
   ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
-  ctx.fillText('ROI %  (last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets)', padL+2, H-4);
+  ctx.fillText('Running ROI%  (showing last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets)', padL+2, H-4);
 }
 
 function renderAsiaStats(data){
