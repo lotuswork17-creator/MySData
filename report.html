@@ -94,6 +94,7 @@ body{display:block;padding-bottom:40px}
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <span class="rpt-updated" id="rptUpdated"></span>
+    <a href="report-gem.html" class="rpt-back" style="border-color:rgba(167,139,250,.4);color:#a78bfa">⚡ GEM Report</a>
     <a href="index.html" class="rpt-back">← Viewer</a>
   </div>
 </div>
@@ -231,6 +232,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderML() -->
 </div>
 
+<div class="rpt-section" id="tab10">
+  <!-- content injected by renderGEM() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -266,6 +271,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-jcexpert.js"></script>
 <script src="js/report-escore.js"></script>
 <script src="js/report-ml.js"></script>
+<script src="js/report-gem.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -282,6 +288,7 @@ var TABS = [
   { label:'🔬 JC Expert',    render: renderJCExpert },
   { label:'📉 Expert Bands', render: renderEScore },
   { label:'🤖 ML Model',    render: renderML },
+  { label:'⚡ GEM/GPT ML',  render: function(RD){ renderGEM(RD.results||RD); } },
 ];
 
 // Build tab bar from registry
