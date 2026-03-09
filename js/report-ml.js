@@ -675,14 +675,15 @@ function renderMLPastResultsHTML(testSamples){
 
   var h = '';
   h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
-  h += '<div class="rpt-title">📋 Past Predictions — Last '+rows.length+' Results</div>';
-  h += '<div class="rpt-sub" style="margin-bottom:10px">Model prediction vs actual Asia handicap outcome on the test set. Running accuracy is cumulative from oldest to newest.</div>';
+  h += '<div class="rpt-title">📋 Past Predictions — Last '+rows.length+' shown (stats = all '+testSamples.length+' test matches)</div>';
+  h += '<div class="rpt-sub" style="margin-bottom:10px">Summary stats cover the full test set ('+testSamples.length+' matches). Table shows the most recent '+rows.length+'. Running accuracy in the table is cumulative within those '+rows.length+' rows.</div>';
 
-  var totalCorrect = rows.filter(function(s){ return (s.pH>=0.5)===s.hSide; }).length;
-  var totalH = rows.filter(function(s){ return s.pH>=0.55; });
-  var totalA = rows.filter(function(s){ return s.pA>=0.55; });
+  var totalCorrect = testSamples.filter(function(s){ return (s.pH>=0.5)===s.hSide; }).length;
+  var totalH = testSamples.filter(function(s){ return s.pH>=0.55; });
+  var totalA = testSamples.filter(function(s){ return s.pA>=0.55; });
   var hPnl = totalH.reduce(function(a,s){return a+s.hp;},0);
   var aPnl = totalA.reduce(function(a,s){return a+s.ap;},0);
+  var nAcc = testSamples.length;
 
   // Reliability verdict based on sample size
   function reliabilityLabel(n){
@@ -696,7 +697,6 @@ function renderMLPastResultsHTML(testSamples){
   // Accuracy 95% CI half-width (Wilson)
   function accCI(n){ return n>0 ? Math.round(1.96*Math.sqrt(0.25/n)*100*10)/10 : 999; }
 
-  var nAcc = rows.length;
   var nH = totalH.length;
   var nA = totalA.length;
   var accRel = reliabilityLabel(nAcc);
