@@ -9,7 +9,7 @@ function sigmoid(x){ return 1/(1+Math.exp(-Math.max(-30,Math.min(30,x)))); }
 // Asia handicap adjusted margin (H perspective)
 // Returns: adj rounded to nearest 0.25
 function hcapAdj(gh, ga, line){
-  return Math.round((gh - ga - line) * 4) / 4;
+  return Math.round((gh - ga + line) * 4) / 4; // +line: ASIALINE = handicap given TO H
 }
 
 // Classify: 'HW'=win full, 'HH'=win half, 'P'=push, 'AH'=lose half, 'AW'=lose full
@@ -247,19 +247,26 @@ function computeML(results){
   });
 
   // ── Feature importance (permutation-based on test) ──
-  function baseAcc(set){
-    return set.filter(function(s){ return s.correct; }).length / set.length;
-  }
-  var base = baseAcc(test);
+  var base = test.filter(function(s){ return s.correct; }).length / test.length;
+
   var importance = FEATURE_NAMES.map(function(name, j){
-    // Permute feature j and measure accuracy drop
-    var shuffled = test.map(function(s){
+    // Shuffle feature j across all test samples (true permutation)
+    var vals = test.map(function(s){ return s.x[j]; });
+    // Fisher-Yates shuffle
+    var shuf = vals.slice();
+    for(var k=shuf.length-1; k>0; k--){
+      var r = Math.floor(Math.random()*(k+1));
+      var tmp=shuf[k]; shuf[k]=shuf[r]; shuf[r]=tmp;
+    }
+    var correct2 = 0;
+    test.forEach(function(s, i){
       var xp = s.x.slice();
-      xp[j] = 0; // zero out (mean after standardisation)
+      xp[j] = shuf[i];
       var pH = predictProb(model, xp);
-      return pH >= 0.5 ? 'H' : 'A';
+      var predH = pH >= 0.5;
+      if(predH === s.hSide) correct2++;  // compare to hSide not outcome string
     });
-    var acc2 = shuffled.filter(function(pred,i){ return pred===test[i].outcome; }).length / test.length;
+    var acc2 = correct2 / test.length;
     return { name: name, drop: Math.round((base - acc2)*10000)/100 };
   });
   importance.sort(function(a,b){ return b.drop - a.drop; });
