@@ -409,12 +409,12 @@ function renderML(RD){
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">Confusion Matrix (Test Set)</div>';
   h += '<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:1px;margin-bottom:14px;max-width:320px">';
   h += '<div style="font-size:9px;color:#64748b;padding:4px 8px"></div>';
-  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2);text-align:center">Pred H</div>';
-  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2);text-align:center">Pred A</div>';
-  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2)">True H</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2);text-align:center">Pred H</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2);text-align:center">Pred A</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2)">True H</div>';
   h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#4ade80;padding:6px 8px;background:#0f1a12;text-align:center">'+cm.tp+'</div>';
   h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171;padding:6px 8px;background:#1a0f0f;text-align:center">'+cm.fn+'</div>';
-  h += '<div style="font-size:9px;font-weight:700;color:#f87171;padding:4px 8px;background:var(--surface2)">True A</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;padding:4px 8px;background:var(--surface2)">True A</div>';
   h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171;padding:6px 8px;background:#1a0f0f;text-align:center">'+cm.fp+'</div>';
   h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#4ade80;padding:6px 8px;background:#0f1a12;text-align:center">'+cm.tn+'</div>';
   h += '</div>';
@@ -440,11 +440,29 @@ function renderML(RD){
   });
   h += '</tbody></table></div>';
 
+  // ── 55%+ confidence ROI highlight ──
+  var roi55 = ml.roiResults.filter(function(r){ return Math.abs(r.t - 0.55) < 0.001; })[0];
+  if(roi55){
+    var rh55=roi55.res.h, ra55=roi55.res.a;
+    h += '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">';
+    h += '<div style="flex:1;min-width:140px;padding:12px 14px;border-radius:10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.35)">';
+    h += '<div style="font-size:9px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">H Bets ≥55% Confidence</div>';
+    h += '<div style="font-size:22px;font-weight:800;font-family:var(--mono);color:'+(rh55.roi>=0?'#4ade80':'#f87171')+'">'+(rh55.roi>=0?'+':'')+rh55.roi.toFixed(1)+'%</div>';
+    h += '<div style="font-size:10px;color:#94a3b8;font-family:var(--mono);margin-top:4px">'+rh55.bets+' bets · '+rh55.wins+' win · '+rh55.half+' ½win</div>';
+    h += '</div>';
+    h += '<div style="flex:1;min-width:140px;padding:12px 14px;border-radius:10px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.35)">';
+    h += '<div style="font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">A Bets ≥55% Confidence</div>';
+    h += '<div style="font-size:22px;font-weight:800;font-family:var(--mono);color:'+(ra55.roi>=0?'#4ade80':'#60a5fa')+'">'+(ra55.roi>=0?'+':'')+ra55.roi.toFixed(1)+'%</div>';
+    h += '<div style="font-size:10px;color:#94a3b8;font-family:var(--mono);margin-top:4px">'+ra55.bets+' bets · '+ra55.wins+' win · '+ra55.half+' ½win</div>';
+    h += '</div>';
+    h += '</div>';
+  }
+
   // ── Feature importance chart: 3 bars (Acc / H-ROI / A-ROI) ──
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:4px">Feature Importance — ROI Drop When Feature Removed</div>';
   h += '<div style="font-size:9px;color:#64748b;margin-bottom:8px">';
-  h += '<span style="color:#60a5fa">■</span> H-bet ROI drop &nbsp;&nbsp;';
-  h += '<span style="color:#34d399">■</span> A-bet ROI drop &nbsp;&nbsp;';
+  h += '<span style="color:#f87171">■</span> H-bet ROI drop &nbsp;&nbsp;';
+  h += '<span style="color:#60a5fa">■</span> A-bet ROI drop &nbsp;&nbsp;';
   h += '<span style="color:#94a3b8">■</span> Accuracy drop &nbsp;&nbsp;';
   h += '<span style="color:#fbbf24">✓</span> = signal reliable (SNR > 2)';
   h += '</div>';
@@ -459,8 +477,8 @@ function renderML(RD){
     var hPct  = Math.min(100, Math.abs(f.hDrop)/maxV*100);
     var aPct  = Math.min(100, Math.abs(f.aDrop)/maxV*100);
     var accPct= Math.min(100, Math.abs(f.drop)/maxV*100);
-    var hCol  = f.hDrop > 0 ? '#60a5fa' : '#f87171';
-    var aCol  = f.aDrop > 0 ? '#34d399' : '#fb923c';
+    var hCol  = '#f87171';  // H always red
+    var aCol  = '#60a5fa';  // A always blue
     var accCol= f.drop  > 0 ? '#94a3b8' : '#6b7280';
     var hRel  = Math.abs(f.hRatio) > 2;
     var aRel  = Math.abs(f.aRatio) > 2;
@@ -718,7 +736,7 @@ function renderMLPastResultsHTML(testSamples){
 
   // H bets row
   h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
-  h += '<span style="font-size:10px;color:#60a5fa;font-family:var(--mono);width:90px;flex-shrink:0">H bets ≥55%</span>';
+  h += '<span style="font-size:10px;color:#f87171;font-family:var(--mono);width:90px;flex-shrink:0">H bets ≥55%</span>';
   h += '<span style="font-size:13px;font-weight:800;font-family:var(--mono);color:'+(hRoi>=0?'#4ade80':'#f87171')+'">'+(hRoi>=0?'+':'')+hRoi+'%</span>';
   h += '<span style="font-size:9px;color:#64748b;font-family:var(--mono)">±'+roiCI(nH)+'% (95% CI) · n='+nH+'</span>';
   h += '<span style="font-size:9px;font-weight:700;color:'+hRel.color+'">'+hRel.label+'</span>';
@@ -726,7 +744,7 @@ function renderMLPastResultsHTML(testSamples){
 
   // A bets row
   h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
-  h += '<span style="font-size:10px;color:#f87171;font-family:var(--mono);width:90px;flex-shrink:0">A bets ≥55%</span>';
+  h += '<span style="font-size:10px;color:#60a5fa;font-family:var(--mono);width:90px;flex-shrink:0">A bets ≥55%</span>';
   h += '<span style="font-size:13px;font-weight:800;font-family:var(--mono);color:'+(aRoi>=0?'#4ade80':'#f87171')+'">'+(aRoi>=0?'+':'')+aRoi+'%</span>';
   h += '<span style="font-size:9px;color:#64748b;font-family:var(--mono)">±'+roiCI(nA)+'% (95% CI) · n='+nA+'</span>';
   h += '<span style="font-size:9px;font-weight:700;color:'+aRel.color+'">'+aRel.label+'</span>';
@@ -759,9 +777,9 @@ function renderMLPastResultsHTML(testSamples){
     h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
     h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
-    h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
-    h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
-    h += '<td class="num"><b style="color:'+(pred==='H'?'#60a5fa':'#f87171')+'">'+pred+'</b></td>';
+    h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
+    h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
+    h += '<td class="num"><b style="color:'+(pred==='H'?'#f87171':'#60a5fa')+'">'+pred+'</b></td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+confColor+'">'+conf+'%</td>';
     h += '<td class="num" style="color:'+outColor+';font-size:10px">'+outLabel+'</td>';
     h += '<td class="num" style="font-size:14px;font-weight:800;color:'+hitColor+'">'+(correct?'✓':'✗')+'</td>';
@@ -776,7 +794,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
   if(!predictions || !predictions.length){
     return '<div style="padding:14px;color:#64748b;font-size:12px">No upcoming matches with sufficient data.</div>';
   }
-  var recColor=function(rec){ return rec==='H'?'#60a5fa':rec==='A'?'#f87171':'#64748b'; };
+  var recColor=function(rec){ return rec==='H'?'#f87171':rec==='A'?'#60a5fa':'#64748b'; };
   var h='';
   h+='<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
   h+='<div class="rpt-title">🎯 Upcoming Match Predictions</div>';
@@ -803,8 +821,8 @@ function renderMLPredictionsHTML(predictions, testAcc){
     h+='<td><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px"><span style="color:#e2e8f0">'+r.TEAMH+'</span><span style="color:#475569;font-size:9px"> vs </span><span style="color:#e2e8f0">'+r.TEAMA+'</span></div>';
     h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||'')+'</div></td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
-    h+='<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(p.pH*100)+'%</td>';
-    h+='<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(p.pA*100)+'%</td>';
+    h+='<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(p.pH*100)+'%</td>';
+    h+='<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(p.pA*100)+'%</td>';
     h+='<td class="num"><b style="font-size:12px;color:'+col+'">'+rec+'</b></td>';
     h+='<td class="num" style="font-family:var(--mono);color:'+confColor+';font-weight:700">'+conf+'%</td>';
     h+='<td class="num" style="font-family:var(--mono);color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+(isSkip?'—':roiSign+p.expRoi.toFixed(1)+'%')+'</td>';
