@@ -6,42 +6,78 @@
 // ── Helpers ─────────────────────────────────────────────────────
 function sigmoid(x){ return 1/(1+Math.exp(-Math.max(-30,Math.min(30,x)))); }
 
-function hcapOutcome(gh, ga, line){
-  var adj = gh - ga - line;
-  if(adj > 0.01) return 'H';
-  if(adj < -0.01) return 'A';
-  return 'P';
+// Asia handicap adjusted margin (H perspective)
+// Returns: adj rounded to nearest 0.25
+function hcapAdj(gh, ga, line){
+  return Math.round((gh - ga - line) * 4) / 4;
 }
 
+// Classify: 'HW'=win full, 'HH'=win half, 'P'=push, 'AH'=lose half, 'AW'=lose full
+function hcapOutcome(gh, ga, line){
+  var adj = hcapAdj(gh, ga, line);
+  if(adj >  0.3)  return 'HW';
+  if(adj ==  0.25) return 'HH';
+  if(adj ==  0)    return 'P';
+  if(adj == -0.25) return 'AH';
+  return 'AW';
+}
+
+// Actual P&L for $1 stake on H or A side
+function asiaPnl(gh, ga, line, asiah, asiaa){
+  var adj = hcapAdj(gh, ga, line);
+  var hOdds = asiah || 1.9;
+  var aOdds = asiaa || 1.9;
+  var hPnl, aPnl;
+  if(adj >  0.3)  { hPnl =  hOdds - 1; aPnl = -1; }
+  else if(adj == 0.25) { hPnl =  (hOdds-1)*0.5; aPnl = -0.5; }
+  else if(adj == 0)    { hPnl =  0;               aPnl =  0; }
+  else if(adj ==-0.25) { hPnl = -0.5;             aPnl = (aOdds-1)*0.5; }
+  else                 { hPnl = -1;               aPnl =  aOdds - 1; }
+  return { h: hPnl, a: aPnl };
+}
+
+// ── JC Tip encodings (ordinal: +1=H, 0=neutral, -1=A) ────────────
+var TIPSUM_MAP = {'H':1.0,'1H':0.8,'D':0.6,'1D':0.6,'1B':0.0,'B':0.0,'A':-0.8,'1A':-1.0,'S':0.0};
+var TIPSID_MAP = {'H':1.0,'D':0.3,'B':0.0,'S':0.0,'A':-1.0};
+var TIPSMAC_MAP= {'H':1.0,'D':0.3,'A':-1.0};
+var TIPSON_MAP = {'H':1.0,'1H':0.7,'1D':0.3,'D':0.3,'B':0.0,'S':0.0,'A':-1.0,'1A':-0.7};
+function encodeTip(val, map){ return map[String(val||'')] || 0; }
+
 function extractFeatures(r){
-  // 12 numeric features — all pre-match
+  // 18 pre-match features
   var asiah  = r.ASIAH  || 0;
   var asiaa  = r.ASIAA  || 0;
   var asiahn = r.ASIAHLN || asiah;
   var asiaan = r.ASIAALN || asiaa;
   var linen  = r.ASIALINELN || r.ASIALINE || 0;
   var line   = r.ASIALINE || 0;
+  var macline= r.ASIALINEMA || line;
+  var sboline= r.ASIALINESB || line;
 
-  // Implied H probability from closing odds (normalised to remove vig)
+  // Market implied H probability (vig-removed closing odds)
   var vigH = asiah > 0 ? 1/asiah : 0.5;
   var vigA = asiaa > 0 ? 1/asiaa : 0.5;
-  var total = vigH + vigA || 1;
-  var impliedH = vigH / total;   // 0–1
+  var impliedH = vigH / (vigH + vigA || 1);
 
   return [
-    line,                              // handicap line (H gives +ve = favoured)
-    impliedH,                          // market implied H prob (closing)
-    (line - linen),                    // line movement (+ = H got worse)
-    (asiah - asiahn),                  // H odds drift (+ = H lengthened = money on A)
-    (asiaa - asiaan),                  // A odds drift (+ = A lengthened = money on H)
-    (r.PREDICTH || 0) / 100,          // model H%
-    (r.PREDICTA || 0) / 100,          // model A%
-    Math.min((r.GEMH || 0), 9) / 9,   // GEM expert H votes (normalised)
-    Math.min((r.GEMA || 0), 9) / 9,   // GEM expert A votes
-    Math.min((r.GPTH || 0), 8) / 8,   // GPT H votes
-    Math.min((r.GPTA || 0), 7) / 7,   // GPT A votes
-    // H form advantage: (H home wins - H home losses) vs (A away wins - A away losses)
-    ((r.REC3MHH||0) - (r.REC3MHA||0) - (r.REC3MAA||0) + (r.REC3MAH||0)) / 10
+    line,                                            // 0  Asia handicap line
+    impliedH,                                        // 1  Market implied H% (vig-free)
+    (line - linen),                                  // 2  JC line movement
+    (asiah - asiahn),                                // 3  H odds drift (+ = money on A)
+    (asiaa - asiaan),                                // 4  A odds drift (+ = money on H)
+    (r.PREDICTH || 0) / 100,                        // 5  Predict model H%
+    (r.PREDICTA || 0) / 100,                        // 6  Predict model A%
+    Math.min((r.GEMH || 0), 9) / 9,                 // 7  GEM H votes
+    Math.min((r.GEMA || 0), 9) / 9,                 // 8  GEM A votes
+    Math.min((r.GPTH || 0), 8) / 8,                 // 9  GPT H votes
+    Math.min((r.GPTA || 0), 7) / 7,                 // 10 GPT A votes
+    ((r.REC3MHH||0)-(r.REC3MHA||0)-(r.REC3MAA||0)+(r.REC3MAH||0)) / 10, // 11 Form advantage
+    encodeTip(r.JCTIPSUM,  TIPSUM_MAP),              // 12 JC Sum tip direction
+    encodeTip(r.JCTIPSID,  TIPSID_MAP),              // 13 JC SID tip direction
+    encodeTip(r.TIPSIDMAC, TIPSMAC_MAP),             // 14 SID Mac tip direction
+    encodeTip(r.TIPSONID,  TIPSON_MAP),              // 15 ON ID tip direction
+    (macline - line),                                // 16 Macau vs JC line gap (cross-book signal)
+    (sboline - line)                                 // 17 SBO vs JC line gap
   ];
 }
 
@@ -49,7 +85,9 @@ var FEATURE_NAMES = [
   'Asia Line', 'Market Implied H%', 'Line Move', 'H Odds Drift',
   'A Odds Drift', 'Predict H%', 'Predict A%',
   'GEM H Votes', 'GEM A Votes', 'GPT H Votes', 'GPT A Votes',
-  'Form Advantage'
+  'Form Advantage',
+  'JC Sum Tip', 'JC SID Tip', 'SID Mac Tip', 'ON ID Tip',
+  'Macau–JC Line Gap', 'SBO–JC Line Gap'
 ];
 
 // ── Logistic Regression (mini-batch SGD) ────────────────────────
@@ -107,16 +145,18 @@ function computeML(results){
   // Sort by date (temporal split)
   data.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||''); });
 
-  // Build samples (exclude pushes from training)
+  // Build samples — exclude full push (adj=0), include half-wins as H/A side
   var samples = [];
   data.forEach(function(r){
-    var o = hcapOutcome(r.RESULTH, r.RESULTA, r.ASIALINE);
-    if(o === 'P') return; // skip pushes
+    var gh = r.RESULTH || 0, ga = r.RESULTA || 0, line = r.ASIALINE || 0;
+    var o = hcapOutcome(gh, ga, line);
+    if(o === 'P') return; // exclude full push
     samples.push({
       x: extractFeatures(r),
-      y: o === 'H' ? 1 : 0,  // 1=H wins, 0=A wins
+      y: (o === 'HW' || o === 'HH') ? 1 : 0, // H side positive (incl half-wins)
       r: r,
-      outcome: o,
+      outcome: o,  // 'HW','HH','AH','AW'
+      hSide: (o==='HW'||o==='HH'),
       date: r.DATE
     });
   });
@@ -131,20 +171,20 @@ function computeML(results){
   var ytr = train.map(function(s){ return s.y; });
 
   // Train model
-  var model = trainLogReg(Xtr, ytr, { lr:0.08, epochs:500, reg:0.002 });
+  var model = trainLogReg(Xtr, ytr, { lr:0.08, epochs:600, reg:0.002 });
 
   // Predict on test set
   test.forEach(function(s){
     s.pH = predictProb(model, s.x);
     s.pA = 1 - s.pH;
     s.pred = s.pH >= 0.5 ? 'H' : 'A';
-    s.correct = s.pred === s.outcome;
+    s.correct = (s.pred==='H') === s.hSide;
   });
   train.forEach(function(s){
     s.pH = predictProb(model, s.x);
     s.pA = 1 - s.pH;
     s.pred = s.pH >= 0.5 ? 'H' : 'A';
-    s.correct = s.pred === s.outcome;
+    s.correct = (s.pred==='H') === s.hSide;
   });
 
   // ── Accuracy metrics ──
@@ -153,36 +193,35 @@ function computeML(results){
     return correct / set.length;
   }
   function classAcc(set, cls){
-    var sub = set.filter(function(s){ return s.outcome===cls; });
+    var sub = set.filter(function(s){ return cls==='H' ? s.hSide : !s.hSide; });
     var correct = sub.filter(function(s){ return s.pred===cls; }).length;
     return { acc: sub.length ? correct/sub.length : 0, n: sub.length };
   }
 
-  // ── ROI backtest ──
-  // Strategy: bet H when pH >= threshold, bet A when pA >= threshold
+  // ── ROI backtest with correct Asia half-win payouts ──
   function roiBacktest(set, threshold){
-    var hBets=0, hWin=0, hPnl=0;
-    var aBets=0, aWin=0, aPnl=0;
-
+    var hBets=0, hWin=0, hHalf=0, hPnl=0;
+    var aBets=0, aWin=0, aHalf=0, aPnl=0;
     set.forEach(function(s){
-      var odds = s.r;
+      var r = s.r;
+      var gh = r.RESULTH||0, ga = r.RESULTA||0, line = r.ASIALINE||0;
+      var pnl = asiaPnl(gh, ga, line, r.ASIAH, r.ASIAA);
       if(s.pH >= threshold){
         hBets++;
-        var o = s.outcome;
-        if(o==='H'){ hWin++; hPnl += (odds.ASIAH||1.9) - 1; }
-        else { hPnl -= 1; }
+        hPnl += pnl.h;
+        if(s.outcome==='HW') hWin++;
+        else if(s.outcome==='HH') hHalf++;
       }
       if(s.pA >= threshold){
         aBets++;
-        var o = s.outcome;
-        if(o==='A'){ aWin++; aPnl += (odds.ASIAA||1.9) - 1; }
-        else { aPnl -= 1; }
+        aPnl += pnl.a;
+        if(s.outcome==='AW') aWin++;
+        else if(s.outcome==='AH') aHalf++;
       }
     });
-
     return {
-      h: { bets:hBets, wins:hWin, pnl:hPnl, roi: hBets ? hPnl/hBets*100 : 0 },
-      a: { bets:aBets, wins:aWin, pnl:aPnl, roi: aBets ? aPnl/aBets*100 : 0 }
+      h: { bets:hBets, wins:hWin, half:hHalf, pnl:hPnl, roi: hBets ? hPnl/hBets*100 : 0 },
+      a: { bets:aBets, wins:aWin, half:aHalf, pnl:aPnl, roi: aBets ? aPnl/aBets*100 : 0 }
     };
   }
 
@@ -191,17 +230,19 @@ function computeML(results){
     return { t: t, res: roiBacktest(test, t) };
   });
 
-  // ── ROI curve (cumulative, sorted by confidence) ──
+  // ── ROI curve (sorted by confidence, proper Asia payout) ──
   var roiCurveH = [], roiCurveA = [];
   var sortedH = test.slice().sort(function(a,b){ return b.pH-a.pH; });
   var sortedA = test.slice().sort(function(a,b){ return b.pA-a.pA; });
   var cumH=0, cumA=0;
   sortedH.forEach(function(s,i){
-    cumH += s.outcome==='H' ? (s.r.ASIAH||1.9)-1 : -1;
+    var pnl = asiaPnl(s.r.RESULTH||0, s.r.RESULTA||0, s.r.ASIALINE||0, s.r.ASIAH, s.r.ASIAA);
+    cumH += pnl.h;
     roiCurveH.push(Math.round(cumH/(i+1)*10000)/100);
   });
   sortedA.forEach(function(s,i){
-    cumA += s.outcome==='A' ? (s.r.ASIAA||1.9)-1 : -1;
+    var pnl = asiaPnl(s.r.RESULTH||0, s.r.RESULTA||0, s.r.ASIALINE||0, s.r.ASIAH, s.r.ASIAA);
+    cumA += pnl.a;
     roiCurveA.push(Math.round(cumA/(i+1)*10000)/100);
   });
 
@@ -230,7 +271,7 @@ function computeML(results){
     var lo=buckets[bi], hi=buckets[bi+1];
     var sub = test.filter(function(s){ return s.pH>=lo && s.pH<hi; });
     if(sub.length >= 5){
-      var actualWin = sub.filter(function(s){ return s.outcome==='H'; }).length / sub.length;
+      var actualWin = sub.filter(function(s){ return s.hSide; }).length / sub.length;
       calibH.push({ mid: (lo+hi)/2, predicted: (lo+hi)/2, actual: actualWin, n: sub.length });
     }
   }
@@ -238,9 +279,10 @@ function computeML(results){
   // ── Confusion matrix ──
   var tp=0,fp=0,tn=0,fn=0;
   test.forEach(function(s){
-    if(s.pred==='H' && s.outcome==='H') tp++;
-    else if(s.pred==='H' && s.outcome==='A') fp++;
-    else if(s.pred==='A' && s.outcome==='H') fn++;
+    var predH = s.pred==='H';
+    if(predH  &&  s.hSide) tp++;
+    else if(predH  && !s.hSide) fp++;
+    else if(!predH &&  s.hSide) fn++;
     else tn++;
   });
 
@@ -348,7 +390,7 @@ function renderML(RD){
   // ── ROI backtest table ──
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">ROI Backtest by Confidence Threshold (Test Set)</div>';
   h += '<div class="rpt-table-wrap"><table class="rpt-table">';
-  h += '<thead><tr><th>Min Confidence</th><th class="num">H Bets</th><th class="num">H Wins</th><th class="num">H ROI</th><th class="num">A Bets</th><th class="num">A Wins</th><th class="num">A ROI</th></tr></thead><tbody>';
+  h += '<thead><tr><th>Min Confidence</th><th class="num">H Bets</th><th class="num">H Win</th><th class="num">H ½Win</th><th class="num">H ROI</th><th class="num">A Bets</th><th class="num">A Win</th><th class="num">A ½Win</th><th class="num">A ROI</th></tr></thead><tbody>';
   ml.roiResults.forEach(function(row){
     var rh=row.res.h, ra=row.res.a;
     var t=(row.t*100).toFixed(0)+'%';
@@ -356,9 +398,11 @@ function renderML(RD){
     h += '<td style="color:#94a3b8">≥ '+t+'</td>';
     h += '<td class="num">'+rh.bets+'</td>';
     h += '<td class="num">'+rh.wins+'</td>';
+    h += '<td class="num" style="color:#94a3b8">'+rh.half+'</td>';
     h += '<td class="num '+cls(rh.roi)+'">'+fmt(rh.roi)+'</td>';
     h += '<td class="num">'+ra.bets+'</td>';
     h += '<td class="num">'+ra.wins+'</td>';
+    h += '<td class="num" style="color:#94a3b8">'+ra.half+'</td>';
     h += '<td class="num '+cls(ra.roi)+'">'+fmt(ra.roi)+'</td>';
     h += '</tr>';
   });
@@ -403,7 +447,7 @@ function renderML(RD){
   h += '<div style="font-size:11px;color:#94a3b8;line-height:1.7">';
   h += '• <b style="color:#e2e8f0">Algorithm:</b> Logistic Regression with L2 regularisation (ridge), trained via mini-batch SGD<br>';
   h += '• <b style="color:#e2e8f0">Split:</b> Strict temporal split — older 75% for training, newest 25% for testing. No data leakage.<br>';
-  h += '• <b style="color:#e2e8f0">Features:</b> 12 pre-match signals (odds, line movement, expert votes, form)<br>';
+  h += '• <b style="color:#e2e8f0">Features:</b> 18 pre-match signals: odds, line movement, JC/Mac/SBO expert tips (encoded), Predict model, GEM/GPT votes, cross-bookmaker line gaps, form<br>';
   h += '• <b style="color:#e2e8f0">Target:</b> Binary — H covers handicap (1) or A covers (0). Pushes excluded.<br>';
   h += '• <b style="color:#e2e8f0">Limitation:</b> 1,700 records is modest for ML. Expect variance in results across retraining.<br>';
   h += '• <b style="color:#e2e8f0">Next steps:</b> XGBoost or ensemble methods would likely improve accuracy by 2–5%.';
