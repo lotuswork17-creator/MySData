@@ -151,12 +151,15 @@ function computeML(results){
     var gh = r.RESULTH || 0, ga = r.RESULTA || 0, line = r.ASIALINE || 0;
     var o = hcapOutcome(gh, ga, line);
     if(o === 'P') return; // exclude full push
+    var pnl = asiaPnl(gh, ga, line, r.ASIAH, r.ASIAA);
     samples.push({
       x: extractFeatures(r),
       y: (o === 'HW' || o === 'HH') ? 1 : 0, // H side positive (incl half-wins)
       r: r,
       outcome: o,  // 'HW','HH','AH','AW'
       hSide: (o==='HW'||o==='HH'),
+      hp: pnl.h,   // P&L if betting H side
+      ap: pnl.a,   // P&L if betting A side
       date: r.DATE
     });
   });
@@ -246,30 +249,52 @@ function computeML(results){
     roiCurveA.push(Math.round(cumA/(i+1)*10000)/100);
   });
 
-  // ── Feature importance (permutation-based on test) ──
-  var base = test.filter(function(s){ return s.correct; }).length / test.length;
+  // ── Feature importance: Acc + H-ROI + A-ROI drops (5-repeat permutation) ──
+  var THRESH_IMP = 0.55;
+  var N_REP = 5;
+
+  function calcMetrics(sset){
+    var acc=0, hPnl=0, hN=0, aPnl=0, aN=0;
+    sset.forEach(function(s){
+      if((s.pH>=0.5)===s.hSide) acc++;
+      if(s.pH>=THRESH_IMP){ hN++; hPnl+=s.hp; }
+      if(s.pA>=THRESH_IMP){ aN++; aPnl+=s.ap; }
+    });
+    return { acc:acc/sset.length*100, hRoi:hN?hPnl/hN*100:0, aRoi:aN?aPnl/aN*100:0 };
+  }
+  var baseM = calcMetrics(test);
+
+  function shuffleArr(arr){
+    var a=arr.slice();
+    for(var k=a.length-1;k>0;k--){var ri=Math.floor(Math.random()*(k+1));var t=a[k];a[k]=a[ri];a[ri]=t;}
+    return a;
+  }
 
   var importance = FEATURE_NAMES.map(function(name, j){
-    // Shuffle feature j across all test samples (true permutation)
-    var vals = test.map(function(s){ return s.x[j]; });
-    // Fisher-Yates shuffle
-    var shuf = vals.slice();
-    for(var k=shuf.length-1; k>0; k--){
-      var r = Math.floor(Math.random()*(k+1));
-      var tmp=shuf[k]; shuf[k]=shuf[r]; shuf[r]=tmp;
+    var accD=[], hD=[], aD=[];
+    for(var rep=0; rep<N_REP; rep++){
+      var shuf = shuffleArr(test.map(function(s){ return s.x[j]; }));
+      var ps = test.map(function(s,i){
+        var xp=s.x.slice(); xp[j]=shuf[i];
+        var pH=predictProb(model,xp);
+        return {pH:pH,pA:1-pH,hSide:s.hSide,hp:s.hp,ap:s.ap};
+      });
+      var pm=calcMetrics(ps);
+      accD.push(baseM.acc-pm.acc); hD.push(baseM.hRoi-pm.hRoi); aD.push(baseM.aRoi-pm.aRoi);
     }
-    var correct2 = 0;
-    test.forEach(function(s, i){
-      var xp = s.x.slice();
-      xp[j] = shuf[i];
-      var pH = predictProb(model, xp);
-      var predH = pH >= 0.5;
-      if(predH === s.hSide) correct2++;  // compare to hSide not outcome string
-    });
-    var acc2 = correct2 / test.length;
-    return { name: name, drop: Math.round((base - acc2)*10000)/100 };
+    function mn(a){ return a.reduce(function(s,v){return s+v;},0)/a.length; }
+    function sd(a){ var m=mn(a); return Math.sqrt(a.reduce(function(s,v){return s+(v-m)*(v-m);},0)/a.length)||0.001; }
+    var hm=mn(hD), am=mn(aD);
+    return {
+      name:name,
+      drop:  Math.round(mn(accD)*100)/100,
+      hDrop: Math.round(hm*100)/100,
+      aDrop: Math.round(am*100)/100,
+      hRatio: hm/sd(hD),
+      aRatio: am/sd(aD)
+    };
   });
-  importance.sort(function(a,b){ return b.drop - a.drop; });
+  importance.sort(function(a,b){ return b.hDrop - a.hDrop; });
 
   // ── Calibration (predicted prob vs actual win rate in buckets) ──
   var buckets = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
@@ -415,19 +440,55 @@ function renderML(RD){
   });
   h += '</tbody></table></div>';
 
-  // ── Feature importance chart ──
-  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:8px">Feature Importance (Accuracy Drop When Removed)</div>';
-  var maxDrop = Math.max.apply(null, ml.importance.map(function(x){ return Math.abs(x.drop); }))||1;
-  h += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px">';
+  // ── Feature importance chart: 3 bars (Acc / H-ROI / A-ROI) ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:4px">Feature Importance — ROI Drop When Feature Removed</div>';
+  h += '<div style="font-size:9px;color:#64748b;margin-bottom:8px">';
+  h += '<span style="color:#60a5fa">■</span> H-bet ROI drop &nbsp;&nbsp;';
+  h += '<span style="color:#34d399">■</span> A-bet ROI drop &nbsp;&nbsp;';
+  h += '<span style="color:#94a3b8">■</span> Accuracy drop &nbsp;&nbsp;';
+  h += '<span style="color:#fbbf24">✓</span> = signal reliable (SNR > 2)';
+  h += '</div>';
+
+  // Scale: max absolute value across all three metrics
+  var allVals = [];
+  ml.importance.forEach(function(f){ allVals.push(Math.abs(f.hDrop),Math.abs(f.aDrop),Math.abs(f.drop)); });
+  var maxV = Math.max.apply(null, allVals) || 1;
+
+  h += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">';
   ml.importance.forEach(function(f){
-    var pct = Math.max(0, f.drop/maxDrop*100);
-    var color = f.drop > 0.5 ? '#60a5fa' : f.drop > 0 ? '#94a3b8' : '#f87171';
-    h += '<div style="display:flex;align-items:center;gap:8px">';
-    h += '<div style="font-size:10px;color:#94a3b8;width:130px;text-align:right;flex-shrink:0">'+f.name+'</div>';
-    h += '<div style="flex:1;background:var(--border);border-radius:3px;height:14px;position:relative">';
-    h += '<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:3px"></div></div>';
-    h += '<div style="font-size:10px;font-family:var(--mono);color:'+color+';width:50px">'+
-          (f.drop>=0?'+':'')+f.drop.toFixed(2)+'%</div>';
+    var hPct  = Math.min(100, Math.abs(f.hDrop)/maxV*100);
+    var aPct  = Math.min(100, Math.abs(f.aDrop)/maxV*100);
+    var accPct= Math.min(100, Math.abs(f.drop)/maxV*100);
+    var hCol  = f.hDrop > 0 ? '#60a5fa' : '#f87171';
+    var aCol  = f.aDrop > 0 ? '#34d399' : '#fb923c';
+    var accCol= f.drop  > 0 ? '#94a3b8' : '#6b7280';
+    var hRel  = Math.abs(f.hRatio) > 2;
+    var aRel  = Math.abs(f.aRatio) > 2;
+    var badge = '';
+    if(hRel) badge += '<span style="color:#fbbf24;font-size:9px" title="H-bet signal reliable"> H✓</span>';
+    if(aRel) badge += '<span style="color:#fbbf24;font-size:9px" title="A-bet signal reliable"> A✓</span>';
+    if(!hRel&&!aRel) badge = '<span style="color:#475569;font-size:9px"> ~</span>';
+
+    h += '<div style="display:flex;align-items:center;gap:6px">';
+    h += '<div style="font-size:10px;color:#94a3b8;width:120px;text-align:right;flex-shrink:0">'+f.name+'</div>';
+    h += '<div style="flex:1;display:flex;flex-direction:column;gap:2px">';
+    // H-ROI bar
+    h += '<div style="display:flex;align-items:center;gap:4px">';
+    h += '<div style="width:'+hPct+'%;max-width:100%;height:8px;background:'+hCol+';border-radius:2px"></div>';
+    h += '<span style="font-size:9px;font-family:var(--mono);color:'+hCol+'">'+(f.hDrop>=0?'+':'')+f.hDrop.toFixed(1)+'%</span>';
+    h += '</div>';
+    // A-ROI bar
+    h += '<div style="display:flex;align-items:center;gap:4px">';
+    h += '<div style="width:'+aPct+'%;max-width:100%;height:8px;background:'+aCol+';border-radius:2px"></div>';
+    h += '<span style="font-size:9px;font-family:var(--mono);color:'+aCol+'">'+(f.aDrop>=0?'+':'')+f.aDrop.toFixed(1)+'%</span>';
+    h += '</div>';
+    // Acc bar (thin)
+    h += '<div style="display:flex;align-items:center;gap:4px">';
+    h += '<div style="width:'+accPct+'%;max-width:100%;height:4px;background:'+accCol+';border-radius:2px;opacity:0.6"></div>';
+    h += '<span style="font-size:8px;font-family:var(--mono);color:'+accCol+';opacity:0.7">'+(f.drop>=0?'+':'')+f.drop.toFixed(1)+'%</span>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div style="width:28px;flex-shrink:0">'+badge+'</div>';
     h += '</div>';
   });
   h += '</div>';
