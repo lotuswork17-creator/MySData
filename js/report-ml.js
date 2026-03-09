@@ -683,10 +683,63 @@ function renderMLPastResultsHTML(testSamples){
   var totalA = rows.filter(function(s){ return s.pA>=0.55; });
   var hPnl = totalH.reduce(function(a,s){return a+s.hp;},0);
   var aPnl = totalA.reduce(function(a,s){return a+s.ap;},0);
-  h += '<div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap;font-size:11px;font-family:var(--mono)">';
-  h += '<span style="color:#94a3b8">Accuracy: <b style="color:'+(totalCorrect/rows.length>=0.52?'#4ade80':'#f87171')+'">'+Math.round(totalCorrect/rows.length*1000)/10+'%</b></span>';
-  h += '<span style="color:#94a3b8">H bets(≥55%): <b style="color:'+(hPnl>=0?'#4ade80':'#f87171')+'">'+totalH.length+' ROI '+(hPnl>=0?'+':'')+Math.round(hPnl/Math.max(1,totalH.length)*1000)/10+'%</b></span>';
-  h += '<span style="color:#94a3b8">A bets(≥55%): <b style="color:'+(aPnl>=0?'#4ade80':'#f87171')+'">'+totalA.length+' ROI '+(aPnl>=0?'+':'')+Math.round(aPnl/Math.max(1,totalA.length)*1000)/10+'%</b></span>';
+
+  // Reliability verdict based on sample size
+  function reliabilityLabel(n){
+    if(n < 25)  return { label:'✗ Meaningless', color:'#f87171' };
+    if(n < 100) return { label:'⚠ Unreliable', color:'#fb923c' };
+    if(n < 200) return { label:'~ Rough estimate', color:'#facc15' };
+    return { label:'✓ Reliable', color:'#4ade80' };
+  }
+  // ROI 95% CI half-width ≈ 1.96 × sqrt(p(1-p)/n) × avg_odds
+  function roiCI(n){ return n>0 ? Math.round(1.96*Math.sqrt(0.25/n)*95*10)/10 : 999; }
+  // Accuracy 95% CI half-width (Wilson)
+  function accCI(n){ return n>0 ? Math.round(1.96*Math.sqrt(0.25/n)*100*10)/10 : 999; }
+
+  var nAcc = rows.length;
+  var nH = totalH.length;
+  var nA = totalA.length;
+  var accRel = reliabilityLabel(nAcc);
+  var hRel = reliabilityLabel(nH);
+  var aRel = reliabilityLabel(nA);
+  var accPct = Math.round(totalCorrect/nAcc*1000)/10;
+  var hRoi = Math.round(hPnl/Math.max(1,nH)*1000)/10;
+  var aRoi = Math.round(aPnl/Math.max(1,nA)*1000)/10;
+
+  h += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">';
+
+  // Accuracy row
+  h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  h += '<span style="font-size:10px;color:#94a3b8;font-family:var(--mono);width:90px;flex-shrink:0">Accuracy</span>';
+  h += '<span style="font-size:13px;font-weight:800;font-family:var(--mono);color:'+(accPct>=52?'#4ade80':'#f87171')+'">'+accPct+'%</span>';
+  h += '<span style="font-size:9px;color:#64748b;font-family:var(--mono)">±'+accCI(nAcc)+'% (95% CI) · n='+nAcc+'</span>';
+  h += '<span style="font-size:9px;font-weight:700;color:'+accRel.color+'">'+accRel.label+'</span>';
+  h += '</div>';
+
+  // H bets row
+  h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  h += '<span style="font-size:10px;color:#60a5fa;font-family:var(--mono);width:90px;flex-shrink:0">H bets ≥55%</span>';
+  h += '<span style="font-size:13px;font-weight:800;font-family:var(--mono);color:'+(hRoi>=0?'#4ade80':'#f87171')+'">'+(hRoi>=0?'+':'')+hRoi+'%</span>';
+  h += '<span style="font-size:9px;color:#64748b;font-family:var(--mono)">±'+roiCI(nH)+'% (95% CI) · n='+nH+'</span>';
+  h += '<span style="font-size:9px;font-weight:700;color:'+hRel.color+'">'+hRel.label+'</span>';
+  h += '</div>';
+
+  // A bets row
+  h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  h += '<span style="font-size:10px;color:#f87171;font-family:var(--mono);width:90px;flex-shrink:0">A bets ≥55%</span>';
+  h += '<span style="font-size:13px;font-weight:800;font-family:var(--mono);color:'+(aRoi>=0?'#4ade80':'#f87171')+'">'+(aRoi>=0?'+':'')+aRoi+'%</span>';
+  h += '<span style="font-size:9px;color:#64748b;font-family:var(--mono)">±'+roiCI(nA)+'% (95% CI) · n='+nA+'</span>';
+  h += '<span style="font-size:9px;font-weight:700;color:'+aRel.color+'">'+aRel.label+'</span>';
+  h += '</div>';
+
+  // Plain-language warning if any sample < 100
+  if(nH < 100 || nA < 100){
+    h += '<div style="margin-top:4px;font-size:10px;color:#fb923c;border-top:1px solid var(--border);padding-top:6px">';
+    h += '⚠ Sample too small to trust these numbers. ';
+    if(nH < 25) h += 'A −26% ROI on '+nH+' bets happens by pure chance 27% of the time. ';
+    h += 'Need ≥100 bets per side for a rough estimate, ≥500 for reliable conclusions.';
+    h += '</div>';
+  }
   h += '</div>';
 
   h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
