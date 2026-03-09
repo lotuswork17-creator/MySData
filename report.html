@@ -289,7 +289,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===0 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===9 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -327,9 +327,9 @@ function loadReport(){
         return;
       }
       document.getElementById('rptLoading').style.display = 'none';
-      document.getElementById('tab0').classList.add('active');
-      drawn[0] = true;
-      TABS[0].render(RD);
+      document.getElementById('tab9').classList.add('active');
+      drawn[9] = true;
+      TABS[9].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
