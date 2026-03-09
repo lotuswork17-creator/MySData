@@ -29,17 +29,6 @@ function loadData(){
       $('th-DATE').classList.add('sort-desc');
       applyFilters();
 
-      // Train ML model and render predictions widget
-      setTimeout(function(){
-        try{
-          var mlData = computeML(ALL);
-          if(mlData && mlData.predictions && mlData.predictions.length){
-            $('mlWidget').style.display='block';
-            renderMLIndexWidget(mlData.predictions, 'mlWidgetContent');
-          }
-        } catch(e){ console.warn('ML widget error:', e); }
-      }, 200);
-
       var t;
       initJCPickFilter();
       $('searchInput').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){pg=1;applyFilters();},300);});

@@ -521,6 +521,9 @@ function renderML(RD){
   h += '• <b style="color:#e2e8f0">Next steps:</b> XGBoost or ensemble methods would likely improve accuracy by 2–5%.';
   h += '</div></div>';
 
+  // ── Past predictions (last N test results) ──
+  h += renderMLPastResultsHTML(ml.testSamples, ml.model);
+
   // ── Upcoming predictions ──
   h += renderMLPredictionsHTML(ml.predictions, ml.testAcc);
 
@@ -658,95 +661,116 @@ function drawRoiCurveChart(hPts, aPts){
 }
 
 // ── Predictions HTML builder (shared by report tab + index widget) ──
+// ── Past Results Table ──
+function renderMLPastResultsHTML(testSamples){
+  if(!testSamples || !testSamples.length) return '';
+  var rows = testSamples.slice(-50).reverse();
+  var chronoRows = rows.slice().reverse();
+  var cumCorrect = 0;
+  var runAcc = chronoRows.map(function(s,i){
+    if((s.pH>=0.5)===s.hSide) cumCorrect++;
+    return Math.round(cumCorrect/(i+1)*1000)/10;
+  });
+  runAcc.reverse();
+
+  var h = '';
+  h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
+  h += '<div class="rpt-title">📋 Past Predictions — Last '+rows.length+' Results</div>';
+  h += '<div class="rpt-sub" style="margin-bottom:10px">Model prediction vs actual Asia handicap outcome on the test set. Running accuracy is cumulative from oldest to newest.</div>';
+
+  var totalCorrect = rows.filter(function(s){ return (s.pH>=0.5)===s.hSide; }).length;
+  var totalH = rows.filter(function(s){ return s.pH>=0.55; });
+  var totalA = rows.filter(function(s){ return s.pA>=0.55; });
+  var hPnl = totalH.reduce(function(a,s){return a+s.hp;},0);
+  var aPnl = totalA.reduce(function(a,s){return a+s.ap;},0);
+  h += '<div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap;font-size:11px;font-family:var(--mono)">';
+  h += '<span style="color:#94a3b8">Accuracy: <b style="color:'+(totalCorrect/rows.length>=0.52?'#4ade80':'#f87171')+'">'+Math.round(totalCorrect/rows.length*1000)/10+'%</b></span>';
+  h += '<span style="color:#94a3b8">H bets(≥55%): <b style="color:'+(hPnl>=0?'#4ade80':'#f87171')+'">'+totalH.length+' ROI '+(hPnl>=0?'+':'')+Math.round(hPnl/Math.max(1,totalH.length)*1000)/10+'%</b></span>';
+  h += '<span style="color:#94a3b8">A bets(≥55%): <b style="color:'+(aPnl>=0?'#4ade80':'#f87171')+'">'+totalA.length+' ROI '+(aPnl>=0?'+':'')+Math.round(aPnl/Math.max(1,totalA.length)*1000)/10+'%</b></span>';
+  h += '</div>';
+
+  h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
+  h += '<thead><tr><th>Date</th><th>Match</th><th class="num">Line</th>';
+  h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th>';
+  h += '<th class="num">Conf</th><th class="num">Outcome</th><th class="num">Hit</th><th class="num">Run.Acc</th>';
+  h += '</tr></thead><tbody>';
+  rows.forEach(function(s,i){
+    var r=s.r; var pred=s.pH>=0.5?'H':'A'; var conf=Math.round(Math.max(s.pH,s.pA)*100);
+    var correct=(s.pH>=0.5)===s.hSide;
+    var outLabel=s.outcome==='HW'?'H Win':s.outcome==='HH'?'H ½Win':s.outcome==='AH'?'A ½Win':'A Win';
+    var outColor=s.hSide?'#4ade80':'#f87171';
+    var hitColor=correct?'#4ade80':'#f87171';
+    var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
+    var accColor=runAcc[i]>=55?'#4ade80':runAcc[i]>=50?'#94a3b8':'#f87171';
+    h += '<tr>';
+    h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
+    h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
+    h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
+    h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
+    h += '<td class="num"><b style="color:'+(pred==='H'?'#60a5fa':'#f87171')+'">'+pred+'</b></td>';
+    h += '<td class="num" style="font-family:var(--mono);color:'+confColor+'">'+conf+'%</td>';
+    h += '<td class="num" style="color:'+outColor+';font-size:10px">'+outLabel+'</td>';
+    h += '<td class="num" style="font-size:14px;font-weight:800;color:'+hitColor+'">'+(correct?'✓':'✗')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:'+accColor+'">'+runAcc[i].toFixed(1)+'%</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
 function renderMLPredictionsHTML(predictions, testAcc){
   if(!predictions || !predictions.length){
     return '<div style="padding:14px;color:#64748b;font-size:12px">No upcoming matches with sufficient data.</div>';
   }
-
-  var recColor = function(rec){ return rec==='H'?'#60a5fa': rec==='A'?'#f87171':'#64748b'; };
-  var recBg    = function(rec){ return rec==='H'?'rgba(96,165,250,.15)': rec==='A'?'rgba(248,113,113,.15)':'rgba(100,116,139,.1)'; };
-  var confBar  = function(pct, col){
-    return '<div style="height:6px;border-radius:3px;background:var(--border);margin-top:3px">'+
-           '<div style="width:'+Math.round(pct*100)+'%;height:100%;background:'+col+';border-radius:3px"></div></div>';
-  };
-
-  var h = '';
-  h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
-  h += '<div class="rpt-title">🎯 Upcoming Match Predictions</div>';
-  h += '<div class="rpt-sub">Model trained on historical data. Confidence = predicted probability. Bet recommended at ≥60%. ';
-  h += 'Est. ROI derived from test-set backtest at same confidence threshold. ';
-  h += 'Model test accuracy: <b style="color:#4ade80">'+(testAcc*100).toFixed(1)+'%</b>. Use as one signal, not sole basis for betting.</div>';
-
-  predictions.forEach(function(p, idx){
-    var r = p.r;
-    var date = r.DATE || '';
-    var time = r.TIME ? String(r.TIME).padStart(4,'0').replace(/(\d\d)(\d\d)/,'$1:$2') : '';
-    var league = r.CATEGORY || '';
-    var rec = p.rec;
-    var isSkip = rec === 'SKIP';
-
-    h += '<div style="background:var(--surface2);border:1px solid '+(isSkip?'var(--border)':recColor(rec)+'55')+';border-radius:10px;padding:12px;margin-bottom:8px">';
-
-    // Header row: match info + recommendation badge
-    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">';
-    h += '<div>';
-    h += '<div style="font-size:12px;font-weight:700;color:#e2e8f0">'+r.TEAMH+' <span style="color:#64748b">vs</span> '+r.TEAMA+'</div>';
-    h += '<div style="font-size:10px;color:#64748b;font-family:var(--mono);margin-top:2px">'+date+' '+time+' · '+league+'</div>';
-    h += '<div style="font-size:10px;color:#94a3b8;margin-top:2px">Line: <b style="color:#e2e8f0">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</b> · H odds: <b style="color:#e2e8f0">'+(r.ASIAH||'—')+'</b> · A odds: <b style="color:#e2e8f0">'+(r.ASIAA||'—')+'</b></div>';
-    h += '</div>';
-    h += '<div style="text-align:right;flex-shrink:0">';
-    h += '<div style="display:inline-block;padding:4px 10px;border-radius:6px;background:'+recBg(rec)+';border:1px solid '+recColor(rec)+'44;font-size:12px;font-weight:800;color:'+recColor(rec)+'">'+rec+'</div>';
-    if(!isSkip){
-      var roiSign = p.expRoi >= 0 ? '+' : '';
-      h += '<div style="font-size:10px;font-family:var(--mono);color:#94a3b8;margin-top:3px">Est ROI <span style="color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+roiSign+p.expRoi.toFixed(1)+'%</span></div>';
-    }
-    h += '</div>';
-    h += '</div>';
-
-    // Confidence bars
-    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-    h += '<div><div style="font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.04em">H Confidence</div>';
-    h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#60a5fa">'+Math.round(p.pH*100)+'%</div>';
-    h += confBar(p.pH, '#60a5fa')+'</div>';
-    h += '<div><div style="font-size:9px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.04em">A Confidence</div>';
-    h += '<div style="font-size:14px;font-weight:800;font-family:var(--mono);color:#f87171">'+Math.round(p.pA*100)+'%</div>';
-    h += confBar(p.pA, '#f87171')+'</div>';
-    h += '</div>';
-
-    // Feature contributions (collapsible)
-    var detailId = 'mlf_'+idx;
-    h += '<div style="margin-top:4px">';
-    h += '<button onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" '+
-         'style="font-size:9px;color:#64748b;background:none;border:none;cursor:pointer;padding:0;font-family:var(--mono)">▶ Feature breakdown</button>';
-    h += '<div id="'+detailId+'" style="display:none;margin-top:6px">';
-    h += '<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Top Drivers (contribution to H prediction)</div>';
-    var maxC = Math.max.apply(null, p.featureVals.map(function(f){ return Math.abs(f.contrib); }))||1;
-    p.featureVals.forEach(function(f){
-      var pct = Math.abs(f.contrib)/maxC*100;
-      var col = f.contrib > 0 ? '#60a5fa' : '#f87171';
-      var dir = f.contrib > 0 ? '▲H' : '▼A';
-      // Format raw value readably
-      var rawDisp;
-      if(f.name==='Market Implied H%'||f.name==='Predict H%'||f.name==='Predict A%') rawDisp=(f.raw*100).toFixed(0)+'%';
-      else rawDisp=f.raw.toFixed(3);
-      h += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">';
-      h += '<div style="font-size:9px;color:#64748b;width:110px;flex-shrink:0;text-align:right">'+f.name+'</div>';
-      h += '<div style="width:8px;font-size:8px;color:'+col+';flex-shrink:0;text-align:center">'+dir+'</div>';
-      h += '<div style="flex:1;background:var(--border);border-radius:2px;height:8px">';
-      h += '<div style="width:'+pct.toFixed(0)+'%;height:100%;background:'+col+';border-radius:2px"></div></div>';
-      h += '<div style="font-size:9px;font-family:var(--mono);color:#94a3b8;width:40px;text-align:right">'+rawDisp+'</div>';
-      h += '</div>';
+  var recColor=function(rec){ return rec==='H'?'#60a5fa':rec==='A'?'#f87171':'#64748b'; };
+  var h='';
+  h+='<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
+  h+='<div class="rpt-title">🎯 Upcoming Match Predictions</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:10px">All upcoming matches ranked by confidence. Model test accuracy: <b style="color:#4ade80">'+(testAcc*100).toFixed(1)+'%</b>. Use as one signal only.</div>';
+  var nH=predictions.filter(function(p){return p.rec==='H';}).length;
+  var nA=predictions.filter(function(p){return p.rec==='A';}).length;
+  var nS=predictions.filter(function(p){return p.rec==='SKIP';}).length;
+  h+='<div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;font-family:var(--mono);flex-wrap:wrap">';
+  h+='<span style="color:#60a5fa;font-weight:700">H picks (≥60%): '+nH+'</span>';
+  h+='<span style="color:#f87171;font-weight:700">A picks (≥60%): '+nA+'</span>';
+  h+='<span style="color:#475569">Skip: '+nS+'</span>';
+  h+='</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>';
+  h+='<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">H%</th><th class="num">A%</th>';
+  h+='<th class="num">Pick</th><th class="num">Conf</th><th class="num">Est ROI</th><th style="width:24px"></th>';
+  h+='</tr></thead><tbody>';
+  predictions.forEach(function(p,idx){
+    var r=p.r; var rec=p.rec; var isSkip=rec==='SKIP';
+    var col=recColor(rec); var conf=Math.round(Math.max(p.pH,p.pA)*100);
+    var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
+    var roiSign=p.expRoi>=0?'+':''; var detailId='mlup_'+idx;
+    h+='<tr style="'+(isSkip?'opacity:0.45':'')+'">';
+    h+='<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
+    h+='<td><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px"><span style="color:#e2e8f0">'+r.TEAMH+'</span><span style="color:#475569;font-size:9px"> vs </span><span style="color:#e2e8f0">'+r.TEAMA+'</span></div>';
+    h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||'')+'</div></td>';
+    h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
+    h+='<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(p.pH*100)+'%</td>';
+    h+='<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(p.pA*100)+'%</td>';
+    h+='<td class="num"><b style="font-size:12px;color:'+col+'">'+rec+'</b></td>';
+    h+='<td class="num" style="font-family:var(--mono);color:'+confColor+';font-weight:700">'+conf+'%</td>';
+    h+='<td class="num" style="font-family:var(--mono);color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+(isSkip?'—':roiSign+p.expRoi.toFixed(1)+'%')+'</td>';
+    h+='<td><button onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="font-size:10px;color:#64748b;background:none;border:none;cursor:pointer;padding:0">▶</button></td>';
+    h+='</tr><tr><td colspan="9" style="padding:0"><div id="'+detailId+'" style="display:none;padding:8px 12px;background:var(--surface)">';
+    h+='<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Feature Contributions (→H positive, →A negative)</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+    var maxC=Math.max.apply(null,p.featureVals.map(function(f){return Math.abs(f.contrib);}));
+    p.featureVals.slice(0,9).forEach(function(f){
+      var col2=f.contrib>0?'#60a5fa':'#f87171';
+      var rawDisp=(f.name.indexOf('%')>=0)?((f.raw*100).toFixed(0)+'%'):f.raw.toFixed(2);
+      h+='<div style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+col2+'15;border:1px solid '+col2+'33;color:'+col2+'">'+f.name+': '+rawDisp+' ('+(f.contrib>=0?'+':'')+f.contrib.toFixed(2)+')</div>';
     });
-    h += '</div></div>';
-
-    h += '</div>'; // match card
+    h+='</div></div></td></tr>';
   });
-
-  h += '</div>';
+  h+='</tbody></table></div></div>';
   return h;
 }
 
-// ── Index page widget (compact) ──
 function renderMLIndexWidget(mlPredictions, containerId){
   var el = document.getElementById(containerId);
   if(!el || !mlPredictions || !mlPredictions.length) return;
