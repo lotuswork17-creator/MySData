@@ -503,10 +503,10 @@ function renderML(RD){
   }
 
   // ── ROI curve chart ──
-  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">ROI Curve — Betting Top-N by Confidence (Test Set)</div>';
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">ROI Curve — Last 100 Bets by Confidence (Test Set)</div>';
   h += '<div class="chart-box">';
   h += '<canvas id="mlRoiChart" style="width:100%;display:block"></canvas>';
-  h += '<div style="font-size:9px;color:#64748b;margin-top:4px">Matches sorted by model confidence. Left = highest confidence. A falling curve = confident picks don\'t outperform.</div>';
+  h += '<div style="font-size:9px;color:#64748b;margin-top:4px">Matches sorted by model confidence, showing last 100. <span style="color:#f87171">Red = H bets</span>, <span style="color:#60a5fa">Blue = A bets</span>. A flat/falling curve = no edge at high confidence.</div>';
   h += '</div>';
 
   // ── Notes ──
@@ -532,7 +532,7 @@ function renderML(RD){
   // Draw charts
   setTimeout(function(){
     drawCalibChart(ml.calibH);
-    drawRoiCurveChart(ml.roiCurveH, ml.roiCurveA);
+    drawRoiCurveChart(ml.roiCurveH.slice(-100), ml.roiCurveA.slice(-100));
   }, 50);
 }
 
@@ -649,14 +649,14 @@ function drawRoiCurveChart(hPts, aPts){
     ctx.fillText((last>=0?'+':'')+last.toFixed(1)+'%', padL+cw+3, yy(last));
   }
 
-  drawLine(hPts, '#60a5fa');
-  drawLine(aPts, '#f87171');
+  drawLine(hPts, '#f87171');  // H = red
+  drawLine(aPts, '#60a5fa');  // A = blue
 
   // Legend
   ctx.font='9px IBM Plex Mono'; ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.fillStyle='#60a5fa'; ctx.fillRect(padL,padT,18,2);
+  ctx.fillStyle='#f87171'; ctx.fillRect(padL,padT,18,2);
   ctx.fillText('H', padL+20, padT+1);
-  ctx.fillStyle='#f87171'; ctx.fillRect(padL+30,padT,18,2);
+  ctx.fillStyle='#60a5fa'; ctx.fillRect(padL+30,padT,18,2);
   ctx.fillText('A', padL+50, padT+1);
 }
 
