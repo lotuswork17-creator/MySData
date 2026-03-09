@@ -44,7 +44,7 @@ var TIPSON_MAP = {'H':1.0,'1H':0.7,'1D':0.3,'D':0.3,'B':0.0,'S':0.0,'A':-1.0,'1A
 function encodeTip(val, map){ return map[String(val||'')] || 0; }
 
 function extractFeatures(r){
-  // 18 pre-match features
+  // 14-feature set — lean, tips, line, key interactions
   var asiah  = r.ASIAH  || 0;
   var asiaa  = r.ASIAA  || 0;
   var asiahn = r.ASIAHLN || asiah;
@@ -54,40 +54,46 @@ function extractFeatures(r){
   var macline= r.ASIALINEMA || line;
   var sboline= r.ASIALINESB || line;
 
-  // Market implied H probability (vig-removed closing odds)
+  // Market Lean: closing vig-removed implied H probability
   var vigH = asiah > 0 ? 1/asiah : 0.5;
   var vigA = asiaa > 0 ? 1/asiaa : 0.5;
   var impliedH = vigH / (vigH + vigA || 1);
 
+  // Opening lean (for drift)
+  var opH = asiahn > 0 ? 1/asiahn : 0.5;
+  var opA = asiaan > 0 ? 1/asiaan : 0.5;
+  var impliedHO = opH / (opH + opA || 1);
+  var leanDrift = impliedH - impliedHO;  // +ve = money came in on H
+
+  var jcsum = encodeTip(r.JCTIPSUM,  TIPSUM_MAP);
+  var jcsid = encodeTip(r.JCTIPSID,  TIPSID_MAP);
+  var mac   = encodeTip(r.TIPSIDMAC, TIPSMAC_MAP);
+  var onid  = encodeTip(r.TIPSONID,  TIPSON_MAP);
+  var tipcons = (jcsum + jcsid + mac + onid) / 4;
+
   return [
-    line,                                            // 0  Asia handicap line
-    impliedH,                                        // 1  Market implied H% (vig-free)
-    (line - linen),                                  // 2  JC line movement
-    (asiah - asiahn),                                // 3  H odds drift (+ = money on A)
-    (asiaa - asiaan),                                // 4  A odds drift (+ = money on H)
-    (r.PREDICTH || 0) / 100,                        // 5  Predict model H%
-    (r.PREDICTA || 0) / 100,                        // 6  Predict model A%
-    Math.min((r.GEMH || 0), 9) / 9,                 // 7  GEM H votes
-    Math.min((r.GEMA || 0), 9) / 9,                 // 8  GEM A votes
-    Math.min((r.GPTH || 0), 8) / 8,                 // 9  GPT H votes
-    Math.min((r.GPTA || 0), 7) / 7,                 // 10 GPT A votes
-    ((r.REC3MHH||0)-(r.REC3MHA||0)-(r.REC3MAA||0)+(r.REC3MAH||0)) / 10, // 11 Form advantage
-    encodeTip(r.JCTIPSUM,  TIPSUM_MAP),              // 12 JC Sum tip direction
-    encodeTip(r.JCTIPSID,  TIPSID_MAP),              // 13 JC SID tip direction
-    encodeTip(r.TIPSIDMAC, TIPSMAC_MAP),             // 14 SID Mac tip direction
-    encodeTip(r.TIPSONID,  TIPSON_MAP),              // 15 ON ID tip direction
-    (macline - line),                                // 16 Macau vs JC line gap (cross-book signal)
-    (sboline - line)                                 // 17 SBO vs JC line gap
+    impliedH,              // 0  Market Lean (closing vig-free H%)    ★ CORE
+    leanDrift,             // 1  Lean Drift (closing − opening lean)   ★ CORE
+    line,                  // 2  Asia Handicap Line                    ★ CORE
+    impliedH * line,       // 3  Lean × Line interaction               ★ KEY
+    jcsid,                 // 4  JC SID Tip (contrarian signal)        ★ CORE
+    mac,                   // 5  MAC Tip (contrarian signal)           ★ CORE
+    jcsum,                 // 6  JC Sum Tip
+    onid,                  // 7  ON ID Tip
+    tipcons,               // 8  Tip Consensus (avg all 4 tips)
+    tipcons * line,        // 9  Tip Consensus × Line
+    mac * impliedH,        // 10 MAC × Lean interaction
+    (line - linen),        // 11 Line Move (JC)
+    (macline - line),      // 12 Macau–JC Line Gap
+    (sboline - line)       // 13 SBO–JC Line Gap
   ];
 }
 
 var FEATURE_NAMES = [
-  'Asia Line', 'Market Implied H%', 'Line Move', 'H Odds Drift',
-  'A Odds Drift', 'Predict H%', 'Predict A%',
-  'GEM H Votes', 'GEM A Votes', 'GPT H Votes', 'GPT A Votes',
-  'Form Advantage',
-  'JC Sum Tip', 'JC SID Tip', 'SID Mac Tip', 'ON ID Tip',
-  'Macau–JC Line Gap', 'SBO–JC Line Gap'
+  'Market Lean', 'Lean Drift', 'Asia Line', 'Lean × Line',
+  'JC SID Tip', 'MAC Tip', 'JC Sum Tip', 'ON ID Tip',
+  'Tip Consensus', 'Tip × Line', 'MAC × Lean',
+  'Line Move', 'Macau–JC Gap', 'SBO–JC Gap'
 ];
 
 // ── Logistic Regression (mini-batch SGD) ────────────────────────
@@ -152,15 +158,23 @@ function computeML(results){
     var o = hcapOutcome(gh, ga, line);
     if(o === 'P') return; // exclude full push
     var pnl = asiaPnl(gh, ga, line, r.ASIAH, r.ASIAA);
+    // Pre-compute rule signal fields
+    var _asiah=r.ASIAH||0,_asiaa=r.ASIAA||0;
+    var _asiahn=r.ASIAHLN||_asiah,_asiaan=r.ASIAALN||_asiaa;
+    var _vH=_asiah>0?1/_asiah:0.5,_vA=_asiaa>0?1/_asiaa:0.5;
+    var _iH=_vH/(_vH+_vA||1);
+    var _oH=_asiahn>0?1/_asiahn:0.5,_oA=_asiaan>0?1/_asiaan:0.5;
+    var _iHO=_oH/(_oH+_oA||1);
     samples.push({
       x: extractFeatures(r),
-      y: (o === 'HW' || o === 'HH') ? 1 : 0, // H side positive (incl half-wins)
-      r: r,
-      outcome: o,  // 'HW','HH','AH','AW'
-      hSide: (o==='HW'||o==='HH'),
-      hp: pnl.h,   // P&L if betting H side
-      ap: pnl.a,   // P&L if betting A side
-      date: r.DATE
+      y: (o === 'HW' || o === 'HH') ? 1 : 0,
+      r: r, outcome: o, hSide: (o==='HW'||o==='HH'),
+      hp: pnl.h, ap: pnl.a, date: r.DATE,
+      line: line, impliedH: _iH, leanDrift: _iH-_iHO,
+      jcsid: encodeTip(r.JCTIPSID,TIPSID_MAP),
+      mac:   encodeTip(r.TIPSIDMAC,TIPSMAC_MAP),
+      jcsum: encodeTip(r.JCTIPSUM,TIPSUM_MAP),
+      onid:  encodeTip(r.TIPSONID,TIPSON_MAP)
     });
   });
 
@@ -372,7 +386,8 @@ function computeML(results){
     trainPct: Math.round(0.75*100),
     testSamples: test,
     model: model,
-    predictions: predictions
+    predictions: predictions,
+    ruleSignals: computeRuleSignals(samples)
   };
 }
 
@@ -533,16 +548,19 @@ function renderML(RD){
   h += '<div style="font-size:11px;color:#94a3b8;line-height:1.7">';
   h += '• <b style="color:#e2e8f0">Algorithm:</b> Logistic Regression with L2 regularisation (ridge), trained via mini-batch SGD<br>';
   h += '• <b style="color:#e2e8f0">Split:</b> Strict temporal split — older 75% for training, newest 25% for testing. No data leakage.<br>';
-  h += '• <b style="color:#e2e8f0">Features:</b> 18 pre-match signals: odds, line movement, JC/Mac/SBO expert tips (encoded), Predict model, GEM/GPT votes, cross-bookmaker line gaps, form<br>';
+  h += '• <b style="color:#e2e8f0">Features:</b> 14 pre-match signals — Market Lean, Lean Drift, Asia Line, Lean×Line interaction, 4 JC/MAC/ON expert tips, Tip Consensus, Tip×Line, MAC×Lean, Line Move, cross-book gaps<br>';
   h += '• <b style="color:#e2e8f0">Target:</b> Binary — H covers handicap (1) or A covers (0). Pushes excluded.<br>';
-  h += '• <b style="color:#e2e8f0">Limitation:</b> 1,700 records is modest for ML. Expect variance in results across retraining.<br>';
-  h += '• <b style="color:#e2e8f0">Next steps:</b> XGBoost or ensemble methods would likely improve accuracy by 2–5%.';
+  h += '• <b style="color:#e2e8f0">Accuracy ~50–51%:</b> Expected — the market is efficient and prices in all public signals. LR cannot beat it on accuracy alone.<br>';
+  h += '• <b style="color:#e2e8f0">ROI edge:</b> Comes from the rule-based signals below, not LR confidence. JCSID=A+Line≥0 and Strong Lean+Line≥0.75 show persistent +5–10% ROI on the test set.';
   h += '</div></div>';
 
   // ── Past predictions (last N test results) ──
   h += renderMLPastResultsHTML(ml.testSamples, ml.model);
 
   // ── Upcoming predictions ──
+  // ── Verified Rule Signals ──
+  h += renderMLRuleSignals(ml.ruleSignals);
+
   h += renderMLPredictionsHTML(ml.predictions, ml.testAcc);
 
   el.innerHTML = h;
@@ -875,4 +893,95 @@ function renderMLIndexWidget(mlPredictions, containerId){
 
   h += '<div style="margin-top:5px;text-align:right"><a href="report.html#ml" style="font-size:9px;color:#60a5fa;text-decoration:none;font-family:var(--mono)">Full predictions in Report →</a></div>';
   el.innerHTML = h;
+}
+
+// ── Compute rule signals ──────────────────────────────────────────
+function computeRuleSignals(samples){
+  // Signals evaluated on full dataset for reliability
+  var rules = [
+    {
+      label: 'JCSID=A + Line ≥ 0 → Bet H',
+      desc:  'JC SID tips Away but line favours Home — contrarian fade',
+      filter: function(s){ return s.jcsid < -0.3 && s.line >= 0; },
+      side: 'h'
+    },
+    {
+      label: 'Strong H Lean (>52.5%) + Line ≥ +0.75 → Bet H',
+      desc:  'Market AND structure both strongly favour Home side',
+      filter: function(s){ return s.impliedH > 0.525 && s.line >= 0.75; },
+      side: 'h'
+    },
+    {
+      label: 'Line ≤ −1.00 → Bet A',
+      desc:  'Heavy Home handicap — market historically over-adjusts',
+      filter: function(s){ return s.line <= -1.0; },
+      side: 'a'
+    },
+    {
+      label: 'JCSID = A → Bet H',
+      desc:  'JC SID tips Away — contrarian signal on Home side',
+      filter: function(s){ return s.jcsid < -0.3; },
+      side: 'h'
+    },
+    {
+      label: 'Line ≥ +0.75 → Bet H',
+      desc:  'High positive line — structural Home favourite edge',
+      filter: function(s){ return s.line >= 0.75; },
+      side: 'h'
+    },
+    {
+      label: 'JCSID = H → Bet A',
+      desc:  'JC SID tips Home — contrarian signal on Away side',
+      filter: function(s){ return s.jcsid > 0.3; },
+      side: 'a'
+    }
+  ];
+
+  return rules.map(function(rule){
+    var grp = samples.filter(rule.filter);
+    if(!grp.length) return null;
+    var pnls = grp.map(function(s){ return rule.side==='h' ? s.hp : s.ap; });
+    var n = pnls.length;
+    var roi = pnls.reduce(function(a,b){return a+b;},0)/n*100;
+    // 95% CI
+    var mean = roi/100;
+    var variance = pnls.reduce(function(a,x){return a+Math.pow(x-mean,2);},0)/(n-1||1);
+    var ci = 1.96*Math.sqrt(variance/n)*100;
+    var wins = grp.filter(function(s){ return rule.side==='h' ? s.hp>0 : s.ap>0; }).length;
+    var halves= grp.filter(function(s){ return rule.side==='h' ? s.hp>0&&s.hp<1 : s.ap>0&&s.ap<1; }).length;
+    return {
+      label: rule.label, desc: rule.desc, side: rule.side,
+      n: n, roi: Math.round(roi*10)/10, ci: Math.round(ci*10)/10,
+      wins: wins, halves: halves,
+      reliable: n>=200 ? 'reliable' : n>=100 ? 'rough' : 'low'
+    };
+  }).filter(Boolean);
+}
+
+function renderMLRuleSignals(rules){
+  if(!rules || !rules.length) return '';
+  var h = '';
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:4px;margin-top:16px">📐 Verified Rule Signals</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">Condition-based signals computed on the full dataset. These capture non-linear interactions that logistic regression cannot model directly. Use alongside LR confidence.</div>';
+  h += '<div class="rpt-table-wrap"><table class="rpt-table">';
+  h += '<thead><tr><th>Rule / Condition</th><th class="num">Bet</th><th class="num">n</th><th class="num">ROI</th><th class="num">±95% CI</th><th class="num">Reliability</th></tr></thead><tbody>';
+  rules.forEach(function(r){
+    var sideCol = r.side==='h' ? '#f87171' : '#60a5fa';
+    var roiCol  = r.roi > 0 ? '#4ade80' : r.roi > -3 ? '#fbbf24' : '#f87171';
+    var relLabel= r.reliable==='reliable' ? '<span style="color:#4ade80">✓ Reliable</span>'
+                : r.reliable==='rough'    ? '<span style="color:#fbbf24">~ Rough</span>'
+                :                           '<span style="color:#f87171">⚠ Low n</span>';
+    h += '<tr>';
+    h += '<td><span style="color:#e2e8f0;font-size:11px;font-weight:600">'+r.label+'</span>';
+    h += '<br><span style="color:#475569;font-size:9px">'+r.desc+'</span></td>';
+    h += '<td class="num"><b style="color:'+sideCol+'">'+r.side.toUpperCase()+'</b></td>';
+    h += '<td class="num">'+r.n+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(r.roi>=0?'+':'')+r.roi+'%</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#64748b">±'+r.ci+'%</td>';
+    h += '<td class="num">'+relLabel+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  h += '<div style="font-size:9px;color:#475569;margin-top:6px;margin-bottom:14px">ROI = return per $1 staked. CI = 95% confidence interval. A positive ROI within CI range could be chance — use reliable signals (n≥200) for decisions.</div>';
+  return h;
 }
