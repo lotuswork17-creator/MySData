@@ -608,11 +608,22 @@ function renderML(RD){
       });
       var predictions = upcoming.map(function(r){
         var cs = mlConflictScore(r);
+        var mac  = TIPSMAC_MAP[String(r.TIPSIDMAC||'')] || 0;
+        var jcsum= TIPSUM_MAP [String(r.JCTIPSUM ||'')] || 0;
+        var jcsid= TIPSID_MAP [String(r.JCTIPSID ||'')] || 0;
+        var lean = cs.lean;
         return {
-          r: r, pH: cs.lean, pA: 1-cs.lean,
+          r: r, pH: lean, pA: 1-lean,
           rec: cs.rec, conf: cs.conf,
-          lean: cs.lean, line: cs.line, rule: cs.rule||'',
-          expRoi: cs.rec==='H' ? ml.roiOverall.h.roi : cs.rec==='A' ? ml.roiOverall.a.roi : 0
+          lean: lean, line: cs.line, rule: cs.rule||'',
+          expRoi: cs.rec==='H' ? ml.roiOverall.h.roi : cs.rec==='A' ? ml.roiOverall.a.roi : 0,
+          featureVals: [
+            { name:'Market Lean', raw: lean,             contrib: (lean-0.5)*4 },
+            { name:'Asia Line',   raw: r.ASIALINE||0,    contrib: (r.ASIALINE||0)*0.5 },
+            { name:'MAC Tip',     raw: mac,               contrib: -mac*1.2 },
+            { name:'JC SID',      raw: jcsid,             contrib: -jcsid },
+            { name:'JC Sum',      raw: jcsum,             contrib: -jcsum*0.8 },
+          ].sort(function(a,b){ return Math.abs(b.contrib)-Math.abs(a.contrib); })
         };
       });
       predictions.sort(function(a,b){ return b.conf - a.conf; });
@@ -938,8 +949,8 @@ function renderMLPredictionsHTML(predictions, testAcc){
     if(p.rule){ h+='<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:6px">⚡ '+p.rule+'</div>'; }
     h+='<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Signal Inputs</div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
-    var maxC=Math.max.apply(null,p.featureVals.map(function(f){return Math.abs(f.contrib);}));
-    p.featureVals.slice(0,9).forEach(function(f){
+    var maxC=Math.max.apply(null,(p.featureVals||[]).map(function(f){return Math.abs(f.contrib);})||[1]);
+    (p.featureVals||[]).slice(0,9).forEach(function(f){
       var col2=f.contrib>0?'#60a5fa':'#f87171';
       var rawDisp=(f.name.indexOf('%')>=0)?((f.raw*100).toFixed(0)+'%'):f.raw.toFixed(2);
       h+='<div style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+col2+'15;border:1px solid '+col2+'33;color:'+col2+'">'+f.name+': '+rawDisp+' ('+(f.contrib>=0?'+':'')+f.contrib.toFixed(2)+')</div>';
