@@ -328,8 +328,12 @@ function loadReport(){
       try{
         RD = computeReport(records);
       } catch(err){
-        document.getElementById('rptLoading').innerHTML =
-          '<p style="color:#f87171">⚠️ Compute error: '+err.message+'</p>';
+        var msg = '<div style="padding:20px;color:#f87171;font-family:monospace;font-size:12px">'
+          + '<b>⚠️ Compute error:</b> ' + err.message
+          + '<br><pre style="margin-top:8px;white-space:pre-wrap;color:#94a3b8">' + (err.stack||'') + '</pre></div>';
+        document.getElementById('rptLoading').innerHTML = msg;
+        document.getElementById('tab9').innerHTML = msg;
+        document.getElementById('tab9').classList.add('active');
         return;
       }
       document.getElementById('rptLoading').style.display = 'none';
