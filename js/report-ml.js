@@ -139,7 +139,7 @@ function predictProb(model, xi){
 }
 
 // ── Main compute ─────────────────────────────────────────────────
-function computeML(results){
+function computeML(results, allRecords){
   // Filter to completed matches
   var data = results.filter(function(r){
     return r.STATUS==='Result' &&
@@ -341,7 +341,8 @@ function computeML(results){
   });
 
   // ── Upcoming predictions using Conflict Score ──
-  var upcoming = results.filter(function(r){
+  var upcomingPool = allRecords || results;
+  var upcoming = upcomingPool.filter(function(r){
     return r.STATUS==='PREEVE' && r.ASIALINE != null && r.ASIAH && r.ASIAA;
   });
   upcoming.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||'') || (a.TIME||0)-(b.TIME||0); });

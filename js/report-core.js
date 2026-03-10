@@ -197,6 +197,6 @@ function computeReport(records){
     odds        : computeOdds(results),
     jcexpert    : computeJCExpert(results),
     escore      : computeEScore(results),
-    ml          : computeML(results),
+    ml          : computeML(results, records),
   };
 }
