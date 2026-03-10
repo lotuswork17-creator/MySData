@@ -795,14 +795,48 @@ function renderMLPredictionsHTML(predictions, testAcc){
   var recColor=function(rec){ return rec==='H'?'#f87171':rec==='A'?'#60a5fa':'#64748b'; };
   var h='';
   h+='<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
-  h+='<div class="rpt-title">🎯 Upcoming Match Predictions</div>';
-  h+='<div class="rpt-sub" style="margin-bottom:10px">All upcoming matches ranked by confidence. Model test accuracy: <b style="color:#4ade80">'+(testAcc*100).toFixed(1)+'%</b>. Use as one signal only.</div>';
+
+  // ── KEY PATTERN ALERTS ──────────────────────────────────────────
+  var flagged = predictions.filter(function(p){ return p.rec!=='SKIP' && p.rule; });
+  h+='<div class="rpt-title">🚨 Key Pattern Alerts — Upcoming Matches</div>';
+  h+='<div style="font-size:10px;color:#64748b;margin-bottom:10px">Matches where a verified counter-relationship rule fires. Each rule was consistent on both train and test set. <span style="color:#fbbf24">Yellow = rule that triggered.</span></div>';
+  if(!flagged.length){
+    h+='<div style="padding:12px;color:#475569;font-size:12px;font-style:italic">No upcoming matches currently match any key pattern.</div>';
+  } else {
+    h+='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">';
+    flagged.forEach(function(p){
+      var r=p.r; var col=recColor(p.rec);
+      var lean=Math.round(p.lean*100); var lineStr=(p.line>=0?'+':'')+p.line.toFixed(2);
+      var conf=Math.round(p.conf*100);
+      h+='<div style="padding:12px 14px;border-radius:8px;background:var(--surface2);border:1.5px solid '+col+'44;display:flex;flex-direction:column;gap:5px">';
+      h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+      h+='<div style="font-size:18px;font-weight:900;font-family:var(--mono);color:'+col+';width:32px;flex-shrink:0">'+p.rec+'</div>';
+      h+='<div style="flex:1;min-width:120px">';
+      h+='<div style="font-size:12px;font-weight:700;color:#e2e8f0">'+r.TEAMH+' <span style="color:#475569;font-weight:400">vs</span> '+r.TEAMA+'</div>';
+      h+='<div style="font-size:10px;color:#64748b;font-family:var(--mono)">'+(r.DATE||'')+' · '+(r.CATEGORY||r.LEAGUE||'')+'</div>';
+      h+='</div>';
+      h+='<div style="text-align:right;flex-shrink:0">';
+      h+='<div style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Line <span style="color:#e2e8f0;font-weight:700">'+lineStr+'</span> · Lean <span style="color:#e2e8f0;font-weight:700">'+lean+'%</span></div>';
+      h+='<div style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Conf <span style="color:'+col+';font-weight:700">'+conf+'%</span></div>';
+      h+='</div></div>';
+      h+='<div style="font-size:10px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:5px;padding:3px 8px;display:inline-block">⚡ '+p.rule+'</div>';
+      if(r.JCTIPSUM||r.JCTIPSID||r.TIPSIDMAC||r.TIPSONID){
+        h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">Tips — JCSUM: '+(r.JCTIPSUM||'—')+' · JCSID: '+(r.JCTIPSID||'—')+' · MAC: '+(r.TIPSIDMAC||'—')+' · ONID: '+(r.TIPSONID||'—')+'</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  // ── Full predictions table ───────────────────────────────────────
+  h+='<div class="rpt-title" style="margin-top:14px">🎯 All Upcoming Match Predictions</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:10px">All upcoming matches ranked by confidence. SKIP = no verified pattern.</div>';
   var nH=predictions.filter(function(p){return p.rec==='H';}).length;
   var nA=predictions.filter(function(p){return p.rec==='A';}).length;
   var nS=predictions.filter(function(p){return p.rec==='SKIP';}).length;
   h+='<div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;font-family:var(--mono);flex-wrap:wrap">';
-  h+='<span style="color:#60a5fa;font-weight:700">H picks (≥60%): '+nH+'</span>';
-  h+='<span style="color:#f87171;font-weight:700">A picks (≥60%): '+nA+'</span>';
+  h+='<span style="color:#f87171;font-weight:700">H picks: '+nH+'</span>';
+  h+='<span style="color:#60a5fa;font-weight:700">A picks: '+nA+'</span>';
   h+='<span style="color:#475569">Skip: '+nS+'</span>';
   h+='</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>';
