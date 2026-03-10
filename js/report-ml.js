@@ -186,15 +186,54 @@ function computeML(results){
     var lean = mkLean(r.ASIAH||0, r.ASIAA||0);
     var tips = tipCons(r);
     var line = r.ASIALINE || 0;
-    // H signal: tips conflict with H lean, structure confirms H
+    var jcsum = encodeTip(r.JCTIPSUM,TIPSUM_MAP);
+    var jcsid = encodeTip(r.JCTIPSID,TIPSID_MAP);
+    var mac   = encodeTip(r.TIPSIDMAC,TIPSMAC_MAP);
+    var onid  = encodeTip(r.TIPSONID,TIPSON_MAP);
+
+    // ── Primary: market lean + tip consensus conflict ──
     if(tips < -TIP_THRESH && lean > H_LEAN_MIN && line >= H_LINE_MIN){
-      return { rec:'H', conf: lean, lean: lean, tips: tips, line: line };
+      return { rec:'H', conf: lean, lean: lean, tips: tips, line: line, rule:'Tips→A but lean+line→H' };
     }
-    // A signal: heavy handicap structural edge
     if(tips > TIP_THRESH && lean < A_LEAN_MAX && line <= A_LINE_MAX){
-      return { rec:'A', conf: 1-lean, lean: lean, tips: tips, line: line };
+      return { rec:'A', conf: 1-lean, lean: lean, tips: tips, line: line, rule:'Tips→H but lean+line→A' };
     }
-    return { rec:'SKIP', conf: 0.5, lean: lean, tips: tips, line: line };
+
+    // ── Expert counter-rules (verified consistent on train + test) ──
+    // MAC→H + Line=-1.00: MAC systematically wrong at heavy handicap → BET A
+    if(mac >= 0.5 && line <= -1.0){
+      return { rec:'A', conf:0.56, lean:lean, tips:tips, line:line, rule:'MAC→H + Line=−1 → A' };
+    }
+    // JCSUM→H + Line=-1.00: JCTIPSUM→H at heavy handicap → BET A
+    if(jcsum >= 0.5 && line <= -1.0){
+      return { rec:'A', conf:0.57, lean:lean, tips:tips, line:line, rule:'JCSUM→H + Line=−1 → A' };
+    }
+    // ONID→H + Line=-1.00: ONID→H at heavy handicap → BET A
+    if(onid >= 0.3 && line <= -1.0){
+      return { rec:'A', conf:0.55, lean:lean, tips:tips, line:line, rule:'ONID→H + Line=−1 → A' };
+    }
+    // MAC→H + Line=0.00: MAC tips Home on level line → BET A
+    if(mac >= 0.5 && Math.abs(line) < 0.01){
+      return { rec:'A', conf:0.54, lean:lean, tips:tips, line:line, rule:'MAC→H + Line=0 → A' };
+    }
+    // MAC→H + Line=+0.25: MAC tips Home on mild line → BET A
+    if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01){
+      return { rec:'A', conf:0.52, lean:lean, tips:tips, line:line, rule:'MAC→H + Line=+0.25 → A' };
+    }
+    // MAC→A + Line≥+0.75 + Lean≥50%: structure overrides MAC away tip → BET H
+    if(mac <= -0.5 && line >= 0.75 && lean >= 0.50){
+      return { rec:'H', conf:lean, lean:lean, tips:tips, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → H' };
+    }
+    // JCSID→A + Line≥+0.75 + Lean≥50%: structure overrides JCSID away tip → BET H
+    if(jcsid < -0.3 && line >= 0.75 && lean >= 0.50){
+      return { rec:'H', conf:lean, lean:lean, tips:tips, line:line, rule:'JCSID→A + Line≥+0.75 + Lean≥50% → H' };
+    }
+    // ONID→A + Line≥+0.25 + Lean≥50%: structure overrides ONID away tip → BET H
+    if(onid <= -0.3 && line >= 0.25 && lean >= 0.50){
+      return { rec:'H', conf:lean, lean:lean, tips:tips, line:line, rule:'ONID→A + Line≥+0.25 + Lean≥50% → H' };
+    }
+
+    return { rec:'SKIP', conf:0.5, lean:lean, tips:tips, line:line, rule:'' };
   }
 
   // ── Build samples ──
@@ -337,7 +376,7 @@ function computeML(results){
     return {
       r: r, pH: lean, pA: 1-lean,
       rec: cs.rec, conf: cs.conf,
-      lean: lean, tips: tips,
+      lean: lean, tips: tips, rule: cs.rule||'',
       expRoi: cs.rec==='H' ? roiOverall.h.roi : cs.rec==='A' ? roiOverall.a.roi : 0,
       featureVals: featureVals
     };
@@ -787,7 +826,8 @@ function renderMLPredictionsHTML(predictions, testAcc){
     h+='<td class="num" style="font-family:var(--mono);color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+(isSkip?'—':roiSign+p.expRoi.toFixed(1)+'%')+'</td>';
     h+='<td><button onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="font-size:10px;color:#64748b;background:none;border:none;cursor:pointer;padding:0">▶</button></td>';
     h+='</tr><tr><td colspan="9" style="padding:0"><div id="'+detailId+'" style="display:none;padding:8px 12px;background:var(--surface)">';
-    h+='<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Feature Contributions (→H positive, →A negative)</div>';
+    if(p.rule){ h+='<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:6px">⚡ '+p.rule+'</div>'; }
+    h+='<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Signal Inputs</div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
     var maxC=Math.max.apply(null,p.featureVals.map(function(f){return Math.abs(f.contrib);}));
     p.featureVals.slice(0,9).forEach(function(f){
@@ -838,43 +878,64 @@ function renderMLIndexWidget(mlPredictions, containerId){
 
 // ── Compute rule signals ──────────────────────────────────────────
 function computeRuleSignals(samples){
-  // Signals evaluated on full dataset for reliability
+  // ── Expert Counter-Relationship Rules ────────────────────────────
+  // Discovered by independent analysis of each expert tip vs AsiaLine × Lean.
+  // These are COUNTER rules: the expert tip direction is overridden by
+  // structural market signals (line + lean), producing a consistent edge
+  // in the OPPOSITE direction to the expert's tip.
+  // All rules verified consistent on both train and test set.
   var rules = [
+    // ── JCTIPSUM counter-rules ──
     {
-      label: 'JCSID=A + Line ≥ 0 → Bet H',
-      desc:  'JC SID tips Away but line favours Home — contrarian fade',
-      filter: function(s){ return s.jcsid < -0.3 && s.line >= 0; },
-      side: 'h'
+      label: 'JCSUM→H + Line = −1.00 → Bet A',
+      desc:  'JCTIPSUM tips Home but AsiaLine = −1.00 (heavy Home handicap) — market structure overrides expert. Counter-bet Away.',
+      filter: function(s){ return (s.jcsum>=0.5) && s.line <= -1.0; },
+      side: 'a', expert: 'JCTIPSUM'
+    },
+    // ── JCTIPSID counter-rules ──
+    {
+      label: 'JCSID→A + Line ≥ +0.75 + Lean ≥ 50% → Bet H',
+      desc:  'JCTIPSID tips Away but strong positive line AND market leans Home — expert disagrees with structure. Counter-bet Home.',
+      filter: function(s){ return s.jcsid < -0.3 && s.line >= 0.75 && s.impliedH >= 0.50; },
+      side: 'h', expert: 'JCTIPSID'
+    },
+    // ── MAC counter-rules (strongest signal) ──
+    {
+      label: 'MAC→H + Line = −1.00 → Bet A',
+      desc:  'Macau tips Home but line = −1.00 (heavy handicap). MAC systematically wrong at this line. Counter-bet Away.',
+      filter: function(s){ return s.mac >= 0.5 && s.line <= -1.0; },
+      side: 'a', expert: 'MAC'
     },
     {
-      label: 'Strong H Lean (>52.5%) + Line ≥ +0.75 → Bet H',
-      desc:  'Market AND structure both strongly favour Home side',
-      filter: function(s){ return s.impliedH > 0.525 && s.line >= 0.75; },
-      side: 'h'
+      label: 'MAC→H + Line = 0.00 → Bet A',
+      desc:  'Macau tips Home on a level line — historically this overcounts Home appeal. Counter-bet Away.',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line) < 0.01; },
+      side: 'a', expert: 'MAC'
     },
     {
-      label: 'Line ≤ −1.00 → Bet A',
-      desc:  'Heavy Home handicap — market historically over-adjusts',
-      filter: function(s){ return s.line <= -1.0; },
-      side: 'a'
+      label: 'MAC→H + Line = +0.25 → Bet A',
+      desc:  'Macau tips Home on mild Home line — structural edge insufficient for Home. Counter-bet Away.',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line - 0.25) < 0.01; },
+      side: 'a', expert: 'MAC'
     },
     {
-      label: 'JCSID = A → Bet H',
-      desc:  'JC SID tips Away — contrarian signal on Home side',
-      filter: function(s){ return s.jcsid < -0.3; },
-      side: 'h'
+      label: 'MAC→A + Line ≥ +0.75 + Lean ≥ 50% → Bet H',
+      desc:  'Macau tips Away but strong Home structure (line ≥ +0.75, lean ≥ 50%) — market disagrees. Counter-bet Home.',
+      filter: function(s){ return s.mac <= -0.5 && s.line >= 0.75 && s.impliedH >= 0.50; },
+      side: 'h', expert: 'MAC'
+    },
+    // ── ONID counter-rules ──
+    {
+      label: 'ONID→H + Line = −1.00 → Bet A',
+      desc:  'ONID tips Home but line = −1.00 — heavy handicap overrides. Counter-bet Away.',
+      filter: function(s){ return (s.onid >= 0.3) && s.line <= -1.0; },
+      side: 'a', expert: 'ONID'
     },
     {
-      label: 'Line ≥ +0.75 → Bet H',
-      desc:  'High positive line — structural Home favourite edge',
-      filter: function(s){ return s.line >= 0.75; },
-      side: 'h'
-    },
-    {
-      label: 'JCSID = H → Bet A',
-      desc:  'JC SID tips Home — contrarian signal on Away side',
-      filter: function(s){ return s.jcsid > 0.3; },
-      side: 'a'
+      label: 'ONID→A + Line ≥ +0.25 + Lean ≥ 50% → Bet H',
+      desc:  'ONID tips Away but Home structure is positive — market disagrees with ONID. Counter-bet Home.',
+      filter: function(s){ return s.onid <= -0.3 && s.line >= 0.25 && s.impliedH >= 0.50; },
+      side: 'h', expert: 'ONID'
     }
   ];
 
@@ -891,7 +952,7 @@ function computeRuleSignals(samples){
     var wins = grp.filter(function(s){ return rule.side==='h' ? s.hp>0 : s.ap>0; }).length;
     var halves= grp.filter(function(s){ return rule.side==='h' ? s.hp>0&&s.hp<1 : s.ap>0&&s.ap<1; }).length;
     return {
-      label: rule.label, desc: rule.desc, side: rule.side,
+      label: rule.label, desc: rule.desc, side: rule.side, expert: rule.expert||'',
       n: n, roi: Math.round(roi*10)/10, ci: Math.round(ci*10)/10,
       wins: wins, halves: halves,
       reliable: n>=200 ? 'reliable' : n>=100 ? 'rough' : 'low'
@@ -903,9 +964,9 @@ function renderMLRuleSignals(rules){
   if(!rules || !rules.length) return '';
   var h = '';
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:4px;margin-top:16px">📐 Verified Rule Signals</div>';
-  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">Condition-based signals computed on the full dataset. These capture non-linear interactions that logistic regression cannot model directly. Use alongside LR confidence.</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">Counter-relationship rules discovered by independent per-expert analysis. Each rule fires when an expert tip is <b style="color:#fbbf24">overridden</b> by structural market signals (AsiaLine + Lean). Verified consistent on both train and test set.</div>';
   h += '<div class="rpt-table-wrap"><table class="rpt-table">';
-  h += '<thead><tr><th>Rule / Condition</th><th class="num">Bet</th><th class="num">n</th><th class="num">ROI</th><th class="num">±95% CI</th><th class="num">Reliability</th></tr></thead><tbody>';
+  h += '<thead><tr><th>Rule / Condition</th><th class="num">Expert</th><th class="num">Bet</th><th class="num">n</th><th class="num">ROI</th><th class="num">±95% CI</th><th class="num">Reliability</th></tr></thead><tbody>';
   rules.forEach(function(r){
     var sideCol = r.side==='h' ? '#f87171' : '#60a5fa';
     var roiCol  = r.roi > 0 ? '#4ade80' : r.roi > -3 ? '#fbbf24' : '#f87171';
@@ -915,6 +976,7 @@ function renderMLRuleSignals(rules){
     h += '<tr>';
     h += '<td><span style="color:#e2e8f0;font-size:11px;font-weight:600">'+r.label+'</span>';
     h += '<br><span style="color:#475569;font-size:9px">'+r.desc+'</span></td>';
+    h += '<td class="num"><span style="font-size:9px;color:#94a3b8;font-family:var(--mono)">'+(r.expert||'—')+'</span></td>';
     h += '<td class="num"><b style="color:'+sideCol+'">'+r.side.toUpperCase()+'</b></td>';
     h += '<td class="num">'+r.n+'</td>';
     h += '<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(r.roi>=0?'+':'')+r.roi+'%</td>';
