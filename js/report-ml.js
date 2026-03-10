@@ -403,13 +403,64 @@ function computeML(results, allRecords){
   };
 }
 
+// ── Standalone conflict score (used by renderML self-fetch, mirrors computeML's conflictScore) ──
+function mlConflictScore(r){
+  var ah = r.ASIAH || 0, aa = r.ASIAA || 0;
+  var vH = ah > 0 ? 1/ah : 0.5, vA = aa > 0 ? 1/aa : 0.5;
+  var lean = vH / (vH + vA || 1);
+  var line = r.ASIALINE || 0;
+  var mac   = TIPSMAC_MAP[String(r.TIPSIDMAC||'')] || 0;
+  var jcsum = TIPSUM_MAP [String(r.JCTIPSUM ||'')] || 0;
+  var jcsid = TIPSID_MAP [String(r.JCTIPSID ||'')] || 0;
+
+  // R1: MAC→H + Line=−1.00 → Bet A
+  if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01)
+    return { rec:'A', conf:0.56, lean:lean, line:line, rule:'MAC→H + Line=−1.00 → Bet A' };
+  // R2: MAC→H + Line=0.00 → Bet A
+  if(mac >= 0.5 && Math.abs(line) < 0.01)
+    return { rec:'A', conf:0.54, lean:lean, line:line, rule:'MAC→H + Line=0.00 → Bet A' };
+  // R3: MAC→H + Line=+0.25 → Bet A
+  if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01)
+    return { rec:'A', conf:0.52, lean:lean, line:line, rule:'MAC→H + Line=+0.25 → Bet A' };
+  // R4: MAC→A + Line≥+0.75 + Lean≥50% → Bet H
+  if(mac <= -0.5 && line >= 0.75 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → Bet H' };
+  // R5: JCSUM→H + Line=−1.00 → Bet A
+  if(jcsum >= 0.5 && Math.abs(line + 1.0) < 0.01)
+    return { rec:'A', conf:0.57, lean:lean, line:line, rule:'JCSUM→H + Line=−1.00 → Bet A' };
+  // R6: JCSID→A + Line≥+0.75 + Lean≥50% → Bet H
+  if(jcsid <= -0.5 && line >= 0.75 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line≥+0.75 + Lean≥50% → Bet H' };
+
+  return { rec:'SKIP', conf:0.5, lean:lean, line:line, rule:'' };
+}
+
 // ── Render ────────────────────────────────────────────────────────
 function renderML(RD){
   var el = document.getElementById('tab9');
   if(!el) return;
-  var ml = RD.ml;
-  if(!ml){ el.innerHTML='<p style="color:#f87171;padding:14px">ML data not available.</p>'; return; }
 
+  // If RD.ml is missing (old report-core.js), compute it ourselves from a fresh fetch
+  if(!RD.ml){
+    el.innerHTML = '<div style="padding:20px;color:#94a3b8;font-size:12px">⏳ Loading ML data…</div>';
+    fetch('./data.json?v=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var allRec = d.records || [];
+        var ml = computeML(allRec.filter(function(r){
+          return r.STATUS==='Result' && typeof r.RESULTH==='number' && typeof r.RESULTA==='number'
+                 && r.ASIALINE != null && r.ASIAH && r.ASIAA;
+        }), allRec);
+        var RD2 = { ml: ml };
+        renderML(RD2);
+      })
+      .catch(function(e){
+        el.innerHTML = '<div style="padding:20px;color:#f87171;font-size:12px">⚠️ Failed to load ML data: '+e.message+'</div>';
+      });
+    return;
+  }
+
+  var ml = RD.ml;
   var fmt = function(v,d){ return (v>=0?'+':'')+v.toFixed(d===undefined?1:d)+'%'; };
   var fmtN = function(v){ return (v>=0?'+':'')+v.toFixed(2); };
   var cls = function(v){ return v>0.5?'pos':v<-0.5?'neg':'neu'; };
@@ -528,11 +579,12 @@ function renderML(RD){
   // ── Past predictions (last N test results) ──
   h += renderMLPastResultsHTML(ml.testSamples, ml.model);
 
-  // ── Upcoming predictions ──
   // ── Verified Rule Signals ──
   h += renderMLRuleSignals(ml.ruleSignals);
 
-  h += renderMLPredictionsHTML(ml.predictions, ml.testAcc);
+  // ── Upcoming predictions — fetch data.json directly so we always get PREEVE records ──
+  // (report-core.js only passes Status=Result records, so predictions from RD.ml may be empty)
+  h += '<div id="mlPredictionsContainer"><div style="padding:14px;color:#64748b;font-size:12px">⏳ Loading upcoming matches…</div></div>';
 
   el.innerHTML = h;
 
@@ -541,7 +593,39 @@ function renderML(RD){
     drawCalibChart(ml.calibH);
     drawRoiCurveChart(ml.roiCurveH.slice(-100), ml.roiCurveA.slice(-100));
   }, 50);
+
+  // Self-fetch data.json to get upcoming matches independently
+  // (report-core.js only passes Status=Result records, so we must fetch directly)
+  fetch('./data.json?v=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var allRecords = d.records || [];
+      var upcoming = allRecords.filter(function(r){
+        return r.STATUS === 'PREEVE' && r.ASIALINE != null && r.ASIAH && r.ASIAA;
+      });
+      upcoming.sort(function(a,b){
+        return (a.DATE||'').localeCompare(b.DATE||'') || (a.TIME||0)-(b.TIME||0);
+      });
+      var predictions = upcoming.map(function(r){
+        var cs = mlConflictScore(r);
+        return {
+          r: r, pH: cs.lean, pA: 1-cs.lean,
+          rec: cs.rec, conf: cs.conf,
+          lean: cs.lean, line: cs.line, rule: cs.rule||'',
+          expRoi: cs.rec==='H' ? ml.roiOverall.h.roi : cs.rec==='A' ? ml.roiOverall.a.roi : 0
+        };
+      });
+      predictions.sort(function(a,b){ return b.conf - a.conf; });
+      var container = document.getElementById('mlPredictionsContainer');
+      if(container) container.innerHTML = renderMLPredictionsHTML(predictions, ml.testAcc);
+    })
+    .catch(function(e){
+      var container = document.getElementById('mlPredictionsContainer');
+      if(container) container.innerHTML = '<div style="padding:14px;color:#f87171;font-size:12px">⚠️ Could not load upcoming: '+e.message+'</div>';
+    });
 }
+
+
 
 function card(label, val, sub, cls){
   return '<div class="rpt-card"><div class="rpt-card-label">'+label+'</div>'+
