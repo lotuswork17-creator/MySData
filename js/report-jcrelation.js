@@ -36,7 +36,7 @@ function jcrPnl(r){
 }
 
 // ── computeJCRelation(results) ──
-function computeJCRelation(results){
+function computeJCRelation(results, allRecords){
   var TIP_MAP_DIR = {
     'H':1,'1H':1,'FH':1,'A':-1,'1A':-1,'FA':-1,
     'D':0,'1D':0,'B':0,'1B':0,'1b':0,'S':0,'1S':0,'CB':0,'CS':0
@@ -215,7 +215,8 @@ function computeJCRelation(results){
   });
 
   // ── Upcoming matches: check which verified rules fire ──
-  var upcoming = results.filter(function(r){
+  var upcomingSrc = (allRecords || results);
+  var upcoming = upcomingSrc.filter(function(r){
     return r.STATUS === 'PREEVE' && r.ASIALINE != null && r.ASIAH && r.ASIAA;
   });
   upcoming.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||'')||(a.TIME||0)-(b.TIME||0); });
