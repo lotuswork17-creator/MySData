@@ -234,6 +234,9 @@ body{display:block;padding-bottom:40px}
 <div class="rpt-section" id="tab10">
   <!-- content injected by renderGEM() -->
 </div>
+<div class="rpt-section" id="tab11">
+  <!-- content injected by renderJCRelation() -->
+</div>
 
 <!--
   ═══════════════════════════════════════════════
@@ -271,6 +274,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-escore.js"></script>
 <script src="js/report-ml.js"></script>
 <script src="js/report-gem.js"></script>
+<script src="js/report-jcrelation.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -288,6 +292,7 @@ var TABS = [
   { label:'📉 Expert Bands', render: renderEScore },
   { label:'🤖 ML Model',    render: renderML },
   { label:'⚡ GEM/GPT ML',  render: function(RD){ renderGEM(RD.results||RD); } },
+  { label:'🔗 JC Relations', render: renderJCRelation },
 ];
 
 // Build tab bar from registry
