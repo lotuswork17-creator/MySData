@@ -147,16 +147,29 @@ function computeJCRelation(results){
         var ra_all = roiSide(allGrp, tip_dir===1?'ap':'hp');
         var ra_tr  = roiSide(train,  tip_dir===1?'ap':'hp');
         var ra_te  = roiSide(test,   tip_dir===1?'ap':'hp');
+        var rw_all = roiSide(allGrp, tip_dir===1?'hp':'ap');
+        var rw_tr  = roiSide(train,  tip_dir===1?'hp':'ap');
+        var rw_te  = roiSide(test,   tip_dir===1?'hp':'ap');
 
-        if(ra_tr > 0 && ra_te > 0 && ra_all > 3){
-          var lean_avg = allGrp.reduce(function(s,g){return s+g.lean;},0)/allGrp.length;
+        var lean_avg = allGrp.reduce(function(s,g){return s+g.lean;},0)/allGrp.length;
+        if(ra_tr > 0 && ra_te > 0 && ra_all > 0){
           matrixWithLean.push({
             exp: exp.key, exp_label: exp.label, exp_short: exp.short,
             line: line_val, tip: tip_label, lean_avg: Math.round(lean_avg*1000)/1000,
             lean_filter: 0.50,
             n: allGrp.length, n_train: train.length, n_test: test.length,
-            bet: tip_dir===1?'A':'H',
+            bet: tip_dir===1?'A':'H', type: 'COUNTER',
             roi: { all: Math.round(ra_all*10)/10, train: Math.round(ra_tr*10)/10, test: Math.round(ra_te*10)/10 }
+          });
+        }
+        if(rw_tr > 0 && rw_te > 0 && rw_all > 0){
+          matrixWithLean.push({
+            exp: exp.key, exp_label: exp.label, exp_short: exp.short,
+            line: line_val, tip: tip_label, lean_avg: Math.round(lean_avg*1000)/1000,
+            lean_filter: 0.50,
+            n: allGrp.length, n_train: train.length, n_test: test.length,
+            bet: tip_dir===1?'H':'A', type: 'WITH',
+            roi: { all: Math.round(rw_all*10)/10, train: Math.round(rw_tr*10)/10, test: Math.round(rw_te*10)/10 }
           });
         }
       });
@@ -208,11 +221,22 @@ function computeJCRelation(results){
   upcoming.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||'')||(a.TIME||0)-(b.TIME||0); });
 
   // Build verified rule list for scanning upcoming
+  // Threshold: ROI > 2% on all data, AND both train & test positive
+  var MIN_ROI = 2.0;
   var verifiedRules = [];
+  var _vrSeen = {};
+  function _addRule(rule){
+    if(rule.roi <= MIN_ROI) return;
+    if(rule.train <= 0 || rule.test <= 0) return;
+    var k = rule.exp+'|'+rule.tip_dir+'|'+rule.line+'|'+(rule.lean_min||0)+'|'+rule.bet;
+    if(_vrSeen[k]) return;  // dedup: keep first (highest ROI)
+    _vrSeen[k] = true;
+    verifiedRules.push(rule);
+  }
   // From base matrix (no lean filter)
   matrix.forEach(function(m){
-    if(m.against_strong){
-      verifiedRules.push({
+    if(m.against_verified){
+      _addRule({
         label: m.exp_short+' tips '+m.tip+' + Line='+(m.line>=0?'+':'')+m.line.toFixed(2),
         exp: m.exp, tip_dir: m.tip==='H'?1:-1, line: m.line, lean_min: null,
         bet: m.against_bet,
@@ -220,8 +244,8 @@ function computeJCRelation(results){
         n: m.n, type: 'COUNTER'
       });
     }
-    if(m.with_strong){
-      verifiedRules.push({
+    if(m.with_verified){
+      _addRule({
         label: m.exp_short+' tips '+m.tip+' + Line='+(m.line>=0?'+':'')+m.line.toFixed(2)+' → follow',
         exp: m.exp, tip_dir: m.tip==='H'?1:-1, line: m.line, lean_min: null,
         bet: m.with_bet,
@@ -230,17 +254,17 @@ function computeJCRelation(results){
       });
     }
   });
-  // From lean-filtered matrix
+  // From lean-filtered matrix (includes both COUNTER and WITH)
   matrixWithLean.forEach(function(m){
-    verifiedRules.push({
+    _addRule({
       label: m.exp_short+' tips '+m.tip+' + Line='+(m.line>=0?'+':'')+m.line.toFixed(2)+' + Lean≥50%',
       exp: m.exp, tip_dir: m.tip==='H'?1:-1, line: m.line, lean_min: 0.50,
       bet: m.bet,
       roi: m.roi.all, train: m.roi.train, test: m.roi.test,
-      n: m.n, type: 'COUNTER'
+      n: m.n, type: m.type
     });
   });
-  // Sort by ROI desc, deduplicate
+  // Sort by ROI desc
   verifiedRules.sort(function(a,b){ return b.roi - a.roi; });
 
   // Scan upcoming for rule fires
