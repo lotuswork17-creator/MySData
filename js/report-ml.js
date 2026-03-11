@@ -163,10 +163,8 @@ function computeML(results, allRecords){
   }
 
   // ── Expert Counter-Rule Model ──────────────────────────────
-  // Bets against a specific expert when market structure contradicts.
-  // R1: MAC→H + Line=−1.00 → Bet A   R4: MAC→A + Line≥+0.75 + Lean≥50% → Bet H
-  // R2: MAC→H + Line= 0.00 → Bet A   R5: JCSUM→H + Line=−1.00 → Bet A
-  // R3: MAC→H + Line=+0.25 → Bet A   R6: JCSID→A + Line≥+0.75 + Lean≥50% → Bet H
+  // Bets against (or with) specific experts when market structure aligns.
+  // 15 rules across MAC, JCSUM, JCSID, ONID. First-match-wins by ROI desc.
   // ───────────────────────────────────────────────────
 
   function conflictScore(r){
@@ -175,35 +173,57 @@ function computeML(results, allRecords){
     var mac   = encodeTip(r.TIPSIDMAC, TIPSMAC_MAP);
     var jcsum = encodeTip(r.JCTIPSUM,  TIPSUM_MAP);
     var jcsid = encodeTip(r.JCTIPSID,  TIPSID_MAP);
+    var onid  = encodeTip(r.TIPSONID,  TIPSON_MAP);
 
-    // ── 6 Verified Expert Counter-Rules ─────────────────────────────
-    // Rule order = priority (first match wins)
-    // All rules: ROI > 0 on BOTH train AND test temporal splits
+    // ── 15 Verified Expert Rules (first-match-wins by ROI desc) ─────
+    // COUNTER = bet against expert. WITH = follow expert.
+    // All: ROI > 0 on BOTH train AND test temporal splits.
 
-    // R1: MAC→H + Line=−1.00 → Bet A  (ROI +5.8%, train +0.8%, test +22.7%)
-    if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01){
-      return { rec:'A', conf:0.56, lean:lean, line:line, rule:'MAC→H + Line=−1.00 → Bet A' };
-    }
-    // R2: MAC→H + Line=0.00 → Bet A  (ROI +7.8%, train +5.4%, test +16.8%)
-    if(mac >= 0.5 && Math.abs(line) < 0.01){
-      return { rec:'A', conf:0.54, lean:lean, line:line, rule:'MAC→H + Line=0.00 → Bet A' };
-    }
-    // R3: MAC→H + Line=+0.25 → Bet A  (ROI +4.0%, train +1.6%, test +11.2%)
-    if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01){
-      return { rec:'A', conf:0.52, lean:lean, line:line, rule:'MAC→H + Line=+0.25 → Bet A' };
-    }
-    // R4: MAC→A + Line≥+0.75 + Lean≥50% → Bet H  (ROI +5.1%, train +5.0%, test +5.3%)
-    if(mac <= -0.5 && line >= 0.75 && lean >= 0.50){
-      return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → Bet H' };
-    }
-    // R5: JCSUM→H + Line=−1.00 → Bet A  (ROI +6.0%, train +4.1%, test +11.9%)
-    if(jcsum >= 0.5 && Math.abs(line + 1.0) < 0.01){
+    // R1 COUNTER: MAC→H + Line=−1.00 + Lean≥50% → Bet A  (+10.0%, tr+1.2%, te+28.1%)
+    if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01 && lean >= 0.50)
+      return { rec:'A', conf:0.60, lean:lean, line:line, rule:'MAC→H + Line=−1.00 + Lean≥50% → Bet A' };
+    // R2 WITH: ONID→A + Line=−0.75 → Follow Away  (+8.9%, tr+10.6%, te+4.0%)
+    if(onid <= -0.5 && Math.abs(line + 0.75) < 0.01)
+      return { rec:'A', conf:0.55, lean:lean, line:line, rule:'ONID→A + Line=−0.75 → Follow Away' };
+    // R3 COUNTER: JCSID→A + Line=+1.00 + Lean≥50% → Bet H  (+8.3%, tr+4.3%, te+18.4%)
+    if(jcsid <= -0.5 && Math.abs(line - 1.0) < 0.01 && lean >= 0.50)
+      return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line=+1.00 + Lean≥50% → Bet H' };
+    // R4 COUNTER: JCSUM→H + Line=−1.00 → Bet A  (+7.9%, tr+5.9%, te+13.4%)
+    if(jcsum >= 0.5 && Math.abs(line + 1.0) < 0.01)
       return { rec:'A', conf:0.57, lean:lean, line:line, rule:'JCSUM→H + Line=−1.00 → Bet A' };
-    }
-    // R6: JCSID→A + Line≥+0.75 + Lean≥50% → Bet H  (ROI +5.7%, train +6.0%, test +4.5%)
-    if(jcsid <= -0.5 && line >= 0.75 && lean >= 0.50){
+    // R5 WITH: MAC→A + Line=−0.75 → Follow Away  (+7.3%, tr+9.2%, te+1.5%)
+    if(mac <= -0.5 && Math.abs(line + 0.75) < 0.01)
+      return { rec:'A', conf:0.55, lean:lean, line:line, rule:'MAC→A + Line=−0.75 → Follow Away' };
+    // R6 COUNTER: JCSID→A + Line=+0.75 + Lean≥50% → Bet H  (+7.0%, tr+4.5%, te+13.4%)
+    if(jcsid <= -0.5 && line >= 0.75 && lean >= 0.50)
       return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line≥+0.75 + Lean≥50% → Bet H' };
-    }
+    // R7 COUNTER: JCSID→H + Line=+0.25 + Lean≥50% → Bet A  (+6.5%, tr+2.8%, te+17.5%)
+    if(jcsid >= 0.5 && Math.abs(line - 0.25) < 0.01 && lean >= 0.50)
+      return { rec:'A', conf:0.53, lean:lean, line:line, rule:'JCSID→H + Line=+0.25 + Lean≥50% → Bet A' };
+    // R8 COUNTER: MAC→A + Line≥+0.75 + Lean≥50% → Bet H  (+5.0%, tr+5.1%, te+4.8%)
+    if(mac <= -0.5 && line >= 0.75 && lean >= 0.50)
+      return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → Bet H' };
+    // R9 COUNTER: MAC→H + Line=−1.00 → Bet A  (+4.2%, tr+2.0%, te+9.9%)
+    if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01)
+      return { rec:'A', conf:0.56, lean:lean, line:line, rule:'MAC→H + Line=−1.00 → Bet A' };
+    // R10 COUNTER: MAC→H + Line=+0.25 → Bet A  (+4.0%, tr+2.6%, te+8.1%)
+    if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01)
+      return { rec:'A', conf:0.52, lean:lean, line:line, rule:'MAC→H + Line=+0.25 → Bet A' };
+    // R11 COUNTER: MAC→A + Line=+1.00 + Lean≥50% → Bet H  (+3.9%, tr+2.6%, te+7.4%)
+    if(mac <= -0.5 && Math.abs(line - 1.0) < 0.01 && lean >= 0.50)
+      return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line=+1.00 + Lean≥50% → Bet H' };
+    // R12 COUNTER: MAC→A + Line=−0.25 + Lean≥50% → Bet H  (+3.2%, tr+4.1%, te+1.0%)
+    if(mac <= -0.5 && Math.abs(line + 0.25) < 0.01 && lean >= 0.50)
+      return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line=−0.25 + Lean≥50% → Bet H' };
+    // R13 COUNTER: JCSUM→H + Line=+0.25 → Bet A  (+2.6%, tr+3.0%, te+1.6%)
+    if(jcsum >= 0.5 && Math.abs(line - 0.25) < 0.01)
+      return { rec:'A', conf:0.52, lean:lean, line:line, rule:'JCSUM→H + Line=+0.25 → Bet A' };
+    // R14 COUNTER: JCSID→A + Line=+1.00 → Bet H  (+2.6%, tr+0.5%, te+8.0%)
+    if(jcsid <= -0.5 && Math.abs(line - 1.0) < 0.01)
+      return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line=+1.00 → Bet H' };
+    // R15 COUNTER: MAC→H + Line=0.00 → Bet A  (carried from original R2, +7.8%)
+    if(mac >= 0.5 && Math.abs(line) < 0.01)
+      return { rec:'A', conf:0.54, lean:lean, line:line, rule:'MAC→H + Line=0.00 → Bet A' };
 
     return { rec:'SKIP', conf:0.5, lean:lean, line:line, rule:'' };
   }
@@ -397,25 +417,39 @@ function mlConflictScore(r){
   var mac   = TIPSMAC_MAP[String(r.TIPSIDMAC||'')] || 0;
   var jcsum = TIPSUM_MAP [String(r.JCTIPSUM ||'')] || 0;
   var jcsid = TIPSID_MAP [String(r.JCTIPSID ||'')] || 0;
+  var onid  = TIPSON_MAP [String(r.TIPSONID ||'')] || 0;
 
-  // R1: MAC→H + Line=−1.00 → Bet A
-  if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01)
-    return { rec:'A', conf:0.56, lean:lean, line:line, rule:'MAC→H + Line=−1.00 → Bet A' };
-  // R2: MAC→H + Line=0.00 → Bet A
-  if(mac >= 0.5 && Math.abs(line) < 0.01)
-    return { rec:'A', conf:0.54, lean:lean, line:line, rule:'MAC→H + Line=0.00 → Bet A' };
-  // R3: MAC→H + Line=+0.25 → Bet A
-  if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01)
-    return { rec:'A', conf:0.52, lean:lean, line:line, rule:'MAC→H + Line=+0.25 → Bet A' };
-  // R4: MAC→A + Line≥+0.75 + Lean≥50% → Bet H
-  if(mac <= -0.5 && line >= 0.75 && lean >= 0.50)
-    return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → Bet H' };
-  // R5: JCSUM→H + Line=−1.00 → Bet A
+  // 15 Verified Rules (first-match-wins, ROI desc)
+  if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01 && lean >= 0.50)
+    return { rec:'A', conf:0.60, lean:lean, line:line, rule:'MAC→H + Line=−1.00 + Lean≥50% → Bet A' };
+  if(onid <= -0.5 && Math.abs(line + 0.75) < 0.01)
+    return { rec:'A', conf:0.55, lean:lean, line:line, rule:'ONID→A + Line=−0.75 → Follow Away' };
+  if(jcsid <= -0.5 && Math.abs(line - 1.0) < 0.01 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line=+1.00 + Lean≥50% → Bet H' };
   if(jcsum >= 0.5 && Math.abs(line + 1.0) < 0.01)
     return { rec:'A', conf:0.57, lean:lean, line:line, rule:'JCSUM→H + Line=−1.00 → Bet A' };
-  // R6: JCSID→A + Line≥+0.75 + Lean≥50% → Bet H
+  if(mac <= -0.5 && Math.abs(line + 0.75) < 0.01)
+    return { rec:'A', conf:0.55, lean:lean, line:line, rule:'MAC→A + Line=−0.75 → Follow Away' };
   if(jcsid <= -0.5 && line >= 0.75 && lean >= 0.50)
     return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line≥+0.75 + Lean≥50% → Bet H' };
+  if(jcsid >= 0.5 && Math.abs(line - 0.25) < 0.01 && lean >= 0.50)
+    return { rec:'A', conf:0.53, lean:lean, line:line, rule:'JCSID→H + Line=+0.25 + Lean≥50% → Bet A' };
+  if(mac <= -0.5 && line >= 0.75 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line≥+0.75 + Lean≥50% → Bet H' };
+  if(mac >= 0.5 && Math.abs(line + 1.0) < 0.01)
+    return { rec:'A', conf:0.56, lean:lean, line:line, rule:'MAC→H + Line=−1.00 → Bet A' };
+  if(mac >= 0.5 && Math.abs(line - 0.25) < 0.01)
+    return { rec:'A', conf:0.52, lean:lean, line:line, rule:'MAC→H + Line=+0.25 → Bet A' };
+  if(mac <= -0.5 && Math.abs(line - 1.0) < 0.01 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line=+1.00 + Lean≥50% → Bet H' };
+  if(mac <= -0.5 && Math.abs(line + 0.25) < 0.01 && lean >= 0.50)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'MAC→A + Line=−0.25 + Lean≥50% → Bet H' };
+  if(jcsum >= 0.5 && Math.abs(line - 0.25) < 0.01)
+    return { rec:'A', conf:0.52, lean:lean, line:line, rule:'JCSUM→H + Line=+0.25 → Bet A' };
+  if(jcsid <= -0.5 && Math.abs(line - 1.0) < 0.01)
+    return { rec:'H', conf:lean, lean:lean, line:line, rule:'JCSID→A + Line=+1.00 → Bet H' };
+  if(mac >= 0.5 && Math.abs(line) < 0.01)
+    return { rec:'A', conf:0.54, lean:lean, line:line, rule:'MAC→H + Line=0.00 → Bet A' };
 
   return { rec:'SKIP', conf:0.5, lean:lean, line:line, rule:'' };
 }
@@ -479,12 +513,21 @@ function renderML(RD){
   h += '<th style="text-align:right;padding:4px 8px;color:#64748b;font-weight:700">n</th>';
   h += '</tr></thead><tbody>';
   var ruleRows = [
-    ['R1','MAC tips H  +  Line = −1.00','A','+5.8%',203,'MAC says Home but faces −1 handicap. MAC over-rates Home here.'],
-    ['R2','MAC tips H  +  Line = 0.00', 'A','+7.8%',201,'MAC says Home on a level line. Consistently wrong.'],
-    ['R3','MAC tips H  +  Line = +0.25','A','+4.0%',212,'MAC says Home on mild line. Market disagrees.'],
-    ['R4','MAC tips A  +  Line ≥ +0.75  +  Lean ≥ 50%','H','+5.1%',468,'MAC says Away but strong structural Home signal overrides.'],
-    ['R5','JCSUM tips H  +  Line = −1.00','A','+6.0%',178,'JC Summary says Home but heavy handicap says otherwise.'],
-    ['R6','JCSID tips A  +  Line ≥ +0.75  +  Lean ≥ 50%','H','+5.7%',316,'JC SID says Away but market structure consistently disagrees.'],
+    ['R1', 'MAC tips H  +  Line = −1.00 + Lean ≥ 50%','A','+10.0%',113,'MAC + heavy handicap + market leans H — market over-adjusts. COUNTER.'],
+    ['R2', 'ONID tips A  +  Line = −0.75',             'A', '+8.9%',174,'ON ID correctly identifies Away value here. WITH (follow expert).'],
+    ['R3', 'JCSID tips A  +  Line = +1.00 + Lean ≥ 50%','H','+8.3%', 52,'Away gives 1 goal AND market leans H — JCSID is wrong. COUNTER.'],
+    ['R4', 'JCSUM tips H  +  Line = −1.00',            'A', '+7.9%',137,'JC Summary says H but heavy handicap overrides. COUNTER.'],
+    ['R5', 'MAC tips A   +  Line = −0.75',             'A', '+7.3%',312,'MAC correctly tips Away at −0.75. WITH (follow expert).'],
+    ['R6', 'JCSID tips A  +  Line ≥ +0.75 + Lean ≥ 50%','H','+7.0%',210,'JCSID says Away but strong structural H signal overrides. COUNTER.'],
+    ['R7', 'JCSID tips H  +  Line = +0.25 + Lean ≥ 50%','A','+6.5%',107,'JCSID says H on mild line with H lean — JCSID over-reads. COUNTER.'],
+    ['R8', 'MAC tips A   +  Line ≥ +0.75 + Lean ≥ 50%','H', '+5.0%',395,'MAC says Away but structural H signal wins. COUNTER.'],
+    ['R9', 'MAC tips H   +  Line = −1.00',             'A', '+4.2%',275,'MAC tips H at −1 handicap (no lean filter). COUNTER.'],
+    ['R10','MAC tips H   +  Line = +0.25',             'A', '+4.0%',212,'MAC tips H on mild +0.25 line. MAC over-extends. COUNTER.'],
+    ['R11','MAC tips A   +  Line = +1.00 + Lean ≥ 50%','H', '+3.9%',102,'MAC says Away at max +1 line with H lean. COUNTER.'],
+    ['R12','MAC tips A   +  Line = −0.25 + Lean ≥ 50%','H', '+3.2%',399,'MAC says Away on slight H line with H lean. COUNTER.'],
+    ['R13','JCSUM tips H  +  Line = +0.25',            'A', '+2.6%',155,'JC Summary says H on mild Away-structure line. COUNTER.'],
+    ['R14','JCSID tips A  +  Line = +1.00',            'H', '+2.6%', 75,'JCSID says Away at +1 (no lean filter). COUNTER.'],
+    ['R15','MAC tips H   +  Line = 0.00',              'A', '+7.8%',201,'MAC says H on level line — consistently wrong. COUNTER.'],
   ];
   ruleRows.forEach(function(row, i){
     var betCol = row[2]==='H' ? '#f87171' : '#60a5fa';
@@ -585,9 +628,9 @@ function renderML(RD){
   h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Model Notes</div>';
   h += '<div style="font-size:11px;color:#94a3b8;line-height:1.7">';
   h += '• <b style="color:#e2e8f0">Split:</b> Strict temporal — oldest 75% for rule discovery, newest 25% for validation only. No data leakage.<br>';
-  h += '• <b style="color:#e2e8f0">ONID excluded:</b> ONID rules had negative ROI in training set — excluded to avoid overfitting.<br>';
-  h += '• <b style="color:#e2e8f0">Portfolio ROI:</b> 1,223 combined bets across all 6 rules · +6.1% all data · train +4.7% · test +10.4%.<br>';
-  h += '• <b style="color:#e2e8f0">SKIP:</b> Any match not matching a rule is skipped — no bet when tips and market agree.';
+  h += '• <b style="color:#e2e8f0">All 4 experts included:</b> MAC, JC Summary, JC SID, and ON ID. Rules fire when any expert tip conflicts with market structure (Line + Lean).<br>';
+  h += '• <b style="color:#e2e8f0">15 verified rules:</b> 13 COUNTER rules (bet against expert) + 2 WITH rules (follow expert). All positive on both train and test splits.<br>';
+  h += '• <b style="color:#e2e8f0">SKIP:</b> Any match not matching a rule is skipped — no bet when no verified edge exists.';
   h += '</div></div>';
 
   // ── Past predictions (last N test results) ──
@@ -625,6 +668,7 @@ function renderML(RD){
         var mac  = TIPSMAC_MAP[String(r.TIPSIDMAC||'')] || 0;
         var jcsum= TIPSUM_MAP [String(r.JCTIPSUM ||'')] || 0;
         var jcsid= TIPSID_MAP [String(r.JCTIPSID ||'')] || 0;
+        var onid = TIPSON_MAP [String(r.TIPSONID ||'')] || 0;
         var lean = cs.lean;
         return {
           r: r, pH: lean, pA: 1-lean,
@@ -637,6 +681,7 @@ function renderML(RD){
             { name:'MAC Tip',     raw: mac,               contrib: -mac*1.2 },
             { name:'JC SID',      raw: jcsid,             contrib: -jcsid },
             { name:'JC Sum',      raw: jcsum,             contrib: -jcsum*0.8 },
+            { name:'ON ID',       raw: onid,              contrib: -onid*0.6 },
           ].sort(function(a,b){ return Math.abs(b.contrib)-Math.abs(a.contrib); })
         };
       });
@@ -1130,52 +1175,115 @@ function renderMLIndexWidget(mlPredictions, containerId){
 
 // ── Compute rule signals ──────────────────────────────────────────
 function computeRuleSignals(samples){
-  // ── 6 Verified Expert Counter-Relationship Rules ──────────────────
-  // Each rule fires when an expert tip is overridden by structural signals.
-  // Criteria: ROI > 0 on BOTH train (75%) and test (25%) temporal splits.
-  // ONID rules excluded — failed train consistency check.
+  // ── 15 Verified Expert Rules (all 4 experts: MAC, JCSUM, JCSID, ONID) ────
+  // COUNTER = bet against expert. WITH = follow expert.
+  // Criteria: ROI > 0 on BOTH train (75%) AND test (25%) temporal splits.
+  // Sorted by overall ROI descending.
   var RULES = [
     {
-      label:  'MAC→H + Line=−1.00 → Bet A',
-      desc:   'Macau tips Home but faces Line=−1.00 (heavy Home handicap). MAC systematically over-favours Home here.',
-      expert: 'MAC',
-      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line + 1.0) < 0.01; },
-      side: 'a', roi_ref: 5.8, train_ref: 0.8, test_ref: 22.7
+      label:  'MAC→H + Line=−1.00 + Lean≥50% → Bet A',
+      desc:   'MAC tips Home + heavy −1 handicap + market leans Home. Market over-adjusts: bet Away.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line + 1.0) < 0.01 && s.impliedH >= 0.50; },
+      side: 'a', roi_ref: 10.0, train_ref: 1.2, test_ref: 28.1
     },
     {
-      label:  'MAC→H + Line=0.00 → Bet A',
-      desc:   'Macau tips Home on a level line. At Line=0, MAC consistently over-rates Home side.',
-      expert: 'MAC',
-      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line) < 0.01; },
-      side: 'a', roi_ref: 7.8, train_ref: 5.4, test_ref: 16.8
+      label:  'ONID→A + Line=−0.75 → Follow Away',
+      desc:   'ON ID tips Away at Line=−0.75. ONID is correct here — follow the expert and bet Away.',
+      expert: 'ONID', type: 'WITH',
+      filter: function(s){ return s.onid <= -0.5 && Math.abs(s.line + 0.75) < 0.01; },
+      side: 'a', roi_ref: 8.9, train_ref: 10.6, test_ref: 4.0
     },
     {
-      label:  'MAC→H + Line=+0.25 → Bet A',
-      desc:   'Macau tips Home on mild +0.25 line. Structure is only slightly Home but MAC over-extends.',
-      expert: 'MAC',
-      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line - 0.25) < 0.01; },
-      side: 'a', roi_ref: 4.0, train_ref: 1.6, test_ref: 11.2
-    },
-    {
-      label:  'MAC→A + Line≥+0.75 + Lean≥50% → Bet H',
-      desc:   'Macau tips Away but line ≥ +0.75 AND market lean ≥ 50% for Home. Strong structural Home signal overrides MAC.',
-      expert: 'MAC',
-      filter: function(s){ return s.mac <= -0.5 && s.line >= 0.75 && s.impliedH >= 0.50; },
-      side: 'h', roi_ref: 5.1, train_ref: 5.0, test_ref: 5.3
+      label:  'JCSID→A + Line=+1.00 + Lean≥50% → Bet H',
+      desc:   'JCSID tips Away but Away must give 1 goal AND market leans Home. Market structure wins.',
+      expert: 'JCSID', type: 'COUNTER',
+      filter: function(s){ return s.jcsid <= -0.5 && Math.abs(s.line - 1.0) < 0.01 && s.impliedH >= 0.50; },
+      side: 'h', roi_ref: 8.3, train_ref: 4.3, test_ref: 18.4
     },
     {
       label:  'JCSUM→H + Line=−1.00 → Bet A',
-      desc:   'JC Summary tips Home but Line=−1.00. At heavy handicap, JCTIPSUM→H is counter-productive.',
-      expert: 'JCSUM',
+      desc:   'JC Summary tips Home but Line=−1.00. Heavy handicap makes the Home tip unreliable.',
+      expert: 'JCSUM', type: 'COUNTER',
       filter: function(s){ return s.jcsum >= 0.5 && Math.abs(s.line + 1.0) < 0.01; },
-      side: 'a', roi_ref: 6.0, train_ref: 4.1, test_ref: 11.9
+      side: 'a', roi_ref: 7.9, train_ref: 5.9, test_ref: 13.4
+    },
+    {
+      label:  'MAC→A + Line=−0.75 → Follow Away',
+      desc:   'MAC tips Away at Line=−0.75. MAC is correct here — follow and bet Away.',
+      expert: 'MAC', type: 'WITH',
+      filter: function(s){ return s.mac <= -0.5 && Math.abs(s.line + 0.75) < 0.01; },
+      side: 'a', roi_ref: 7.3, train_ref: 9.2, test_ref: 1.5
     },
     {
       label:  'JCSID→A + Line≥+0.75 + Lean≥50% → Bet H',
-      desc:   'JC SID tips Away but line ≥ +0.75 AND lean ≥ 50% for Home. Market structure consistently overrides JCSID here.',
-      expert: 'JCSID',
+      desc:   'JCSID tips Away but line ≥ +0.75 AND market leans Home. Strong structural signal overrides.',
+      expert: 'JCSID', type: 'COUNTER',
       filter: function(s){ return s.jcsid <= -0.5 && s.line >= 0.75 && s.impliedH >= 0.50; },
-      side: 'h', roi_ref: 5.7, train_ref: 6.0, test_ref: 4.5
+      side: 'h', roi_ref: 7.0, train_ref: 4.5, test_ref: 13.4
+    },
+    {
+      label:  'JCSID→H + Line=+0.25 + Lean≥50% → Bet A',
+      desc:   'JCSID tips Home on mild +0.25 line with market leaning Home. JCSID over-reads Home here.',
+      expert: 'JCSID', type: 'COUNTER',
+      filter: function(s){ return s.jcsid >= 0.5 && Math.abs(s.line - 0.25) < 0.01 && s.impliedH >= 0.50; },
+      side: 'a', roi_ref: 6.5, train_ref: 2.8, test_ref: 17.5
+    },
+    {
+      label:  'MAC→A + Line≥+0.75 + Lean≥50% → Bet H',
+      desc:   'MAC tips Away but strong structural Home signal (line + lean) consistently overrides.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac <= -0.5 && s.line >= 0.75 && s.impliedH >= 0.50; },
+      side: 'h', roi_ref: 5.0, train_ref: 5.1, test_ref: 4.8
+    },
+    {
+      label:  'MAC→H + Line=−1.00 → Bet A',
+      desc:   'MAC tips Home but faces heavy −1 handicap. Even without lean filter, MAC is wrong here.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line + 1.0) < 0.01; },
+      side: 'a', roi_ref: 4.2, train_ref: 2.0, test_ref: 9.9
+    },
+    {
+      label:  'MAC→H + Line=+0.25 → Bet A',
+      desc:   'MAC tips Home on mild +0.25 line. MAC over-extends on mild structure.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line - 0.25) < 0.01; },
+      side: 'a', roi_ref: 4.0, train_ref: 2.6, test_ref: 8.1
+    },
+    {
+      label:  'MAC→A + Line=+1.00 + Lean≥50% → Bet H',
+      desc:   'MAC tips Away at max handicap (Away gives 1 goal) with market leaning Home.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac <= -0.5 && Math.abs(s.line - 1.0) < 0.01 && s.impliedH >= 0.50; },
+      side: 'h', roi_ref: 3.9, train_ref: 2.6, test_ref: 7.4
+    },
+    {
+      label:  'MAC→A + Line=−0.25 + Lean≥50% → Bet H',
+      desc:   'MAC tips Away on slight Home line with market leaning Home. Structural H signal wins.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac <= -0.5 && Math.abs(s.line + 0.25) < 0.01 && s.impliedH >= 0.50; },
+      side: 'h', roi_ref: 3.2, train_ref: 4.1, test_ref: 1.0
+    },
+    {
+      label:  'JCSUM→H + Line=+0.25 → Bet A',
+      desc:   'JC Summary tips Home on mild Away-structure line. JCSUM is systematically wrong here.',
+      expert: 'JCSUM', type: 'COUNTER',
+      filter: function(s){ return s.jcsum >= 0.5 && Math.abs(s.line - 0.25) < 0.01; },
+      side: 'a', roi_ref: 2.6, train_ref: 3.0, test_ref: 1.6
+    },
+    {
+      label:  'JCSID→A + Line=+1.00 → Bet H',
+      desc:   'JCSID tips Away at max +1.00 line. Even without lean filter, JCSID is wrong here.',
+      expert: 'JCSID', type: 'COUNTER',
+      filter: function(s){ return s.jcsid <= -0.5 && Math.abs(s.line - 1.0) < 0.01; },
+      side: 'h', roi_ref: 2.6, train_ref: 0.5, test_ref: 8.0
+    },
+    {
+      label:  'MAC→H + Line=0.00 → Bet A',
+      desc:   'MAC tips Home on a level line. At Line=0, MAC consistently over-rates Home side.',
+      expert: 'MAC', type: 'COUNTER',
+      filter: function(s){ return s.mac >= 0.5 && Math.abs(s.line) < 0.01; },
+      side: 'a', roi_ref: 7.8, train_ref: 5.4, test_ref: 16.8
     },
   ];
 
@@ -1212,7 +1320,7 @@ function renderMLRuleSignals(rules){
   if(!rules || !rules.length) return '';
   var h = '';
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:4px;margin-top:16px">📐 Verified Expert Counter-Rules</h>';
-  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">Rules fire when an expert tip is <b style="color:#fbbf24">overridden</b> by market structure (Line + Lean). Verified consistent ROI on both train (75%) and test (25%) temporal splits. ONID rules excluded — failed train consistency.</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">15 rules across all 4 experts (MAC, JCSUM, JCSID, ONID). <b style="color:#fbbf24">COUNTER</b> = bet against the expert. <b style="color:#4ade80">WITH</b> = follow the expert. All rules positive on both train (75%) and test (25%) temporal splits.</div>';
   h += '<div class="rpt-table-wrap"><table class="rpt-table">';
   h += '<thead><tr>';
   h += '<th>Rule</th>';

@@ -297,13 +297,63 @@ function renderJCRelation(RD){
   h += '<div class="rpt-title">🔬 JC Expert Relationship Analysis</div>';
   h += '<div class="rpt-sub">How JC expert tips interact with Asia Handicap Line and Market Lean. Counter-relationships = experts are systematically wrong in specific conditions. Positive relationships = follow the expert. All rules verified on both train (75%) and test (25%) splits.</div>';
 
-  // ── SECTION 1: Upcoming match alerts ──
+  // ── SECTION 1: Auto-Apply Rules to Upcoming Matches ──
   h += '<div style="margin-bottom:20px">';
-  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px;margin-top:4px">🚨 Upcoming Match Alerts</div>';
+  h += '<div class="rpt-title" style="margin-bottom:4px">🎯 Auto-Apply Rules to Upcoming Matches</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:10px">All verified rules automatically scanned against upcoming matches. Rules fire on first-match-wins basis (highest ROI rule listed per match). All 4 experts (MAC / JCSUM / JCSID / ONID) included.</div>';
 
   if(!jcr.upcomingAlerts.length){
-    h += '<div style="padding:12px;color:#475569;font-size:12px;font-style:italic;background:var(--surface2);border-radius:8px">No upcoming matches currently match any verified rule.</div>';
+    h += '<div style="padding:14px;color:#475569;font-size:12px;font-style:italic;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">No upcoming matches currently match any verified rule. Check back when new odds are available.</div>';
   } else {
+    // ── Quick summary table ──
+    h += '<div style="margin-bottom:12px">';
+    h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Quick Scan Summary</div>';
+    h += '<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>';
+    h += '<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">Lean</th>';
+    h += '<th class="num">Bet</th><th class="num">Type</th><th>Rule Fired</th><th class="num">Est ROI</th>';
+    h += '<th class="num">Tips</th>';
+    h += '</tr></thead><tbody>';
+
+    jcr.upcomingAlerts.forEach(function(alert){
+      var r = alert.r;
+      var topRule = alert.rules[0];
+      var betCol  = topRule.bet === 'H' ? '#f87171' : '#60a5fa';
+      var typeCol = topRule.type === 'COUNTER' ? '#fbbf24' : '#4ade80';
+      var typeLabel = topRule.type === 'COUNTER' ? '⚡' : '✓';
+      var leanPct = alert.lean ? Math.round(alert.lean*100)+'%' : '—';
+      var lineStr = (parseFloat(r.ASIALINE)>=0?'+':'')+parseFloat(r.ASIALINE).toFixed(2);
+      var roiCol  = topRule.roi >= 7 ? '#4ade80' : topRule.roi >= 4 ? '#a3e635' : '#94a3b8';
+      var multiMark = alert.rules.length > 1 ? ' <span style="color:#a78bfa;font-size:8px">+'+( alert.rules.length-1)+'</span>' : '';
+
+      // Tips mini-badge
+      var tipFields = [{key:'JCTIPSUM',label:'JCS'},{key:'JCTIPSID',label:'SID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONI'}];
+      var tipStr = tipFields.map(function(tf){
+        var tv = r[tf.key];
+        if(!tv) return '';
+        var isH = String(tv).indexOf('H')>=0, isA = String(tv).indexOf('A')>=0;
+        var c = isH ? '#f87171' : isA ? '#60a5fa' : '#475569';
+        return '<span style="color:'+c+';font-size:8px;font-family:var(--mono)">'+tf.label+'='+tv+'</span>';
+      }).filter(Boolean).join(' ');
+
+      h += '<tr>';
+      h += '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(r.DATE||'').slice(5)+'</td>';
+      h += '<td><div style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">'+r.TEAMH+' vs '+r.TEAMA+'</div>';
+      h += '<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+lineStr+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#64748b">'+leanPct+'</td>';
+      h += '<td class="num"><b style="font-size:14px;color:'+betCol+'">'+topRule.bet+'</b></td>';
+      h += '<td class="num"><span style="color:'+typeCol+';font-size:11px;font-weight:700">'+typeLabel+'</span></td>';
+      h += '<td style="font-size:10px;color:#e2e8f0;max-width:200px">'+topRule.label+multiMark+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(topRule.roi>=0?'+':'')+topRule.roi.toFixed(1)+'%</td>';
+      h += '<td style="font-size:9px;white-space:nowrap">'+tipStr+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<div style="font-size:9px;color:#475569;margin-top:4px">⚡ = COUNTER (bet against expert) · ✓ = WITH (follow expert) · +N = additional rules also fired</div>';
+    h += '</div>';
+
+    // ── Detail cards ──
+    h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Match Details</div>';
     h += '<div style="display:flex;flex-direction:column;gap:8px">';
     jcr.upcomingAlerts.forEach(function(alert){
       var r = alert.r;
@@ -312,42 +362,42 @@ function renderJCRelation(RD){
       var leanPct = alert.lean ? Math.round(alert.lean*100) : '—';
       var lineStr = (parseFloat(r.ASIALINE)>=0?'+':'')+parseFloat(r.ASIALINE).toFixed(2);
 
-      h += '<div style="padding:12px 14px;border-radius:8px;background:var(--surface2);border:1.5px solid '+betCol+'44">';
-      h += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">';
-      h += '<div style="font-size:20px;font-weight:900;font-family:var(--mono);color:'+betCol+';min-width:24px">'+topRule.bet+'</div>';
+      h += '<div style="padding:12px 14px;border-radius:8px;background:var(--surface2);border:1.5px solid '+betCol+'33">';
+      h += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px">';
+      h += '<div style="font-size:22px;font-weight:900;font-family:var(--mono);color:'+betCol+';width:28px;flex-shrink:0">'+topRule.bet+'</div>';
       h += '<div style="flex:1;min-width:140px">';
       h += '<div style="font-size:12px;font-weight:700;color:#e2e8f0">'+r.TEAMH+' <span style="color:#475569;font-weight:400">vs</span> '+r.TEAMA+'</div>';
       h += '<div style="font-size:10px;color:#64748b;font-family:var(--mono)">'+(r.DATE||'')+' · '+(r.CATEGORY||r.LEAGUE||'')+'</div>';
       h += '</div>';
-      h += '<div style="text-align:right;font-size:10px;color:#94a3b8;font-family:var(--mono)">';
+      h += '<div style="text-align:right;font-size:10px;color:#94a3b8;font-family:var(--mono);flex-shrink:0">';
       h += 'Line <b style="color:#e2e8f0">'+lineStr+'</b> · Lean <b style="color:#e2e8f0">'+leanPct+'%</b>';
       h += '</div></div>';
 
-      // Tips summary
-      h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
+      // All 4 expert tips
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">';
       var tipFields = [
         { key:'JCTIPSUM', label:'JCSUM' }, { key:'JCTIPSID', label:'JCSID' },
         { key:'TIPSIDMAC', label:'MAC' },  { key:'TIPSONID', label:'ONID' }
       ];
       tipFields.forEach(function(tf){
         var tv = r[tf.key];
-        if(tv){
-          var c = (String(tv).indexOf('H')>=0) ? '#f87171' : (String(tv).indexOf('A')>=0) ? '#60a5fa' : '#64748b';
-          h += '<span style="font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:4px;background:'+c+'15;border:1px solid '+c+'33;color:'+c+'">'+tf.label+': '+tv+'</span>';
-        }
+        var displayVal = tv || '—';
+        var isH = tv && String(tv).indexOf('H')>=0, isA = tv && String(tv).indexOf('A')>=0;
+        var c = isH ? '#f87171' : isA ? '#60a5fa' : '#475569';
+        h += '<span style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+c+'15;border:1px solid '+c+'33;color:'+c+'">'+tf.label+': '+displayVal+'</span>';
       });
       h += '</div>';
 
-      // Fired rules
-      alert.rules.forEach(function(rule){
+      // All fired rules for this match
+      alert.rules.forEach(function(rule, ri){
         var rc = rule.type === 'COUNTER' ? '#fbbf24' : '#4ade80';
         var typeLabel = rule.type === 'COUNTER' ? '⚡ COUNTER' : '✓ FOLLOW';
-        h += '<div style="display:flex;align-items:center;gap:8px;font-size:10px;flex-wrap:wrap">';
-        h += '<span style="color:'+rc+';font-weight:700;font-family:var(--mono)">'+typeLabel+'</span>';
-        h += '<span style="color:#e2e8f0">'+rule.label+'</span>';
-        h += '<span style="color:#4ade80;font-family:var(--mono);font-weight:700">'+(rule.roi>=0?'+':'')+rule.roi.toFixed(1)+'%</span>';
-        h += '<span style="color:#64748b;font-family:var(--mono)">n='+rule.n+'</span>';
-        h += '<span style="color:#475569">tr='+(rule.train>=0?'+':'')+rule.train.toFixed(1)+'% te='+(rule.test>=0?'+':'')+rule.test.toFixed(1)+'%</span>';
+        var borderStyle = ri === 0 ? 'border:1px solid '+rc+'44;' : 'border:1px solid var(--border);';
+        h += '<div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;flex-wrap:wrap;padding:5px 8px;border-radius:5px;margin-bottom:3px;background:rgba(255,255,255,0.02);'+borderStyle+'">';
+        h += '<span style="color:'+rc+';font-weight:700;font-family:var(--mono);white-space:nowrap">'+typeLabel+'</span>';
+        h += '<span style="color:#e2e8f0;flex:1;min-width:120px">'+rule.label+'</span>';
+        h += '<span style="color:#4ade80;font-family:var(--mono);font-weight:700;white-space:nowrap">'+(rule.roi>=0?'+':'')+rule.roi.toFixed(1)+'% ROI</span>';
+        h += '<span style="color:#64748b;font-family:var(--mono);white-space:nowrap">n='+rule.n+' · tr='+(rule.train>=0?'+':'')+rule.train.toFixed(1)+'% te='+(rule.test>=0?'+':'')+rule.test.toFixed(1)+'%</span>';
         h += '</div>';
       });
       h += '</div>';
