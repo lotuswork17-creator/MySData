@@ -198,5 +198,6 @@ function computeReport(records){
     jcexpert    : computeJCExpert(results),
     escore      : computeEScore(results),
     ml          : computeML(results, records),
+    jcrelation  : computeJCRelation(results),
   };
 }
