@@ -6,6 +6,7 @@
 var JCR_TIPSUM_MAP  = {'H':1.0,'1H':0.8,'D':0.6,'1D':0.4,'B':0.2,'1B':0.0,'1A':-0.8,'A':-1.0};
 var JCR_TIPSID_MAP  = {'H':1.0,'D':0.3,'B':0.0,'S':0.0,'A':-1.0};
 var JCR_TIPSMAC_MAP = {'H':1.0,'D':0.3,'A':-1.0};
+var JCR_TIPSON_MAP  = {'H':1.0,'1H':1.0,'FH':1.0,'A':-1.0,'1A':-1.0,'FA':-1.0,'D':0,'1D':0,'B':0,'1B':0,'S':0,'1S':0,'CB':0,'CS':0,'1b':0};
 
 function jcrEncodeTip(val, map){
   if(val == null) return 0;
@@ -37,8 +38,8 @@ function jcrPnl(r){
 // ── computeJCRelation(results) ──
 function computeJCRelation(results){
   var TIP_MAP_DIR = {
-    'H':1,'1H':1,'A':-1,'1A':-1,
-    'D':0,'1D':0,'B':0,'1B':0,'S':0,'1S':0
+    'H':1,'1H':1,'FH':1,'A':-1,'1A':-1,'FA':-1,
+    'D':0,'1D':0,'B':0,'1B':0,'1b':0,'S':0,'1S':0,'CB':0,'CS':0
   };
 
   var data = results.filter(function(r){
@@ -55,6 +56,7 @@ function computeJCRelation(results){
     { key:'JCTIPSUM',  label:'JC Summary',  short:'JCSUM' },
     { key:'JCTIPSID',  label:'JC SID',      short:'JCSID' },
     { key:'TIPSIDMAC', label:'MAC',          short:'MAC'   },
+    { key:'TIPSONID',  label:'ON ID',        short:'ONID'  },
   ];
 
   // ── Build full relationship matrix ──
@@ -242,7 +244,7 @@ function computeJCRelation(results){
   verifiedRules.sort(function(a,b){ return b.roi - a.roi; });
 
   // Scan upcoming for rule fires
-  var TIP_MAP_DIR2 = { 'H':1,'1H':1,'A':-1,'1A':-1,'D':0,'1D':0,'B':0,'1B':0,'S':0,'1S':0 };
+  var TIP_MAP_DIR2 = { 'H':1,'1H':1,'FH':1,'A':-1,'1A':-1,'FA':-1,'D':0,'1D':0,'B':0,'1B':0,'1b':0,'S':0,'1S':0,'CB':0,'CS':0 };
   var upcomingAlerts = [];
   upcoming.forEach(function(r){
     var fired = [];
@@ -391,7 +393,7 @@ function renderJCRelation(RD){
   h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">';
   h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin:0">📊 Full Relationship Matrix</div>';
   h += '<div style="display:flex;gap:4px;margin-left:auto" id="jcrExpBtns">';
-  ['All','JCSUM','JCSID','MAC'].forEach(function(label, i){
+  ['All','JCSUM','JCSID','MAC','ONID'].forEach(function(label, i){
     var active = i === 0;
     h += '<button onclick="jcrFilterExp(\''+label+'\')" id="jcrBtn_'+label+'" ';
     h += 'style="font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:5px;cursor:pointer;';
