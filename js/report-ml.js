@@ -605,6 +605,7 @@ function renderML(RD){
   // Draw charts
   setTimeout(function(){
     drawRoiCurveChart(ml.roiCurveH.slice(-100), ml.roiCurveA.slice(-100));
+    drawRuleRoiCharts(ml.ruleSignals);
   }, 50);
 
   // Self-fetch data.json to get upcoming matches independently
@@ -974,6 +975,106 @@ function renderMLPredictionsHTML(predictions, testAcc){
   return h;
 }
 
+// ── Running ROI chart: all 6 counter-rules, last 100 bets each ──
+function drawRuleRoiCharts(rules){
+  var canvas = document.getElementById('mlRuleRoiChart');
+  if(!canvas || !rules || !rules.length) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.parentElement.clientWidth || 600;
+  var H = 220;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  var PAD = { t:20, r:20, b:36, l:52 };
+  var cW = W - PAD.l - PAD.r;
+  var cH = H - PAD.t - PAD.b;
+
+  // Compute Y range across all curves
+  var allPts = [];
+  rules.forEach(function(r){ if(r.roiCurve) allPts = allPts.concat(r.roiCurve); });
+  if(!allPts.length) return;
+  var yMin = Math.min.apply(null, allPts);
+  var yMax = Math.max.apply(null, allPts);
+  var yPad = Math.max(3, (yMax - yMin) * 0.15);
+  yMin = Math.floor(yMin - yPad);
+  yMax = Math.ceil(yMax + yPad);
+
+  // Grid lines
+  ctx.save();
+  var yTicks = 5;
+  for(var yi = 0; yi <= yTicks; yi++){
+    var yv = yMin + (yMax - yMin) * yi / yTicks;
+    var yp = PAD.t + cH - (yv - yMin) / (yMax - yMin) * cH;
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, yp); ctx.lineTo(PAD.l + cW, yp); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((yv >= 0 ? '+' : '') + yv.toFixed(1) + '%', PAD.l - 4, yp + 3);
+  }
+  // Zero line
+  if(yMin < 0 && yMax > 0){
+    var y0 = PAD.t + cH - (0 - yMin) / (yMax - yMin) * cH;
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y0); ctx.lineTo(PAD.l + cW, y0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+
+  // Rule colours (H bets warm, A bets cool)
+  var COLORS = ['#60a5fa','#38bdf8','#818cf8','#f87171','#fb923c','#fbbf24'];
+
+  // Draw each rule curve
+  rules.forEach(function(rule, ri){
+    var pts = rule.roiCurve;
+    if(!pts || pts.length < 2) return;
+    var col = COLORS[ri % COLORS.length];
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    pts.forEach(function(v, i){
+      var x = PAD.l + (pts.length > 1 ? i / (pts.length - 1) : 0) * cW;
+      var y = PAD.t + cH - (v - yMin) / (yMax - yMin) * cH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // End dot
+    var lastX = PAD.l + cW;
+    var lastY = PAD.t + cH - (pts[pts.length-1] - yMin) / (yMax - yMin) * cH;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(lastX - 2, lastY, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+
+  // Legend (two rows, below chart)
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  var legX = PAD.l, legY = H - 18;
+  rules.forEach(function(rule, ri){
+    var col = COLORS[ri % COLORS.length];
+    var pts = rule.roiCurve || [];
+    var lastRoi = pts.length ? pts[pts.length - 1] : 0;
+    var roiStr = (lastRoi >= 0 ? '+' : '') + lastRoi.toFixed(1) + '%';
+    var label = 'R' + (ri + 1) + ' ' + roiStr;
+    var tw = ctx.measureText(label).width + 20;
+    if(legX + tw > W - PAD.r){ legX = PAD.l; legY += 13; }
+    ctx.fillStyle = col;
+    ctx.fillRect(legX, legY - 6, 12, 3);
+    ctx.fillStyle = lastRoi >= 0 ? '#94a3b8' : '#f87171';
+    ctx.fillText(label, legX + 15, legY);
+    legX += tw + 4;
+  });
+
+  // X-axis label
+  ctx.fillStyle = '#475569'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('Bet number (last 100)', PAD.l + cW / 2, H - 1);
+}
+
 function renderMLIndexWidget(mlPredictions, containerId){
   var el = document.getElementById(containerId);
   if(!el || !mlPredictions || !mlPredictions.length) return;
@@ -1071,12 +1172,20 @@ function computeRuleSignals(samples){
     var ci = 1.96 * Math.sqrt(variance/n) * 100;
     var wins  = grp.filter(function(s){ return rule.side==='h' ? s.hp > 0 : s.ap > 0; }).length;
     var halves= grp.filter(function(s){ return rule.side==='h' ? (s.hp>0&&s.hp<0.4) : (s.ap>0&&s.ap<0.4); }).length;
+    // Build running ROI curve (chronological, last 100 bets)
+    var last100 = grp.slice(-100);
+    var cumPnl = 0;
+    var roiCurve = last100.map(function(s, i){
+      cumPnl += rule.side === 'h' ? s.hp : s.ap;
+      return Math.round(cumPnl / (i+1) * 10000) / 100;
+    });
     return {
       label: rule.label, desc: rule.desc, expert: rule.expert, side: rule.side,
       n: n, roi: Math.round(roi*10)/10, ci: Math.round(ci*10)/10,
       wins: wins, halves: halves,
       train_ref: rule.train_ref, test_ref: rule.test_ref,
-      reliable: n >= 200 ? 'reliable' : n >= 100 ? 'rough' : 'low'
+      reliable: n >= 200 ? 'reliable' : n >= 100 ? 'rough' : 'low',
+      roiCurve: roiCurve
     };
   }).filter(Boolean);
 }
@@ -1123,5 +1232,11 @@ function renderMLRuleSignals(rules){
   });
   h += '</tbody></table></div>';
   h += '<div style="font-size:9px;color:#475569;margin-top:6px;margin-bottom:14px">Train/Test ROI are reference values from initial discovery. Live computed ROI (all data) may differ slightly as dataset grows.</div>';
+
+  // ── Running ROI chart for all 6 rules (last 100 bets each) ──
+  h += '<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px;margin-top:16px">📈 Running ROI — Last 100 Bets per Rule</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:8px">Cumulative ROI across the most recent 100 matched bets for each rule. A rising or flat line = edge holding. Falling = deteriorating. All rules use the same chronological order as the dataset.</div>';
+  h += '<div class="chart-box"><canvas id="mlRuleRoiChart" style="width:100%;display:block"></canvas></div>';
+  h += '<div style="font-size:9px;color:#475569;margin-top:4px;margin-bottom:14px">Each line = one rule. Last 100 bets shown (or fewer if rule has fired &lt;100 times). Y-axis = cumulative ROI %, X-axis = bet number (1–100).</div>';
   return h;
 }
