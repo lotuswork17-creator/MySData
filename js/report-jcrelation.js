@@ -290,12 +290,38 @@ function computeJCRelation(results, allRecords){
     }
   });
 
+  // ── Past bets: last 50 results where at least one verified rule fired ──
+  var pastBets = [];
+  data.slice().reverse().forEach(function(r){
+    if(pastBets.length >= 50) return;
+    var fired = [];
+    verifiedRules.forEach(function(rule){
+      var tv = TIP_MAP_DIR[String(r[rule.exp]||'')];
+      if(tv == null || tv !== rule.tip_dir) return;
+      var lv = parseFloat(r.ASIALINE)||0;
+      if(Math.abs(lv - rule.line) > 0.01) return;
+      if(rule.lean_min){
+        var lk = jcrLean(r);
+        if(lk == null || lk < rule.lean_min) return;
+      }
+      fired.push(rule);
+    });
+    if(!fired.length) return;
+    var pnl = jcrPnl(r);
+    if(!pnl) return;
+    var adj = parseFloat(r.RESULTH)||0 - (parseFloat(r.RESULTA)||0) + (parseFloat(r.ASIALINE)||0);
+    adj = Math.round(adj * 4) / 4;
+    var outcome = adj > 0.25 ? 'HW' : adj === 0.25 ? 'HH' : adj === 0 ? 'P' : adj === -0.25 ? 'AH' : 'AW';
+    pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
+  });
+
   return {
     matrix: matrix,
     matrixWithLean: matrixWithLean,
     bothJC: bothJC,
     verifiedRules: verifiedRules,
     upcomingAlerts: upcomingAlerts,
+    pastBets: pastBets,
     nRecords: n,
     splitIdx: splitIdx,
   };
@@ -428,6 +454,94 @@ function renderJCRelation(RD){
       h += '</div>';
     });
     h += '</div>';
+  }
+  h += '</div>';
+
+  // ── SECTION 1b: Past Bets Table ──
+  h += '<div style="margin-bottom:20px;border-top:2px solid var(--border);padding-top:14px">';
+  h += '<div class="rpt-title" style="margin-bottom:4px">📋 Past Bets — Last '+jcr.pastBets.length+' shown</div>';
+  h += '<div class="rpt-sub" style="margin-bottom:10px">Most recent completed matches where at least one verified rule fired. Outcome and hit reflect the rule\'s recommended bet side.</div>';
+
+  if(!jcr.pastBets.length){
+    h += '<div style="padding:14px;color:#475569;font-size:12px;font-style:italic">No past bets found.</div>';
+  } else {
+    // Running unit accumulator
+    var pbCumUnits = 0;
+    var pbRunUnits = jcr.pastBets.slice().reverse().map(function(pb){
+      var bet = pb.rules[0].bet;
+      pbCumUnits = Math.round((pbCumUnits + (bet==='H' ? pb.pnl.h : pb.pnl.a)) * 100) / 100;
+      return pbCumUnits;
+    });
+    pbRunUnits.reverse();
+
+    var pbTotal = pbRunUnits[0] || 0;
+    var pbROI   = Math.round(pbTotal / jcr.pastBets.length * 1000) / 10;
+    var pbColor = pbROI >= 0 ? '#4ade80' : '#f87171';
+
+    h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
+    h += '<thead><tr>';
+    h += '<th>Date</th><th>Match</th>';
+    h += '<th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Score</th>';
+    h += '<th class="num">Bet</th><th>Rule</th><th>Outcome</th><th class="num">Hit</th><th class="num">Run.Units</th>';
+    h += '</tr></thead><tbody>';
+
+    jcr.pastBets.forEach(function(pb, i){
+      var r       = pb.r;
+      var topRule = pb.rules[0];
+      var bet     = topRule.bet;
+      var betCol  = bet==='H' ? '#f87171' : '#60a5fa';
+
+      // Outcome label and whether bet side won
+      var outLabel, predWon;
+      if     (pb.outcome==='HW'){ outLabel='H WIN';  predWon=(bet==='H'); }
+      else if(pb.outcome==='HH'){ outLabel='H ½WIN'; predWon=(bet==='H'); }
+      else if(pb.outcome==='P') { outLabel='PUSH';   predWon=null; }
+      else if(pb.outcome==='AH'){ outLabel='A ½WIN'; predWon=(bet==='A'); }
+      else                      { outLabel='A WIN';  predWon=(bet==='A'); }
+      var outBg  = predWon===null ? 'rgba(148,163,184,0.15)' : predWon ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
+      var outCol = predWon===null ? '#94a3b8' : predWon ? '#4ade80' : '#f87171';
+
+      // Hit ticks
+      var predFullWin  = (bet==='H' && pb.outcome==='HW') || (bet==='A' && pb.outcome==='AW');
+      var predHalfWin  = (bet==='H' && pb.outcome==='HH') || (bet==='A' && pb.outcome==='AH');
+      var predHalfLoss = (bet==='H' && pb.outcome==='AH') || (bet==='A' && pb.outcome==='HH');
+      var hitHtml;
+      if     (predFullWin)      hitHtml = '<span style="font-size:13px">✅✅</span>';
+      else if(predHalfWin)      hitHtml = '<span style="font-size:13px">✅</span>';
+      else if(pb.outcome==='P') hitHtml = '<span style="font-size:13px">⬜</span>';
+      else if(predHalfLoss)     hitHtml = '<span style="font-size:13px">❌</span>';
+      else                      hitHtml = '<span style="font-size:13px">❌❌</span>';
+
+      var units    = pbRunUnits[i];
+      var unitCol  = units >= 0 ? '#4ade80' : '#f87171';
+      var score    = (r.RESULTH!=null && r.RESULTA!=null) ? r.RESULTH+'–'+r.RESULTA : '—';
+      var ruleExtra = pb.rules.length > 1
+        ? ' <span style="color:#fbbf24;font-size:9px">+' + (pb.rules.length-1) + '</span>' : '';
+
+      h += '<tr>';
+      h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
+      h += '<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA!=null?r.ASIAA:'—')+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>';
+      h += '<td class="num"><b style="color:'+betCol+'">'+bet+'</b></td>';
+      h += '<td style="font-size:9px;color:#94a3b8;max-width:140px">'+topRule.label+ruleExtra+'</td>';
+      h += '<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
+      h += '<td class="num">'+hitHtml+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);font-size:10px;color:'+unitCol+'">'+(units>=0?'+':'')+units.toFixed(2)+'</td>';
+      h += '</tr>';
+    });
+
+    // Footer
+    h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
+    h += '<td colspan="7" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+jcr.pastBets.length+' bets shown</td>';
+    h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>';
+    h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+pbColor+'">'+(pbROI>=0?'+':'')+pbROI+'%</td>';
+    h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Total</td>';
+    h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+pbColor+'">'+(pbTotal>=0?'+':'')+pbTotal.toFixed(2)+' units</td>';
+    h += '</tr>';
+    h += '</tbody></table></div>';
   }
   h += '</div>';
 
