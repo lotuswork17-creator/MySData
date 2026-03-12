@@ -833,6 +833,15 @@ function renderMLPastResultsHTML(testSamples){
   var rows = testSamples.slice(-50).reverse();
   var chronoRows = rows.slice().reverse();
 
+  // Running unit accumulator in chronological order, then reversed
+  var cumUnits = 0;
+  var runUnits = chronoRows.map(function(s){
+    var pred = s.pH >= 0.5 ? 'H' : 'A';
+    cumUnits = Math.round((cumUnits + (pred==='H' ? s.hp : s.ap)) * 100) / 100;
+    return cumUnits;
+  });
+  runUnits.reverse();
+
   var h = '';
   h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
   h += '<div class="rpt-title">📋 Past Predictions — Last '+rows.length+' shown (stats = all '+testSamples.length+' test matches)</div>';
@@ -902,91 +911,68 @@ function renderMLPastResultsHTML(testSamples){
   }
   h += '</div>';
 
-  // ── Outcome badge: label based on outcome + predicted side ──
-  // HW/HH = H-side result; AH/AW = A-side result
-  // Badge shows what happened from H-side perspective, coloured by whether pred side won
-  function outcomeBadge(outcome, pred){
-    // What actually happened (H-side view)
-    var label, hWon;
-    if(outcome==='HW'){ label='H WIN';  hWon=true; }
-    else if(outcome==='HH'){ label='H ½WIN'; hWon=true; }
-    else if(outcome==='P'){ label='PUSH'; hWon=null; }
-    else if(outcome==='AH'){ label='A ½WIN'; hWon=false; }
-    else { label='A WIN'; hWon=false; }
-    // Colour: green=pred side won, grey=push, red=pred side lost
-    var predWon = hWon===null ? null : (pred==='H' ? hWon : !hWon);
-    var color = predWon===null ? '#94a3b8' : predWon ? '#4ade80' : '#f87171';
-    var bg    = predWon===null ? 'rgba(148,163,184,0.15)' : predWon ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
-    return '<span style="background:'+bg+';color:'+color+';font-size:9px;font-weight:700;'
-      +'padding:2px 5px;border-radius:4px;font-family:var(--mono);letter-spacing:.03em">'+label+'</span>';
-  }
-
-  // ── Hit ticks: based on outcome + predicted side, not raw P&L ──
-  function hitTicks(outcome, pred){
-    // Full win for pred side
-    if((pred==='H' && outcome==='HW') || (pred==='A' && outcome==='AW'))
-      return '<span style="font-size:13px">✅✅</span>';
-    // Half win for pred side
-    if((pred==='H' && outcome==='HH') || (pred==='A' && outcome==='AH'))
-      return '<span style="font-size:13px">✅</span>';
-    // Push
-    if(outcome==='P')
-      return '<span style="font-size:13px">⬜</span>';
-    // Half loss for pred side
-    if((pred==='H' && outcome==='AH') || (pred==='A' && outcome==='HH'))
-      return '<span style="font-size:13px">❌</span>';
-    // Full loss
-    return '<span style="font-size:13px">❌❌</span>';
-  }
-
-  // ── Running unit accumulator (chronological → reverse for display) ──
-  var cumUnits = 0;
-  var runUnits = chronoRows.map(function(s){
-    var pred = s.pH >= 0.5 ? 'H' : 'A';
-    cumUnits = Math.round((cumUnits + (pred==='H' ? s.hp : s.ap)) * 100) / 100;
-    return cumUnits;
-  });
-  runUnits.reverse();
-
   var totalUnits = runUnits[0] || 0;
   var totalROI   = Math.round(totalUnits / rows.length * 1000) / 10;
   var roiColor   = totalROI >= 0 ? '#4ade80' : '#f87171';
 
   h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
-  h += '<thead><tr><th>Date</th><th>Match</th><th class="num">Line</th>';
-  h += '<th class="num">AsiaH</th><th class="num">AsiaA</th>';
-  h += '<th class="num">Score</th>';
-  h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th>';
-  h += '<th class="num">Conf</th><th>Outcome</th><th class="num">Hit</th><th class="num">Run.Units</th>';
+  h += '<thead><tr>';
+  h += '<th>Date</th><th>Match</th>';
+  h += '<th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Score</th>';
+  h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th><th class="num">Conf</th>';
+  h += '<th>Outcome</th><th class="num">Hit</th><th class="num">Run.Units</th>';
   h += '</tr></thead><tbody>';
   rows.forEach(function(s,i){
-    var r=s.r;
-    var pred=s.pH>=0.5?'H':'A';
-    var conf=Math.round(Math.max(s.pH,s.pA)*100);
-    var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
-    var units=runUnits[i];
-    var unitColor=units>=0?'#4ade80':'#f87171';
-    var score=(r.RESULTH!=null&&r.RESULTA!=null)
-      ? '<span style="color:#e2e8f0">'+r.RESULTH+'–'+r.RESULTA+'</span>'
-      : '<span style="color:#475569">—</span>';
+    var r   = s.r;
+    var pred = s.pH >= 0.5 ? 'H' : 'A';
+    var conf = Math.round(Math.max(s.pH, s.pA) * 100);
+    var confColor = conf>=65 ? '#4ade80' : conf>=60 ? '#facc15' : '#94a3b8';
+
+    // Outcome label and colour — always from H perspective
+    var outLabel, predWon;
+    if     (s.outcome==='HW'){ outLabel='H WIN';   predWon=(pred==='H'); }
+    else if(s.outcome==='HH'){ outLabel='H ½WIN';  predWon=(pred==='H'); }
+    else if(s.outcome==='P') { outLabel='PUSH';    predWon=null; }
+    else if(s.outcome==='AH'){ outLabel='A ½WIN';  predWon=(pred==='A'); }
+    else                     { outLabel='A WIN';   predWon=(pred==='A'); }
+    var outBg  = predWon===null ? 'rgba(148,163,184,0.15)' : predWon ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
+    var outCol = predWon===null ? '#94a3b8' : predWon ? '#4ade80' : '#f87171';
+
+    // Hit ticks — full/half based on outcome vs predicted side
+    var hitHtml;
+    var predFullWin  = (pred==='H' && s.outcome==='HW') || (pred==='A' && s.outcome==='AW');
+    var predHalfWin  = (pred==='H' && s.outcome==='HH') || (pred==='A' && s.outcome==='AH');
+    var predHalfLoss = (pred==='H' && s.outcome==='AH') || (pred==='A' && s.outcome==='HH');
+    var predFullLoss = (pred==='H' && s.outcome==='AW') || (pred==='A' && s.outcome==='HW');
+    if     (predFullWin)       hitHtml = '<span style="font-size:13px">✅✅</span>';
+    else if(predHalfWin)       hitHtml = '<span style="font-size:13px">✅</span>';
+    else if(s.outcome==='P')   hitHtml = '<span style="font-size:13px">⬜</span>';
+    else if(predHalfLoss)      hitHtml = '<span style="font-size:13px">❌</span>';
+    else                       hitHtml = '<span style="font-size:13px">❌❌</span>';
+
+    var units = runUnits[i];
+    var unitColor = units >= 0 ? '#4ade80' : '#f87171';
+    var score = (r.RESULTH!=null && r.RESULTA!=null)
+      ? r.RESULTH + '–' + r.RESULTA : '—';
+
     h += '<tr>';
     h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
-    h += '<td style="max-width:120px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+    h += '<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH||'—')+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA||'—')+'</td>';
-    h += '<td class="num" style="font-family:var(--mono)">'+score+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA!=null?r.ASIAA:'—')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>';
     h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
     h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
     h += '<td class="num"><b style="color:'+(pred==='H'?'#f87171':'#60a5fa')+'">'+pred+'</b></td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+confColor+'">'+conf+'%</td>';
-    h += '<td>'+outcomeBadge(s.outcome,pred)+'</td>';
-    h += '<td class="num">'+hitTicks(s.outcome,pred)+'</td>';
+    h += '<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
+    h += '<td class="num">'+hitHtml+'</td>';
     h += '<td class="num" style="font-family:var(--mono);font-size:10px;color:'+unitColor+'">'+(units>=0?'+':'')+units.toFixed(2)+'</td>';
     h += '</tr>';
   });
   h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
-  h += '<td colspan="10" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets · ROI</td>';
+  h += '<td colspan="11" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets · ROI</td>';
   h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalROI>=0?'+':'')+totalROI+'%</td>';
   h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalUnits>=0?'+':'')+totalUnits.toFixed(2)+'u</td>';
   h += '</tr>';
