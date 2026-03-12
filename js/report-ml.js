@@ -902,36 +902,48 @@ function renderMLPastResultsHTML(testSamples){
   }
   h += '</div>';
 
-  // ── Outcome badge ──
-  function outcomeBadge(outcome){
-    var map = {
-      'HW':{ label:'H WIN',  bg:'rgba(74,222,128,0.18)', color:'#4ade80' },
-      'HH':{ label:'H ½WIN', bg:'rgba(74,222,128,0.10)', color:'#86efac' },
-      'P': { label:'PUSH',   bg:'rgba(148,163,184,0.15)',color:'#94a3b8' },
-      'AH':{ label:'A ½WIN', bg:'rgba(96,165,250,0.10)', color:'#93c5fd' },
-      'AW':{ label:'A WIN',  bg:'rgba(96,165,250,0.18)', color:'#60a5fa' },
-    };
-    var o = map[outcome] || { label:outcome, bg:'rgba(148,163,184,0.1)', color:'#94a3b8' };
-    return '<span style="background:'+o.bg+';color:'+o.color+';font-size:9px;font-weight:700;'
-      +'padding:2px 5px;border-radius:4px;font-family:var(--mono);letter-spacing:.03em">'+o.label+'</span>';
+  // ── Outcome badge: label based on outcome + predicted side ──
+  // HW/HH = H-side result; AH/AW = A-side result
+  // Badge shows what happened from H-side perspective, coloured by whether pred side won
+  function outcomeBadge(outcome, pred){
+    // What actually happened (H-side view)
+    var label, hWon;
+    if(outcome==='HW'){ label='H WIN';  hWon=true; }
+    else if(outcome==='HH'){ label='H ½WIN'; hWon=true; }
+    else if(outcome==='P'){ label='PUSH'; hWon=null; }
+    else if(outcome==='AH'){ label='A ½WIN'; hWon=false; }
+    else { label='A WIN'; hWon=false; }
+    // Colour: green=pred side won, grey=push, red=pred side lost
+    var predWon = hWon===null ? null : (pred==='H' ? hWon : !hWon);
+    var color = predWon===null ? '#94a3b8' : predWon ? '#4ade80' : '#f87171';
+    var bg    = predWon===null ? 'rgba(148,163,184,0.15)' : predWon ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
+    return '<span style="background:'+bg+';color:'+color+';font-size:9px;font-weight:700;'
+      +'padding:2px 5px;border-radius:4px;font-family:var(--mono);letter-spacing:.03em">'+label+'</span>';
   }
 
-  // ── Hit ticks — based on actual P&L of predicted side ──
-  function hitTicks(s){
-    var pred = s.pH >= 0.5 ? 'H' : 'A';
-    var pnl  = Math.round((pred === 'H' ? s.hp : s.ap) * 100) / 100;
-    if(pnl >=  0.9) return '<span style="font-size:13px">✅✅</span>';
-    if(pnl >=  0.4) return '<span style="font-size:13px">✅</span>';
-    if(pnl ===  0)  return '<span style="font-size:13px">⬜</span>';
-    if(pnl >= -0.6) return '<span style="font-size:13px">❌</span>';
-    return                  '<span style="font-size:13px">❌❌</span>';
+  // ── Hit ticks: based on outcome + predicted side, not raw P&L ──
+  function hitTicks(outcome, pred){
+    // Full win for pred side
+    if((pred==='H' && outcome==='HW') || (pred==='A' && outcome==='AW'))
+      return '<span style="font-size:13px">✅✅</span>';
+    // Half win for pred side
+    if((pred==='H' && outcome==='HH') || (pred==='A' && outcome==='AH'))
+      return '<span style="font-size:13px">✅</span>';
+    // Push
+    if(outcome==='P')
+      return '<span style="font-size:13px">⬜</span>';
+    // Half loss for pred side
+    if((pred==='H' && outcome==='AH') || (pred==='A' && outcome==='HH'))
+      return '<span style="font-size:13px">❌</span>';
+    // Full loss
+    return '<span style="font-size:13px">❌❌</span>';
   }
 
   // ── Running unit accumulator (chronological → reverse for display) ──
   var cumUnits = 0;
   var runUnits = chronoRows.map(function(s){
     var pred = s.pH >= 0.5 ? 'H' : 'A';
-    cumUnits = Math.round((cumUnits + (pred === 'H' ? s.hp : s.ap)) * 100) / 100;
+    cumUnits = Math.round((cumUnits + (pred==='H' ? s.hp : s.ap)) * 100) / 100;
     return cumUnits;
   });
   runUnits.reverse();
@@ -942,30 +954,39 @@ function renderMLPastResultsHTML(testSamples){
 
   h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
   h += '<thead><tr><th>Date</th><th>Match</th><th class="num">Line</th>';
+  h += '<th class="num">AsiaH</th><th class="num">AsiaA</th>';
+  h += '<th class="num">Score</th>';
   h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th>';
   h += '<th class="num">Conf</th><th>Outcome</th><th class="num">Hit</th><th class="num">Run.Units</th>';
   h += '</tr></thead><tbody>';
   rows.forEach(function(s,i){
-    var r=s.r; var pred=s.pH>=0.5?'H':'A'; var conf=Math.round(Math.max(s.pH,s.pA)*100);
+    var r=s.r;
+    var pred=s.pH>=0.5?'H':'A';
+    var conf=Math.round(Math.max(s.pH,s.pA)*100);
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var units=runUnits[i];
     var unitColor=units>=0?'#4ade80':'#f87171';
+    var score=(r.RESULTH!=null&&r.RESULTA!=null)
+      ? '<span style="color:#e2e8f0">'+r.RESULTH+'–'+r.RESULTA+'</span>'
+      : '<span style="color:#475569">—</span>';
     h += '<tr>';
     h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
-    h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+    h += '<td style="max-width:120px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH||'—')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA||'—')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono)">'+score+'</td>';
     h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
     h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
     h += '<td class="num"><b style="color:'+(pred==='H'?'#f87171':'#60a5fa')+'">'+pred+'</b></td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+confColor+'">'+conf+'%</td>';
-    h += '<td>'+outcomeBadge(s.outcome)+'</td>';
-    h += '<td class="num">'+hitTicks(s)+'</td>';
+    h += '<td>'+outcomeBadge(s.outcome,pred)+'</td>';
+    h += '<td class="num">'+hitTicks(s.outcome,pred)+'</td>';
     h += '<td class="num" style="font-family:var(--mono);font-size:10px;color:'+unitColor+'">'+(units>=0?'+':'')+units.toFixed(2)+'</td>';
     h += '</tr>';
   });
-  // Footer
   h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
-  h += '<td colspan="8" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets · ROI</td>';
+  h += '<td colspan="10" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets · ROI</td>';
   h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalROI>=0?'+':'')+totalROI+'%</td>';
   h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalUnits>=0?'+':'')+totalUnits.toFixed(2)+'u</td>';
   h += '</tr>';
