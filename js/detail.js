@@ -66,9 +66,9 @@ function openDetail(idx){
     +'<div class="dc full"><h3>📈 Asian Handicap</h3>'
     +(function(){
       function ahVal(v){return v!=null?String(v):'—';}
-      // Line diff: absolute movement, skip if open==0
-      function ahDiff(latest,open){
-        if(latest==null||open==null||latest===open)return'';
+      // Line diff: absolute movement, skip if no opening data (openH===0)
+      function ahDiff(latest,open,noData){
+        if(noData||latest==null||open==null||latest===open)return'';
         var d=Math.round((latest-open)*100)/100;
         if(d===0)return'';
         var abs=Math.abs(d);
@@ -101,7 +101,7 @@ function openDetail(idx){
           +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">'
           +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">LINE</div>'
           +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openLine)+'</div>'
-          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latLine)+ahDiff(latLine,openLine)+'</div></div>'
+          +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latLine)+ahDiff(latLine,openLine,openH===0)+'</div></div>'
           +'<div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">ASIA H</div>'
           +'<div style="font-size:11px;font-family:var(--mono);color:var(--muted)">'+ahVal(openH)+'</div>'
           +'<div style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)">'+ahVal(latH)+ahOddsDiff(latH,openH)+'</div></div>'
