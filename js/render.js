@@ -200,12 +200,18 @@ function renderTable(){
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
-        +'<td class="oc">'+(r.GEMH!=null?r.GEMH:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GEMD!=null?r.GEMD:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GEMA!=null?r.GEMA:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTH!=null?r.GPTH:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTD!=null?r.GPTD:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTA!=null?r.GPTA:'\u2014')+'</td>'
+        +'<td class="oc" style="line-height:1.3;text-align:center">'
+        +(r.GEMH!=null?'<div style="font-size:11px">'+r.GEMH+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
+        +(r.GPTH!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTH+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
+        +'</td>'
+        +'<td class="oc" style="line-height:1.3;text-align:center">'
+        +(r.GEMD!=null?'<div style="font-size:11px">'+r.GEMD+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
+        +(r.GPTD!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTD+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
+        +'</td>'
+        +'<td class="oc" style="line-height:1.3;text-align:center">'
+        +(r.GEMA!=null?'<div style="font-size:11px">'+r.GEMA+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
+        +(r.GPTA!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTA+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
+        +'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
