@@ -972,9 +972,11 @@ function renderMLPastResultsHTML(testSamples){
     h += '</tr>';
   });
   h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
-  h += '<td colspan="11" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets · ROI</td>';
+  h += '<td colspan="9" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets shown</td>';
+  h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>';
   h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalROI>=0?'+':'')+totalROI+'%</td>';
-  h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalUnits>=0?'+':'')+totalUnits.toFixed(2)+'u</td>';
+  h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Total</td>';
+  h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalUnits>=0?'+':'')+totalUnits.toFixed(2)+' units</td>';
   h += '</tr>';
   h += '</tbody></table></div></div>';
   return h;
