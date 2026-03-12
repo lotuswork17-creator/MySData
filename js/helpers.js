@@ -57,10 +57,10 @@ function expertLead(r){
   return'A';
 }
 
-function asiaLineArrows(val,ln){
+function asiaLineArrows(val,ln,noData){
   if(val==null)return'—';
   var s=String(val);
-  if(ln==null||ln===val)return s;
+  if(noData||ln==null||ln===val)return s;
   var diff=Math.round((val-ln)*100)/100;
   if(diff===0)return s;
   var abs=Math.abs(diff);

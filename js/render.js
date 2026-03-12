@@ -46,19 +46,19 @@ function renderTable(){
         +'<span>LINE</span><span>H</span><span>A</span></div>'
         +(r.ASIALINE!=null||r.ASIAH!=null||r.ASIAA!=null?
           '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
-          +'<span style="color:var(--muted)"><span style="font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+'</span>'
+          +'<span style="color:var(--muted)"><span style="font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN,r.ASIAHLN===0)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</span>'
           +'</div>':'') 
         +(r.ASIALINEMA!=null||r.ASIAHMAC!=null||r.ASIAAMAC!=null?
           '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
-          +'<span style="color:#a78bfa"><span style="font-size:9px">M </span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2)+'</span>'
+          +'<span style="color:#a78bfa"><span style="font-size:9px">M </span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2,r.ASIAHMACLN===0)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN)+'</span>'
           +'</div>':'') 
         +(r.ASIALINESB!=null||r.ASIAHSBO!=null||r.ASIAASBO!=null?
           '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center">'
-          +'<span style="color:#fb923c"><span style="font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2)+'</span>'
+          +'<span style="color:#fb923c"><span style="font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2,r.ASIAHSBOLN===0)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN)+'</span>'
           +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN)+'</span>'
           +'</div>':'') 
@@ -182,9 +182,9 @@ function renderTable(){
           return html||'<span style="color:var(--muted)">—</span>';
         })()
         +'<td class="oc" style="line-height:1.7">'
-        +(r.ASIALINE!=null?'<div><span style="color:var(--muted);font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN)+'</div>':'')
-        +(r.ASIALINEMA!=null?'<div><span style="color:#a78bfa;font-size:9px">M </span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2)+'</div>':'')
-        +(r.ASIALINESB!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2)+'</div>':'')
+        +(r.ASIALINE!=null?'<div><span style="color:var(--muted);font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN,r.ASIAHLN===0)+'</div>':'')
+        +(r.ASIALINEMA!=null?'<div><span style="color:#a78bfa;font-size:9px">M </span>'+asiaLineArrows(r.ASIALINEMA,r.ASIALINEM2,r.ASIAHMACLN===0)+'</div>':'')
+        +(r.ASIALINESB!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2,r.ASIAHSBOLN===0)+'</div>':'')
         +'</td>'
         +'<td class="oc" style="line-height:1.7">'
         +(r.ASIAH!=null?'<div>'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</div>':'')
