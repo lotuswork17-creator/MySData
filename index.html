@@ -15,20 +15,18 @@
       <h1>TipsCompare <span>Viewer</span></h1>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <a href="report.html" style="padding:4px 12px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:11px;font-weight:600;text-decoration:none;font-family:var(--sans)">📊 Report →</a>
-        <span class="updated" id="updatedAt"></span>
-      </div>
+      <span class="updated" id="updatedAt"></span>
       <div class="hstats">
         <div class="hstat" style="border-color:rgba(74,222,128,.3)">Results <b id="hResult" style="color:var(--accent)">—</b></div>
         <div class="hstat" style="border-color:rgba(96,165,250,.3)">Upcoming <b id="hPreeve" style="color:var(--accent2)">—</b></div>
-        <div class="hstat" style="border-color:rgba(148,163,184,.2)">Filtered <b id="showCount" style="color:var(--accent2)">—</b> / <b id="totalCount" style="color:var(--muted)">—</b></div>
       </div>
     </div>
   </div>
-
-  <!-- Secondary filters: collapsed by default -->
-  <div class="filters collapsed" id="filtersPanel">
+  <div class="filter-header">
+    <button class="filter-toggle active" id="filterToggle" onclick="toggleFilters()"><span id="filterToggleLabel">Hide Filters</span> <span class="ft-arrow">▼</span></button>
+    <span id="resultsInline" style="display:none;font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:4px">Showing <b id="showCount" style="color:var(--accent)">0</b> of <b id="totalCount" style="color:var(--accent)">0</b></span>
+  </div>
+  <div class="filters" id="filtersPanel">
     <div class="fg" style="min-width:100px;max-width:130px">
       <div class="fl">Date Range</div>
       <select id="dateRangeSelect">
@@ -53,10 +51,6 @@
         <option value="Suspen">Suspended</option>
       </select>
     </div>
-  </div>
-
-  <!-- Main filters: always visible -->
-  <div class="filters" id="filtersMain">
     <div class="fg" style="min-width:90px;max-width:120px">
       <div class="fl">Asia Line</div>
       <select id="asialineSelect"><option value="">All Lines</option></select>
@@ -78,7 +72,7 @@
         <option value="A-vstrong">A Dominant (A ≥ 70%)</option>
       </select>
     </div>
-    <div class="fg fg-expert" style="min-width:110px;max-width:150px">
+    <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Expert Signal</div>
       <select id="expertSelect">
         <option value="">Any</option>
@@ -91,11 +85,6 @@
         <option value="A-strong-e">A Backed (Expert A ≥ 50%)</option>
         <option value="A-vstrong-e">A Dominant (Expert A ≥ 67%)</option>
         <option value="A-ultra-e">A Overwhelming (Expert A ≥ 83%)</option>
-        <option disabled>── Band Signal ──</option>
-        <option value="H-max-weak">H Max ≤54% (H leads, weak signal)</option>
-        <option value="H-max-mod">H Max 55–59% (H leads, moderate)</option>
-        <option value="A-max-weak">A Max ≤54% (A leads, weak signal)</option>
-        <option value="A-max-mod">A Max 55–59% (A leads, moderate)</option>
         <option disabled>── vs Predict ──</option>
         <option value="agree">Agrees with Predict</option>
         <option value="disagree">Disagrees with Predict</option>
@@ -122,15 +111,6 @@
         <option value="low-conf-A70">Low Conf ⚠ + A ≥ 67%</option>
         <option value="low-conf-A90">Low Conf ⚠ + A ≥ 83%</option>
       </select>
-    </div>
-    <div class="fg fg-jcpick" style="min-width:220px;max-width:420px">
-      <div class="fl" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleJCPickPanel()">
-        <span>JC Expert Picks</span>
-        <span id="jcPickArrow" style="font-size:10px;color:#64748b;margin-left:6px;display:inline-block;transform:rotate(-90deg);transition:transform .2s">&#x25BC;</span>
-      </div>
-      <div id="jcPickFilter" style="display:none;flex-direction:column;gap:5px">
-        <!-- rows injected by initJCPickFilter() -->
-      </div>
     </div>
     <div class="fg" style="min-width:110px;max-width:150px">
       <div class="fl">Market Lean</div>
@@ -173,12 +153,12 @@
       <div class="fl">H Odds Move</div>
       <select id="hMoveSelect">
         <option value="">Any</option>
-        <option value="short">▼ Any Shorten</option>
-        <option value="short2">▼▼ Shortened ≥5%</option>
-        <option value="short3">▼▼▼ Shortened ≥10%</option>
-        <option value="drift">▲ Any Lengthen</option>
-        <option value="drift2">▲▲ Lengthened ≥5%</option>
-        <option value="drift3">▲▲▲ Lengthened ≥10%</option>
+        <option value="short">▲ Any Shorten</option>
+        <option value="short2">▲▲ Shortened ≥5%</option>
+        <option value="short3">▲▲▲ Shortened ≥10%</option>
+        <option value="drift">▼ Any Lengthen</option>
+        <option value="drift2">▼▼ Lengthened ≥5%</option>
+        <option value="drift3">▼▼▼ Lengthened ≥10%</option>
         <option value="flat">— Unchanged</option>
       </select>
     </div>
@@ -212,19 +192,7 @@
         <option value="sm7">Expert H≥83% + Line Unchanged (A bet)</option>
       </select>
     </div>
-  </div>
-
-  <!-- Persistent control bar — always visible -->
-  <div class="filter-actions">
-    <button class="filter-toggle-secondary" id="mainFilterToggle" onclick="toggleMainFilters()">
-      <span class="ft-arrow" id="mainFilterArrow" style="transition:transform .2s;display:inline-block">▼</span>
-      <span id="mainFilterLabel">Hide</span>
-    </button>
-    <button class="filter-toggle-secondary" id="filterToggle" onclick="toggleFilters()">
-      <span class="ft-arrow" id="secFilterArrow" style="transform:rotate(-90deg);transition:transform .2s;display:inline-block">▼</span>
-      <span id="filterToggleLabel">More</span>
-    </button>
-    <button class="btn-clear" onclick="clearFilters()">&#x2715;</button>
+    <button class="btn-clear" onclick="clearFilters()">✕</button>
   </div>
 </header>
 
@@ -264,14 +232,10 @@
       <div class="bc-row"><span>ROI</span><span id="bc-a-roi">—</span></div>
     </div>
     <div class="bc-card" style="flex:2;min-width:200px">
-      <div class="bc-card-label">Running ROI %</div>
+      <div class="bc-card-label">Running P&L</div>
       <div class="bc-chart-wrap"><canvas id="betChart"></canvas></div>
     </div>
   </div>
-</div>
-
-<!-- ML Predictions widget -->
-
 </div>
 
 <div id="loadingState"><div class="spinner"></div><span>Loading match data…</span></div>
@@ -297,12 +261,9 @@
       <th onclick="sortBy('JCTIPSID')" id="th-JCTIPSID">JC SID <span class="si">⇅</span></th>
       <th onclick="sortBy('TIPSIDMAC')" id="th-TIPSIDMAC">SID Mac <span class="si">⇅</span></th>
       <th onclick="sortBy('TIPSONID')" id="th-TIPSONID">ON ID <span class="si">⇅</span></th>
-      <th onclick="sortBy('GEMH')" id="th-GEMH">GemH <span class="si">⇅</span></th>
-      <th onclick="sortBy('GEMD')" id="th-GEMD">GemD <span class="si">⇅</span></th>
-      <th onclick="sortBy('GEMA')" id="th-GEMA">GemA <span class="si">⇅</span></th>
-      <th onclick="sortBy('GPTH')" id="th-GPTH">GptH <span class="si">⇅</span></th>
-      <th onclick="sortBy('GPTD')" id="th-GPTD">GptD <span class="si">⇅</span></th>
-      <th onclick="sortBy('GPTA')" id="th-GPTA">GptA <span class="si">⇅</span></th>
+      <th onclick="sortBy('GEMH')" id="th-GEMH" style="text-align:center">H<br><span style="font-size:8px;color:#94a3b8;font-weight:400;letter-spacing:.04em">Gem / GPT</span></th>
+      <th onclick="sortBy('GEMD')" id="th-GEMD" style="text-align:center">D<br><span style="font-size:8px;color:#94a3b8;font-weight:400;letter-spacing:.04em">Gem / GPT</span></th>
+      <th onclick="sortBy('GEMA')" id="th-GEMA" style="text-align:center">A<br><span style="font-size:8px;color:#94a3b8;font-weight:400;letter-spacing:.04em">Gem / GPT</span></th>
       <th>Score</th>
       <th>Status</th>
     </tr></thead>
@@ -328,6 +289,5 @@
 <script src="js/app.js"></script>
 <script src="js/render.js"></script>
 <script src="js/detail.js"></script>
-<script src="js/report-ml.js"></script>
 </body>
 </html>
