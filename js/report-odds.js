@@ -3,6 +3,40 @@
 // Sub-filters (Market Lean, Line Movement, Vig) layer on top when N >= ODDS_MIN_N
 
 var ODDS_MIN_N = 30;  // threshold for sub-filter segments only
+var _oddsLineGroupsRef = null;
+var _oddsMonthBoundsRef = null;
+var _oddsZoom = 50;
+
+function oddsZoomSet(n){
+  _oddsZoom = n;
+  var activeStyle  = 'font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700';
+  var inactiveStyle= 'font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer';
+  var b50  = document.getElementById('oddsZoomBtn50');
+  var b100 = document.getElementById('oddsZoomBtn100');
+  if(b50)  b50.style.cssText  = (n === 50  ? activeStyle : inactiveStyle);
+  if(b100) b100.style.cssText = (n === 100 ? activeStyle : inactiveStyle);
+  redrawOddsCharts(n);
+}
+
+function redrawOddsCharts(n){
+  if(!_oddsLineGroupsRef) return;
+  _oddsLineGroupsRef.forEach(function(lg){
+    lg.expertPairs.forEach(function(ep){
+      if(ep.base.n > 0){
+        var sH = { label: ep.base.seriesH.label, color: ep.base.seriesH.color, pts: ep.base.seriesH.pts.slice(-n) };
+        var sA = { label: ep.base.seriesA.label, color: ep.base.seriesA.color, pts: ep.base.seriesA.pts.slice(-n) };
+        drawChart('cOdds_'+lg.line+'_'+ep.expKey, [sH, sA], _oddsMonthBoundsRef, 90);
+      }
+      ep.subGroupOrder.forEach(function(gname){
+        ep.subGroups[gname].forEach(function(seg){
+          var sH = { label: seg.seriesH.label, color: seg.seriesH.color, pts: seg.seriesH.pts.slice(-n) };
+          var sA = { label: seg.seriesA.label, color: seg.seriesA.color, pts: seg.seriesA.pts.slice(-n) };
+          drawChart('cOdds_'+lg.line+'_'+seg.key, [sH, sA], _oddsMonthBoundsRef, 80);
+        });
+      });
+    });
+  });
+}
 
 // ── Helpers ──
 function mktH(r){
@@ -161,21 +195,18 @@ function renderOdds(d){
     });
   });
 
-  area.innerHTML = html;
+  _oddsLineGroupsRef  = d.odds.lineGroups;
+  _oddsMonthBoundsRef = d.monthBounds;
+  _oddsZoom = 50;
 
-  setTimeout(function(){
-    d.odds.lineGroups.forEach(function(lg){
-      lg.expertPairs.forEach(function(ep){
-        if(ep.base.n > 0)
-          drawChart('cOdds_'+lg.line+'_'+ep.expKey, [ep.base.seriesH, ep.base.seriesA], d.monthBounds, 90);
-        ep.subGroupOrder.forEach(function(gname){
-          ep.subGroups[gname].forEach(function(seg){
-            drawChart('cOdds_'+lg.line+'_'+seg.key, [seg.seriesH, seg.seriesA], d.monthBounds, 80);
-          });
-        });
-      });
-    });
-  }, 30);
+  var zoomBar = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'
+    + '<span style="font-size:10px;color:#64748b;font-family:var(--mono)">Zoom:</span>'
+    + '<button id="oddsZoomBtn50"  onclick="oddsZoomSet(50)"  style="font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700">Last 50</button>'
+    + '<button id="oddsZoomBtn100" onclick="oddsZoomSet(100)" style="font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer">Last 100</button>'
+    + '</div>';
+  area.innerHTML = zoomBar + html;
+
+  setTimeout(function(){ redrawOddsCharts(_oddsZoom); }, 30);
 
   // Summary table
   var rows = '';
