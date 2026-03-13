@@ -49,10 +49,10 @@ function cA(r){
   if(o==='lw')return od-1; if(o==='lh')return(od-1)*0.5; if(o==='dd')return 0; if(o==='wh')return-0.5; return-1;
 }
 
-// ── Running P&L ──
+// ── Running ROI% ──
 function runPnl(subset, fn){
-  var pnl=0, pts=[];
-  subset.forEach(function(r){ var v=fn(r); if(v!==null){ pnl=Math.round((pnl+v)*1000)/1000; pts.push(pnl); } });
+  var pnl=0, n=0, pts=[];
+  subset.forEach(function(r){ var v=fn(r); if(v!==null){ pnl=Math.round((pnl+v)*1000)/1000; n++; pts.push(Math.round(pnl/n*1000)/10); } });
   return pts;
 }
 
@@ -134,7 +134,7 @@ function drawChart(canvasId, series, monthBoundaries, chartH){
     ctx.fillStyle = col; ctx.textAlign = 'left';
     var lx = xi(thisPts-1)+3, ly = yy(lastV);
     if(lx > w-36) lx = xi(thisPts-1)-40;
-    ctx.fillText(fmtPnl(lastV), lx, ly);
+    ctx.fillText(fmtRoi(lastV), lx, ly);
   });
 }
 
