@@ -384,7 +384,7 @@ function renderJCRelation(RD){
       }).filter(Boolean).join(' ');
 
       h += '<tr>';
-      h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+      h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       h += '<td><div style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">'+r.TEAMH+' vs '+r.TEAMA+'</div>';
       h += '<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
       h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+lineStr+'</td>';
@@ -504,7 +504,7 @@ function renderJCRelation(RD){
       var score = (r.RESULTH!=null&&r.RESULTA!=null) ? r.RESULTH+'–'+r.RESULTA : '—';
       var ruleExtra = pb.rules.length>1 ? ' <span style="color:#fbbf24;font-size:9px">+' + (pb.rules.length-1)+'</span>' : '';
       h += '<tr>';
-      h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+      h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       h += '<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
       h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
       h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';

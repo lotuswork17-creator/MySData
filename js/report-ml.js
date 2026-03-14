@@ -922,7 +922,7 @@ function renderMLPastResultsHTML(testSamples){
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var accColor=runAcc[i]>=55?'#4ade80':runAcc[i]>=50?'#94a3b8':'#f87171';
     h += '<tr>';
-    h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+    h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
     h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
     h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
@@ -999,7 +999,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var roiSign=p.expRoi>=0?'+':''; var detailId='mlup_'+idx;
     h+='<tr style="'+(isSkip?'opacity:0.45':'')+'">';
-    h+=(function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+    h+=(function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
     h+='<td><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px"><span style="color:#e2e8f0">'+r.TEAMH+'</span><span style="color:#475569;font-size:9px"> vs </span><span style="color:#e2e8f0">'+r.TEAMA+'</span></div>';
     h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||'')+'</div></td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
