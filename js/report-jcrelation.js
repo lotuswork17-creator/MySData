@@ -232,6 +232,7 @@ function computeJCRelation(results, allRecords){
     var k = rule.exp+'|'+rule.tip_dir+'|'+rule.line+'|'+(rule.lean_min||0)+'|'+rule.bet;
     if(_vrSeen[k]) return;  // dedup: keep first (highest ROI)
     _vrSeen[k] = true;
+    rule.ruleKey = k;
     verifiedRules.push(rule);
   }
   // From base matrix (no lean filter)
@@ -312,6 +313,21 @@ function computeJCRelation(results, allRecords){
     pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
   });
 
+  // ── Per-rule last-20 ROI map (keyed by ruleKey, newest-first pastBets) ──
+  var ruleROI20 = {};
+  verifiedRules.forEach(function(rule){
+    var key = rule.ruleKey;
+    var pnl = 0, cnt = 0;
+    for(var pi = 0; pi < pastBets.length && cnt < 20; pi++){
+      var pb = pastBets[pi];
+      var match = pb.rules.some(function(fr){ return fr.ruleKey === key; });
+      if(!match) continue;
+      var v = rule.bet==='H' ? pb.pnl.h : pb.pnl.a;
+      if(v !== null){ pnl += v; cnt++; }
+    }
+    ruleROI20[key] = cnt >= 5 ? Math.round(pnl / cnt * 1000) / 10 : null;
+  });
+
   return {
     matrix: matrix,
     matrixWithLean: matrixWithLean,
@@ -319,6 +335,7 @@ function computeJCRelation(results, allRecords){
     verifiedRules: verifiedRules,
     upcomingAlerts: upcomingAlerts,
     pastBets: pastBets,
+    ruleROI20: ruleROI20,
     nRecords: n,
     splitIdx: splitIdx,
   };
