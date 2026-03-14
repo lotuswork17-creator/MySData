@@ -1009,7 +1009,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
     h+='<td class="num" style="font-family:var(--mono);color:'+confColor+';font-weight:700">'+conf+'%</td>';
     h+='<td class="num" style="font-family:var(--mono);color:'+(p.expRoi>=0?'#4ade80':'#f87171')+'">'+(isSkip?'—':roiSign+p.expRoi.toFixed(1)+'%')+'</td>';
     h+='<td><button onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="font-size:10px;color:#64748b;background:none;border:none;cursor:pointer;padding:0">▶</button></td>';
-    h+='</tr><tr><td colspan="9" style="padding:0"><div id="'+detailId+'" style="display:none;padding:8px 12px;background:var(--surface)">';
+    h+='</tr><tr><td colspan="10" style="padding:0"><div id="'+detailId+'" style="display:none;padding:8px 12px;background:var(--surface)">';
     if(p.rule){ h+='<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:6px">⚡ '+p.rule+'</div>'; }
     h+='<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Signal Inputs</div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
