@@ -358,7 +358,7 @@ function renderJCRelation(RD){
     h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Quick Scan Summary</div>';
     h += '<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>';
     h += '<th>Date / Time</th><th>Match</th><th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Lean</th>';
-    h += '<th class="num">Bet</th><th class="num">Type</th><th>Rule Fired</th><th class="num">N</th><th class="num">Est ROI</th>';
+    h += '<th class="num">Bet</th><th class="num">Type</th><th>Rule Fired</th><th class="num">N</th><th class="num">Est ROI</th><th class="num">Past 20</th>';
     h += '<th class="num">Tips</th>';
     h += '</tr></thead><tbody>';
 
@@ -396,6 +396,10 @@ function renderJCRelation(RD){
       h += '<td style="font-size:10px;color:#e2e8f0;max-width:200px">'+topRule.label+multiMark+'</td>';
       h += '<td class="num" style="font-family:var(--mono);color:#64748b">'+topRule.n+'</td>';
       h += '<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(topRule.roi>=0?'+':'')+topRule.roi.toFixed(1)+'%</td>';
+      var p20val = jcr.ruleROI20 && topRule.ruleKey ? jcr.ruleROI20[topRule.ruleKey] : null;
+      var p20col = p20val===null ? '#475569' : p20val>=0 ? '#4ade80' : '#f87171';
+      var p20str = p20val===null ? '<span style="color:#475569;font-size:9px">—</span>' : '<span style="font-family:var(--mono);font-weight:700;color:'+p20col+'">'+(p20val>=0?'+':'')+p20val.toFixed(1)+'%</span>';
+      h += '<td class="num">'+p20str+'</td>';
       h += '<td style="font-size:9px;white-space:nowrap">'+tipStr+'</td>';
       h += '</tr>';
     });
