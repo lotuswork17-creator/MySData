@@ -832,15 +832,12 @@ function renderMLPastResultsHTML(testSamples){
   if(!testSamples || !testSamples.length) return '';
   var rows = testSamples.slice(-50).reverse();
   var chronoRows = rows.slice().reverse();
-
-  // Running unit accumulator in chronological order, then reversed
-  var cumUnits = 0;
-  var runUnits = chronoRows.map(function(s){
-    var pred = s.pH >= 0.5 ? 'H' : 'A';
-    cumUnits = Math.round((cumUnits + (pred==='H' ? s.hp : s.ap)) * 100) / 100;
-    return cumUnits;
+  var cumCorrect = 0;
+  var runAcc = chronoRows.map(function(s,i){
+    if((s.pH>=0.5)===s.hSide) cumCorrect++;
+    return Math.round(cumCorrect/(i+1)*1000)/10;
   });
-  runUnits.reverse();
+  runAcc.reverse();
 
   var h = '';
   h += '<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">';
@@ -911,73 +908,32 @@ function renderMLPastResultsHTML(testSamples){
   }
   h += '</div>';
 
-  var totalUnits = runUnits[0] || 0;
-  var totalROI   = Math.round(totalUnits / rows.length * 1000) / 10;
-  var roiColor   = totalROI >= 0 ? '#4ade80' : '#f87171';
-
   h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
-  h += '<thead><tr>';
-  h += '<th>Date</th><th>Match</th>';
-  h += '<th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Score</th>';
-  h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th><th class="num">Conf</th>';
-  h += '<th>Outcome</th><th class="num">Hit</th><th class="num">Run.Units</th>';
+  h += '<thead><tr><th>Date / Time</th><th>Match</th><th class="num">Line</th>';
+  h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th>';
+  h += '<th class="num">Conf</th><th class="num">Outcome</th><th class="num">Hit</th><th class="num">Run.Acc</th>';
   h += '</tr></thead><tbody>';
   rows.forEach(function(s,i){
-    var r   = s.r;
-    var pred = s.pH >= 0.5 ? 'H' : 'A';
-    var conf = Math.round(Math.max(s.pH, s.pA) * 100);
-    var confColor = conf>=65 ? '#4ade80' : conf>=60 ? '#facc15' : '#94a3b8';
-
-    // Outcome label and colour — always from H perspective
-    var outLabel, predWon;
-    if     (s.outcome==='HW'){ outLabel='H WIN';   predWon=(pred==='H'); }
-    else if(s.outcome==='HH'){ outLabel='H ½WIN';  predWon=(pred==='H'); }
-    else if(s.outcome==='P') { outLabel='PUSH';    predWon=null; }
-    else if(s.outcome==='AH'){ outLabel='A ½WIN';  predWon=(pred==='A'); }
-    else                     { outLabel='A WIN';   predWon=(pred==='A'); }
-    var outBg  = predWon===null ? 'rgba(148,163,184,0.15)' : predWon ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
-    var outCol = predWon===null ? '#94a3b8' : predWon ? '#4ade80' : '#f87171';
-
-    // Hit ticks — full/half based on outcome vs predicted side
-    var hitHtml;
-    var predFullWin  = (pred==='H' && s.outcome==='HW') || (pred==='A' && s.outcome==='AW');
-    var predHalfWin  = (pred==='H' && s.outcome==='HH') || (pred==='A' && s.outcome==='AH');
-    var predHalfLoss = (pred==='H' && s.outcome==='AH') || (pred==='A' && s.outcome==='HH');
-    var predFullLoss = (pred==='H' && s.outcome==='AW') || (pred==='A' && s.outcome==='HW');
-    if     (predFullWin)       hitHtml = '<span style="font-size:13px">✅✅</span>';
-    else if(predHalfWin)       hitHtml = '<span style="font-size:13px">✅</span>';
-    else if(s.outcome==='P')   hitHtml = '<span style="font-size:13px">⬜</span>';
-    else if(predHalfLoss)      hitHtml = '<span style="font-size:13px">❌</span>';
-    else                       hitHtml = '<span style="font-size:13px">❌❌</span>';
-
-    var units = runUnits[i];
-    var unitColor = units >= 0 ? '#4ade80' : '#f87171';
-    var score = (r.RESULTH!=null && r.RESULTA!=null)
-      ? r.RESULTH + '–' + r.RESULTA : '—';
-
+    var r=s.r; var pred=s.pH>=0.5?'H':'A'; var conf=Math.round(Math.max(s.pH,s.pA)*100);
+    var correct=(s.pH>=0.5)===s.hSide;
+    var outLabel=s.outcome==='HW'?'H Win':s.outcome==='HH'?'H ½Win':s.outcome==='AH'?'A ½Win':'A Win';
+    var outColor=s.hSide?'#4ade80':'#f87171';
+    var hitColor=correct?'#4ade80':'#f87171';
+    var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
+    var accColor=runAcc[i]>=55?'#4ade80':runAcc[i]>=50?'#94a3b8':'#f87171';
     h += '<tr>';
-    h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
-    h += '<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+    h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+    h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA!=null?r.ASIAA:'—')+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>';
     h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
     h += '<td class="num" style="color:#60a5fa;font-family:var(--mono)">'+Math.round(s.pA*100)+'%</td>';
     h += '<td class="num"><b style="color:'+(pred==='H'?'#f87171':'#60a5fa')+'">'+pred+'</b></td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+confColor+'">'+conf+'%</td>';
-    h += '<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
-    h += '<td class="num">'+hitHtml+'</td>';
-    h += '<td class="num" style="font-family:var(--mono);font-size:10px;color:'+unitColor+'">'+(units>=0?'+':'')+units.toFixed(2)+'</td>';
+    h += '<td class="num" style="color:'+outColor+';font-size:10px">'+outLabel+'</td>';
+    h += '<td class="num" style="font-size:14px;font-weight:800;color:'+hitColor+'">'+(correct?'✓':'✗')+'</td>';
+    h += '<td class="num" style="font-family:var(--mono);color:'+accColor+'">'+runAcc[i].toFixed(1)+'%</td>';
     h += '</tr>';
   });
-  h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
-  h += '<td colspan="9" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+rows.length+' bets shown</td>';
-  h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>';
-  h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalROI>=0?'+':'')+totalROI+'%</td>';
-  h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Total</td>';
-  h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+roiColor+'">'+(totalUnits>=0?'+':'')+totalUnits.toFixed(2)+' units</td>';
-  h += '</tr>';
   h += '</tbody></table></div></div>';
   return h;
 }
@@ -1034,7 +990,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
   h+='<span style="color:#475569">Skip: '+nS+'</span>';
   h+='</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>';
-  h+='<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">H%</th><th class="num">A%</th>';
+  h+='<th>Date / Time</th><th>Match</th><th class="num">Line</th><th class="num">H%</th><th class="num">A%</th>';
   h+='<th class="num">Pick</th><th class="num">Conf</th><th class="num">Est ROI</th><th style="width:24px"></th>';
   h+='</tr></thead><tbody>';
   predictions.forEach(function(p,idx){
@@ -1043,7 +999,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var roiSign=p.expRoi>=0?'+':''; var detailId='mlup_'+idx;
     h+='<tr style="'+(isSkip?'opacity:0.45':'')+'">';
-    h+='<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
+    h+=(function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#64748b;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
     h+='<td><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px"><span style="color:#e2e8f0">'+r.TEAMH+'</span><span style="color:#475569;font-size:9px"> vs </span><span style="color:#e2e8f0">'+r.TEAMA+'</span></div>';
     h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||'')+'</div></td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
