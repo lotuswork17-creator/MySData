@@ -909,7 +909,7 @@ function renderMLPastResultsHTML(testSamples){
   h += '</div>';
 
   h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px">';
-  h += '<thead><tr><th>Date / Time</th><th>Match</th><th class="num">Line</th>';
+  h += '<thead><tr><th>Date</th><th>Match</th><th class="num">Line</th>';
   h += '<th class="num">H%</th><th class="num">A%</th><th class="num">Pick</th>';
   h += '<th class="num">Conf</th><th class="num">Outcome</th><th class="num">Hit</th><th class="num">Run.Acc</th>';
   h += '</tr></thead><tbody>';
@@ -922,7 +922,7 @@ function renderMLPastResultsHTML(testSamples){
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var accColor=runAcc[i]>=55?'#4ade80':runAcc[i]>=50?'#94a3b8':'#f87171';
     h += '<tr>';
-    h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+    h += '<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
     h += '<td style="max-width:140px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
     h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
     h += '<td class="num" style="color:#f87171;font-family:var(--mono)">'+Math.round(s.pH*100)+'%</td>';
@@ -990,7 +990,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
   h+='<span style="color:#475569">Skip: '+nS+'</span>';
   h+='</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>';
-  h+='<th>Date / Time</th><th>Match</th><th class="num">Line</th><th class="num">H%</th><th class="num">A%</th>';
+  h+='<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">H%</th><th class="num">A%</th>';
   h+='<th class="num">Pick</th><th class="num">Conf</th><th class="num">Est ROI</th><th style="width:24px"></th>';
   h+='</tr></thead><tbody>';
   predictions.forEach(function(p,idx){
@@ -999,7 +999,7 @@ function renderMLPredictionsHTML(predictions, testAcc){
     var confColor=conf>=65?'#4ade80':conf>=60?'#facc15':'#94a3b8';
     var roiSign=p.expRoi>=0?'+':''; var detailId='mlup_'+idx;
     h+='<tr style="'+(isSkip?'opacity:0.45':'')+'">';
-    h+=(function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
+    h+='<td style="color:#64748b;font-family:var(--mono);font-size:10px">'+(r.DATE||'').slice(5)+'</td>';
     h+='<td><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px"><span style="color:#e2e8f0">'+r.TEAMH+'</span><span style="color:#475569;font-size:9px"> vs </span><span style="color:#e2e8f0">'+r.TEAMA+'</span></div>';
     h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||'')+'</div></td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>0?'+':'')+r.ASIALINE+'</td>';
@@ -1316,7 +1316,13 @@ function computeRuleSignals(samples){
       train_ref: rule.train_ref, test_ref: rule.test_ref,
       reliable: n >= 200 ? 'reliable' : n >= 100 ? 'rough' : 'low',
       roiCurveAll: roiCurveAll,
-      roiCurve: roiCurveAll.slice(-50)  // default view: last 50
+      roiCurve: roiCurveAll.slice(-50),  // default view: last 50
+      last20ROI: (function(){
+        var s = grp.slice(-20);
+        if(s.length < 5) return null;
+        var p = s.reduce(function(a,x){ return a + (rule.side==='h' ? x.hp : x.ap); }, 0);
+        return Math.round(p / s.length * 1000) / 10;
+      })()
     };
   }).filter(Boolean);
 }
@@ -1336,6 +1342,7 @@ function renderMLRuleSignals(rules){
   h += '<th class="num">±95% CI</th>';
   h += '<th class="num">Train ROI</th>';
   h += '<th class="num">Test ROI</th>';
+  h += '<th class="num">Past 20</th>';
   h += '<th class="num">Size</th>';
   h += '</tr></thead><tbody>';
   rules.forEach(function(r){
@@ -1358,6 +1365,9 @@ function renderMLRuleSignals(rules){
     h += '<td class="num" style="font-family:var(--mono);color:#64748b">±'+r.ci+'%</td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+trCol+'">'+(r.train_ref>=0?'+':'')+r.train_ref.toFixed(1)+'%</td>';
     h += '<td class="num" style="font-family:var(--mono);color:'+teCol+'">'+(r.test_ref>=0?'+':'')+r.test_ref.toFixed(1)+'%</td>';
+    var p20c = r.last20ROI===null ? '#475569' : r.last20ROI>=0 ? '#4ade80' : '#f87171';
+    var p20v = r.last20ROI===null ? '<span style="color:#475569">—</span>' : '<span style="font-family:var(--mono);font-weight:700;color:'+p20c+'">'+(r.last20ROI>=0?'+':'')+r.last20ROI.toFixed(1)+'%</span>';
+    h += '<td class="num">'+p20v+'</td>';
     h += '<td class="num">'+sizeLabel+'</td>';
     h += '</tr>';
   });
