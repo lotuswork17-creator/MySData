@@ -313,17 +313,26 @@ function computeJCRelation(results, allRecords){
     pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
   });
 
-  // ── Per-rule last-20 ROI map (keyed by ruleKey, newest-first pastBets) ──
+  // ── Per-rule last-20 ROI map — scan full data array newest-first per rule ──
+  var TIP_MAP_DIR3 = TIP_MAP_DIR;
+  var dataRev = data.slice().reverse();  // newest first
   var ruleROI20 = {};
   verifiedRules.forEach(function(rule){
     var key = rule.ruleKey;
     var pnl = 0, cnt = 0;
-    for(var pi = 0; pi < pastBets.length && cnt < 20; pi++){
-      var pb = pastBets[pi];
-      var match = pb.rules.some(function(fr){ return fr.ruleKey === key; });
-      if(!match) continue;
-      var v = rule.bet==='H' ? pb.pnl.h : pb.pnl.a;
-      if(v !== null){ pnl += v; cnt++; }
+    for(var di = 0; di < dataRev.length && cnt < 20; di++){
+      var r = dataRev[di];
+      var tv = TIP_MAP_DIR3[String(r[rule.exp]||'')];
+      if(tv == null || tv !== rule.tip_dir) continue;
+      var lv = parseFloat(r.ASIALINE)||0;
+      if(Math.abs(lv - rule.line) > 0.01) continue;
+      if(rule.lean_min){
+        var lk3 = jcrLean(r);
+        if(lk3 == null || lk3 < rule.lean_min) continue;
+      }
+      var v = rule.bet==='H' ? cH(r) : cA(r);
+      if(v === null) continue;
+      pnl += v; cnt++;
     }
     ruleROI20[key] = cnt >= 5 ? Math.round(pnl / cnt * 1000) / 10 : null;
   });
