@@ -36,13 +36,51 @@ function computeLM(results, allHpts, allApts){
   return { table:lmTable, seriesH:lmHSeries, seriesA:lmASeries };
 }
 
+var _lmRef = null;
+var _lmZoom = 50;
+
+function lmZoomSet(n){
+  _lmZoom = n;
+  var activeStyle   = 'font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700';
+  var inactiveStyle = 'font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer';
+  var b50  = document.getElementById('lmZoomBtn50');
+  var b100 = document.getElementById('lmZoomBtn100');
+  if(b50)  b50.style.cssText  = (n === 50  ? activeStyle : inactiveStyle);
+  if(b100) b100.style.cssText = (n === 100 ? activeStyle : inactiveStyle);
+  redrawLMCharts(n);
+}
+
+function redrawLMCharts(n){
+  if(!_lmRef) return;
+  var sliceH = _lmRef.seriesH.map(function(s){ return {label:s.label, color:s.color, pts:s.pts.slice(-n)}; });
+  var sliceA = _lmRef.seriesA.map(function(s){ return {label:s.label, color:s.color, pts:s.pts.slice(-n)}; });
+  drawChart('cLmH', sliceH, _lmRef.monthBounds, 120);
+  drawChart('cLmA', sliceA, _lmRef.monthBounds, 120);
+}
+
 function renderLM(d){
+  _lmRef = { seriesH: d.lm.seriesH, seriesA: d.lm.seriesA, monthBounds: d.monthBounds };
+  _lmZoom = 50;
+
+  // Inject zoom bar before first chart-box in tab5
+  var tab5 = document.getElementById('tab5');
+  if(tab5){
+    var existingBar = document.getElementById('lmZoomBarDiv');
+    if(existingBar) existingBar.remove();
+    var zoomDiv = document.createElement('div');
+    zoomDiv.id = 'lmZoomBarDiv';
+    zoomDiv.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px';
+    zoomDiv.innerHTML = '<span style="font-size:10px;color:#64748b;font-family:var(--mono)">Zoom:</span>'
+      + '<button id="lmZoomBtn50"  onclick="lmZoomSet(50)"  style="font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700">Last 50</button>'
+      + '<button id="lmZoomBtn100" onclick="lmZoomSet(100)" style="font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer">Last 100</button>';
+    var firstChart = tab5.querySelector('.chart-box');
+    if(firstChart) tab5.insertBefore(zoomDiv, firstChart);
+    else tab5.insertBefore(zoomDiv, tab5.firstChild);
+  }
+
   makeLegend('lgdLmH', d.lm.seriesH);
   makeLegend('lgdLmA', d.lm.seriesA);
-  setTimeout(function(){
-    drawChart('cLmH', d.lm.seriesH, d.monthBounds, 120);
-    drawChart('cLmA', d.lm.seriesA, d.monthBounds, 120);
-  }, 30);
+  setTimeout(function(){ redrawLMCharts(_lmZoom); }, 30);
   // Update table header to include both-side columns
   var tbLm = document.getElementById('tbLm');
   if(tbLm && tbLm.parentElement){
