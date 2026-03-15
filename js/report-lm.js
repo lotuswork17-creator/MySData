@@ -50,16 +50,15 @@ function renderLM(d){
     if(thead) thead.innerHTML = '<th>Line Move</th><th>Expert</th><th class="num">N</th><th class="num">Bet</th><th class="num">ROI%</th><th class="num">Other</th><th class="num">ROI%</th><th>Signal</th>';
   }
   document.getElementById('tbLm').innerHTML = d.lm.table.map(function(x){
-    var rc  = x.roi>=10?'roi-high':x.roi>=0?'roi-mid':'roi-low';
-    var sig = x.roi>=10?'🔥 Strong':x.roi>=0?'👍 Positive':'❌ Negative';
-    var rcO = x.roiOther>=10?'roi-high':x.roiOther>=0?'roi-mid':'roi-low';
-    var otherSide = x.side==='H'?'A':'H';
-    var otherBadge = x.side==='H'?'sm-a':'sm-h';
-    return '<tr><td>'+x.lm+'</td><td>'+x.expert+'</td><td class="num">'+x.n+'</td>'
-      +'<td><span class="sm-badge '+(x.side==='H'?'sm-h':'sm-a')+'">'+x.side+'</span></td>'
-      +'<td class="num '+rc+'">'+fmtRoi(x.roi)+'</td>'
-      +'<td><span class="sm-badge '+otherBadge+'">'+otherSide+'</span></td>'
-      +'<td class="num '+rcO+'">'+fmtRoi(x.roiOther)+'</td>'
-      +'<td>'+sig+'</td></tr>';
+    var edge    = x.roi - x.roiOther;
+    var betCol  = x.side==='H' ? '#f87171' : '#60a5fa';
+    var oBetCol = x.side==='H' ? '#60a5fa' : '#f87171';
+    var otherSide = x.side==='H' ? 'A' : 'H';
+    var roiCol  = x.roi>=10?'#4ade80':x.roi>=5?'#a3e635':x.roi>=0?'#fbbf24':'#f87171';
+    var roiOCol = x.roiOther>=10?'#4ade80':x.roiOther>=5?'#a3e635':x.roiOther>=0?'#94a3b8':'#f87171';
+    var betW    = edge >= 5 ? '800' : '600';
+    var oBetW   = edge <= -5 ? '800' : '400';
+    var sig = x.roi>=10?'🔥 Strong':x.roi>=5?'✅ Good':x.roi>=0?'👍 Positive':'❌ Negative';
+    return '<tr><td>'+x.lm+'</td><td>'+x.expert+'</td><td class="num">'+x.n+'</td>'      +'<td class="num" style="font-family:var(--mono);color:'+betCol+';font-weight:'+betW+'">'+x.side+'</td>'      +'<td class="num" style="font-family:var(--mono);color:'+roiCol+';font-weight:'+betW+'">'+fmtRoi(x.roi)+'</td>'      +'<td class="num" style="font-family:var(--mono);color:'+oBetCol+';font-weight:'+oBetW+'">'+otherSide+'</td>'      +'<td class="num" style="font-family:var(--mono);color:'+roiOCol+';font-weight:'+oBetW+'">'+fmtRoi(x.roiOther)+'</td>'      +'<td>'+sig+'</td></tr>';
   }).join('');
 }
