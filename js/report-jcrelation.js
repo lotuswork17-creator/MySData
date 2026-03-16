@@ -308,7 +308,7 @@ function computeJCRelation(results, allRecords){
     if(!fired.length) return;
     var pnl = jcrPnl(r);
     if(!pnl) return;
-    var adj2 = Math.round((parseFloat(r.RESULTH)||0 - (parseFloat(r.RESULTA)||0) + (parseFloat(r.ASIALINE)||0)) * 4) / 4;
+    var adj2 = Math.round(((parseFloat(r.RESULTH)||0) - (parseFloat(r.RESULTA)||0) + (parseFloat(r.ASIALINE)||0)) * 4) / 4;
     var outcome = adj2 > 0.25 ? 'HW' : adj2 === 0.25 ? 'HH' : adj2 === 0 ? 'P' : adj2 === -0.25 ? 'AH' : 'AW';
     pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
   });
