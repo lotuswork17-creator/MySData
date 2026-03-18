@@ -388,6 +388,7 @@ function renderJCRelation(RD){
     h += '<th class="num">Tips</th>';
     h += '</tr></thead><tbody>';
 
+    var alertIdx = 0;
     jcr.upcomingAlerts.forEach(function(alert){
       var r = alert.r;
       var topRule = alert.rules[0];
@@ -409,7 +410,8 @@ function renderJCRelation(RD){
         return '<span style="color:'+c+';font-size:8px;font-family:var(--mono)">'+tf.label+'='+tv+'</span>';
       }).filter(Boolean).join(' ');
 
-      h += '<tr>';
+      var detId = 'jcrup_'+alertIdx;
+      h += '<tr style="cursor:pointer" onclick="var el=document.getElementById(\''+detId+'\');el.style.display=el.style.display===\'none\'?\'table-row\':\'none\'">';
       h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       h += '<td><div style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">'+r.TEAMH+' vs '+r.TEAMA+'</div>';
       h += '<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
@@ -428,61 +430,93 @@ function renderJCRelation(RD){
       h += '<td class="num">'+p20str+'</td>';
       h += '<td style="font-size:9px;white-space:nowrap">'+tipStr+'</td>';
       h += '</tr>';
+      alertIdx++;
+
+      // ── Inline expand row with front-page-style detail ──
+      var tipFields2 = [{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'}];
+      var tipBadges = tipFields2.map(function(tf){
+        var tv=r[tf.key]; var dv=tv||'—';
+        var isH=tv&&String(tv).indexOf('H')>=0, isA=tv&&String(tv).indexOf('A')>=0;
+        var c=isH?'#f87171':isA?'#60a5fa':'#475569';
+        return '<span style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+c+'15;border:1px solid '+c+'33;color:'+c+'">'+tf.label+': '+dv+'</span>';
+      }).join(' ');
+
+      var ruleRows = alert.rules.map(function(rule,ri){
+        var rc2=rule.type==='COUNTER'?'#fbbf24':'#4ade80';
+        var tl2=rule.type==='COUNTER'?'⚡ COUNTER':'✓ FOLLOW';
+        var bs=ri===0?'border:1px solid '+rc2+'44':'border:1px solid var(--border)';
+        return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;flex-wrap:wrap;padding:5px 8px;border-radius:5px;margin-bottom:3px;background:rgba(255,255,255,0.02);'+bs+'">'
+          +'<span style="color:'+rc2+';font-weight:700;font-family:var(--mono);white-space:nowrap">'+tl2+'</span>'
+          +'<span style="color:#e2e8f0;flex:1;min-width:120px">'+rule.label+'</span>'
+          +'<span style="color:#4ade80;font-family:var(--mono);font-weight:700;white-space:nowrap">'+(rule.roi>=0?'+':'')+rule.roi.toFixed(1)+'% ROI</span>'
+          +'<span style="color:#e2e8f0;font-family:var(--mono);white-space:nowrap">n='+rule.n+' · tr='+(rule.train>=0?'+':'')+rule.train.toFixed(1)+'% te='+(rule.test>=0?'+':'')+rule.test.toFixed(1)+'%</span>'
+          +'</div>';
+      }).join('');
+
+      var ahBlock=(function(){
+        function ahVal(v){return v!=null?String(v):'—';}
+        function ahDiff(lat,opn){
+          if(opn==null||lat==null||opn===0||lat===opn)return'';
+          var d=Math.round((lat-opn)*100)/100;if(d===0)return'';
+          var abs=Math.abs(d),n=abs>=1.0?3:abs>=0.5?2:1,arr=d>0?'▲':'▼',col=d>0?'#60a5fa':'#f87171';
+          return '<span style="color:'+col+';font-size:9px;margin-left:3px">'+arr.repeat(n)+'</span>';
+        }
+        function ahOddsDiff(lat,opn){
+          if(lat==null||opn==null||opn===0||lat===opn)return'';
+          var n,arr,col;
+          if(lat<opn){n=lat<opn*0.9?3:lat<opn*0.95?2:1;arr='▼';col='#f87171';}
+          else{n=lat>opn*1.1?3:lat>opn*1.05?2:1;arr='▲';col='#60a5fa';}
+          return '<span style="color:'+col+';font-size:9px;margin-left:3px">'+arr.repeat(n)+'</span>';
+        }
+        function ahRow(label,color,openLine,openH,openA,latLine,latH,latA){
+          return '<div style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:6px;padding:7px 10px">'
+            +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">'+label+'</div>'
+            +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;text-align:center">'
+            +'<div><div style="font-size:8px;color:#475569;margin-bottom:2px">LINE</div><div style="font-size:9px;font-family:var(--mono);color:#64748b">'+ahVal(openLine)+'</div><div style="font-size:11px;font-weight:700;font-family:var(--mono);color:#e2e8f0">'+ahVal(latLine)+ahDiff(latLine,openLine)+'</div></div>'
+            +'<div><div style="font-size:8px;color:#475569;margin-bottom:2px">ASIA H</div><div style="font-size:9px;font-family:var(--mono);color:#64748b">'+ahVal(openH)+'</div><div style="font-size:11px;font-weight:700;font-family:var(--mono);color:#e2e8f0">'+ahVal(latH)+ahOddsDiff(latH,openH)+'</div></div>'
+            +'<div><div style="font-size:8px;color:#475569;margin-bottom:2px">ASIA A</div><div style="font-size:9px;font-family:var(--mono);color:#64748b">'+ahVal(openA)+'</div><div style="font-size:11px;font-weight:700;font-family:var(--mono);color:#e2e8f0">'+ahVal(latA)+ahOddsDiff(latA,openA)+'</div></div>'
+            +'</div></div>';
+        }
+        return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'
+          +ahRow('General','#94a3b8',r.ASIALINELN,r.ASIAHLN,r.ASIAALN,r.ASIALINE,r.ASIAH,r.ASIAA)
+          +ahRow('Macau','#a78bfa',r.ASIALINEM2,r.ASIAHMACLN,r.ASIAAMACLN,r.ASIALINEMA,r.ASIAHMAC,r.ASIAAMAC)
+          +ahRow('SBO','#fb923c',r.ASIALINES2,r.ASIAHSBOLN,r.ASIAASBOLN,r.ASIALINESB,r.ASIAHSBO,r.ASIAASBO)
+          +'</div>';
+      })();
+
+      var pred1x2=(r.PREDICTH||r.PREDICTD||r.PREDICTA)?(function(){
+        var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
+        return '<div style="margin-bottom:8px">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Prediction %</div>'
+          +'<div style="display:flex;gap:8px;font-size:10px;font-family:var(--mono);margin-bottom:4px"><span style="color:#f87171">H '+ph+'%</span><span style="color:#4ade80">D '+pd+'%</span><span style="color:#60a5fa">A '+pa+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;overflow:hidden;display:flex"><div style="width:'+(ph/pt*100).toFixed(1)+'%;background:#f87171"></div><div style="width:'+(pd/pt*100).toFixed(1)+'%;background:#4ade80"></div><div style="width:'+(pa/pt*100).toFixed(1)+'%;background:#60a5fa"></div></div>'
+          +'</div>';
+      })():'';
+
+      var jcNarrative=(r.JCTIPS1||r.JCTIPS2||r.JCTIPS3)?(function(){
+        return '<div style="margin-bottom:8px;padding-top:7px;border-top:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">JC Analysis</div>'
+          +(r.JCTIPS1?'<div style="font-size:11px;color:#fbbf24;font-weight:600;margin-bottom:4px">'+r.JCTIPS1+'</div>':'')
+          +(r.JCTIPS2?'<div style="font-size:10px;color:#e2e8f0;line-height:1.6;margin-bottom:4px">'+r.JCTIPS2+'</div>':'')
+          +(r.JCTIPS3?'<div style="font-size:10px;color:#94a3b8;line-height:1.6">'+r.JCTIPS3+'</div>':'')
+          +'</div>';
+      })():'';
+
+      var macNarrative=r.TIPSMAC?(function(){
+        return '<div style="margin-bottom:8px;padding-top:7px;border-top:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">🎰 Macau Tips</div>'
+          +'<div style="font-size:10px;color:#e2e8f0;line-height:1.7">'+r.TIPSMAC+'</div>'
+          +'</div>';
+      })():'';
+
+      h += '<tr id="'+detId+'" style="display:none"><td colspan="13" style="padding:0">'
+        +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
+        +ahBlock+pred1x2+ruleRows+jcNarrative+macNarrative
+        +'</div></td></tr>';
     });
     h += '</tbody></table></div>';
-    h += '<div style="font-size:9px;color:#475569;margin-top:4px">⚡ = COUNTER (bet against expert) · ✓ = WITH (follow expert) · +N = additional rules also fired</div>';
-    h += '</div>';
-
-    // ── Detail cards ──
-    h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Match Details</div>';
-    h += '<div style="display:flex;flex-direction:column;gap:8px">';
-    jcr.upcomingAlerts.forEach(function(alert){
-      var r = alert.r;
-      var topRule = alert.rules[0];
-      var betCol = topRule.bet === 'H' ? '#f87171' : '#60a5fa';
-      var leanPct = alert.lean ? Math.round(alert.lean*100) : '—';
-      var lineStr = (parseFloat(r.ASIALINE)>=0?'+':'')+parseFloat(r.ASIALINE).toFixed(2);
-
-      h += '<div style="padding:12px 14px;border-radius:8px;background:var(--surface2);border:1.5px solid '+betCol+'33">';
-      h += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px">';
-      h += '<div style="font-size:22px;font-weight:900;font-family:var(--mono);color:'+betCol+';width:28px;flex-shrink:0">'+topRule.bet+'</div>';
-      h += '<div style="flex:1;min-width:140px">';
-      h += '<div style="font-size:12px;font-weight:700;color:#e2e8f0">'+r.TEAMH+' <span style="color:#475569;font-weight:400">vs</span> '+r.TEAMA+'</div>';
-      h += '<div style="font-size:10px;color:#64748b;font-family:var(--mono)">'+(r.DATE||'')+' · '+(r.CATEGORY||r.LEAGUE||'')+'</div>';
-      h += '</div>';
-      h += '<div style="text-align:right;font-size:10px;color:#94a3b8;font-family:var(--mono);flex-shrink:0">';
-      h += 'Line <b style="color:#e2e8f0">'+lineStr+'</b> · Lean <b style="color:#e2e8f0">'+leanPct+'%</b>';
-      h += '</div></div>';
-
-      // All 4 expert tips
-      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">';
-      var tipFields = [
-        { key:'JCTIPSUM', label:'JCSUM' }, { key:'JCTIPSID', label:'JCSID' },
-        { key:'TIPSIDMAC', label:'MAC' },  { key:'TIPSONID', label:'ONID' }
-      ];
-      tipFields.forEach(function(tf){
-        var tv = r[tf.key];
-        var displayVal = tv || '—';
-        var isH = tv && String(tv).indexOf('H')>=0, isA = tv && String(tv).indexOf('A')>=0;
-        var c = isH ? '#f87171' : isA ? '#60a5fa' : '#475569';
-        h += '<span style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+c+'15;border:1px solid '+c+'33;color:'+c+'">'+tf.label+': '+displayVal+'</span>';
-      });
-      h += '</div>';
-
-      // All fired rules for this match
-      alert.rules.forEach(function(rule, ri){
-        var rc = rule.type === 'COUNTER' ? '#fbbf24' : '#4ade80';
-        var typeLabel = rule.type === 'COUNTER' ? '⚡ COUNTER' : '✓ FOLLOW';
-        var borderStyle = ri === 0 ? 'border:1px solid '+rc+'44;' : 'border:1px solid var(--border);';
-        h += '<div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;flex-wrap:wrap;padding:5px 8px;border-radius:5px;margin-bottom:3px;background:rgba(255,255,255,0.02);'+borderStyle+'">';
-        h += '<span style="color:'+rc+';font-weight:700;font-family:var(--mono);white-space:nowrap">'+typeLabel+'</span>';
-        h += '<span style="color:#e2e8f0;flex:1;min-width:120px">'+rule.label+'</span>';
-        h += '<span style="color:#4ade80;font-family:var(--mono);font-weight:700;white-space:nowrap">'+(rule.roi>=0?'+':'')+rule.roi.toFixed(1)+'% ROI</span>';
-        h += '<span style="color:#e2e8f0;font-family:var(--mono);white-space:nowrap">n='+rule.n+' · tr='+(rule.train>=0?'+':'')+rule.train.toFixed(1)+'% te='+(rule.test>=0?'+':'')+rule.test.toFixed(1)+'%</span>';
-        h += '</div>';
-      });
-      h += '</div>';
-    });
+    h += '<div style="font-size:9px;color:#475569;margin-top:4px">⚡ = COUNTER · ✓ = WITH · +N = more rules fired · Click any row to expand details</div>';
     h += '</div>';
   }
   h += '</div>';
