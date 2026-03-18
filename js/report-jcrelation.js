@@ -484,6 +484,20 @@ function renderJCRelation(RD){
           +'</div>';
       })();
 
+      var expertBar=(function(){
+        var e=expertScore(r);
+        if(!e)return '';
+        var et=e.h+e.d+e.a||1;
+        return '<div style="margin-bottom:8px">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Expert Signal</div>'
+          +'<div style="display:flex;gap:8px;font-size:10px;font-family:var(--mono);margin-bottom:4px">'
+          +'<span style="color:#f87171">H '+e.h+'%</span><span style="color:#4ade80">D '+e.d+'%</span><span style="color:#60a5fa">A '+e.a+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;overflow:hidden;display:flex">'
+          +'<div style="width:'+(e.h/et*100).toFixed(1)+'%;background:#f87171"></div>'
+          +'<div style="width:'+(e.d/et*100).toFixed(1)+'%;background:#4ade80"></div>'
+          +'<div style="width:'+(e.a/et*100).toFixed(1)+'%;background:#60a5fa"></div>'
+          +'</div></div>';
+      })();
       var pred1x2=(r.PREDICTH||r.PREDICTD||r.PREDICTA)?(function(){
         var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
         return '<div style="margin-bottom:8px">'
@@ -512,7 +526,7 @@ function renderJCRelation(RD){
       h += '<tr id="'+detId+'" style="display:none"><td colspan="13" style="padding:0">'
         +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
-        +ahBlock+pred1x2+ruleRows+jcNarrative+macNarrative
+        +ahBlock+expertBar+pred1x2+ruleRows+jcNarrative+macNarrative
         +'</div></td></tr>';
     });
     h += '</tbody></table></div>';
@@ -537,18 +551,7 @@ function renderJCRelation(RD){
       return Math.round(_pbPnl / _pbN * 1000) / 10;
     });
     pbRunROI.reverse();
-    // Last-20 ROI
-    var L20 = 20;
-    var pbLast20ROI = (function(){
-      var slice = jcr.pastBets.slice(0, L20);
-      var pnl = 0, n = 0;
-      slice.forEach(function(pb){
-        var bet = pb.rules[0].bet;
-        var v = bet==='H' ? pb.pnl.h : pb.pnl.a;
-        if(v !== null){ pnl += v; n++; }
-      });
-      return n ? Math.round(pnl / n * 1000) / 10 : null;
-    })();
+
     var pbTotal = _pbPnl;
     var pbROI   = Math.round(pbTotal / jcr.pastBets.length * 1000) / 10;
     var pbColor = pbROI >= 0 ? '#4ade80' : '#f87171';
@@ -556,7 +559,7 @@ function renderJCRelation(RD){
     h += '<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>';
     h += '<th>Date / Time</th><th>Match</th>';
     h += '<th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Score</th>';
-    h += '<th class="num">Bet</th><th>Rule</th><th class="num">N</th><th>Outcome</th><th class="num">Hit</th><th class="num">Run ROI</th><th class="num">Last '+L20+'</th>';
+    h += '<th class="num">Bet</th><th>Rule</th><th class="num">N</th><th>Outcome</th><th class="num">Hit</th><th class="num">Run ROI</th>';
     h += '</tr></thead><tbody>';
     jcr.pastBets.forEach(function(pb, i){
       var r = pb.r, topRule = pb.rules[0], bet = topRule.bet;
@@ -579,10 +582,7 @@ function renderJCRelation(RD){
         : '<span style="font-size:13px">❌❌</span>';
       var runRoi = pbRunROI[i];
       var runRoiCol = runRoi>=0 ? '#4ade80' : '#f87171';
-      // Last-20 column: only show on row 0 (most recent), otherwise blank
-      var last20Html = i===0 && pbLast20ROI!==null
-        ? '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:'+(pbLast20ROI>=0?'#4ade80':'#f87171')+'">'+(pbLast20ROI>=0?'+':'')+pbLast20ROI.toFixed(1)+'%</span>'
-        : '';
+
       var score = (r.RESULTH!=null&&r.RESULTA!=null) ? r.RESULTH+'–'+r.RESULTA : '—';
       var ruleExtra = pb.rules.length>1 ? ' <span style="color:#fbbf24;font-size:9px">+' + (pb.rules.length-1)+'</span>' : '';
       h += '<tr>';
@@ -598,17 +598,13 @@ function renderJCRelation(RD){
       h += '<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
       h += '<td class="num">'+hitHtml+'</td>';
       h += '<td class="num" style="font-family:var(--mono);font-size:10px;color:'+runRoiCol+'">'+(runRoi>=0?'+':'')+runRoi.toFixed(1)+'%</td>';
-      h += '<td class="num">'+last20Html+'</td>';
       h += '</tr>';
     });
     h += '<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">';
     h += '<td colspan="8" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+jcr.pastBets.length+' bets shown</td>';
     h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>';
     h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+pbColor+'">'+(pbROI>=0?'+':'')+pbROI+'%</td>';
-    h += '<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">Last '+L20+'</td>';
-    var l20c = pbLast20ROI!==null ? (pbLast20ROI>=0?'#4ade80':'#f87171') : '#94a3b8';
-    var l20v = pbLast20ROI!==null ? (pbLast20ROI>=0?'+':'')+pbLast20ROI.toFixed(1)+'%' : '—';
-    h += '<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+l20c+'">'+l20v+'</td>';
+
     h += '</tr>';
     h += '</tbody></table></div>';
   }
