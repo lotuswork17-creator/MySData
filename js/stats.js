@@ -1,8 +1,29 @@
 // stats.js
+var _bcData = null;
+var _bcOddsMode = 'latest'; // 'latest' or 'opening'
+
+function setOddsMode(mode){
+  _bcOddsMode = mode;
+  var activeStyle   = 'font-size:10px;font-family:var(--mono);padding:2px 9px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700';
+  var inactiveStyle = 'font-size:10px;font-family:var(--mono);padding:2px 9px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer';
+  var bL = document.getElementById('oddsToggleLatest');
+  var bO = document.getElementById('oddsToggleOpening');
+  if(bL) bL.style.cssText = mode === 'latest'  ? activeStyle : inactiveStyle;
+  if(bO) bO.style.cssText = mode === 'opening' ? activeStyle : inactiveStyle;
+  var lbl = document.getElementById('oddsModeLabel');
+  if(lbl) lbl.textContent = mode === 'latest' ? 'Results Only' : 'Results Only · Opening Odds';
+  if(_bcData) renderBetCalc(_bcData);
+}
+
 function renderBetCalc(data){
+  _bcData = data;
   var el=document.getElementById('betCalc');
+  var useOpening = _bcOddsMode === 'opening';
+  // For opening odds: require ASIAHLN/ASIAALN to be present and non-zero
   var results=data.filter(function(r){
-    return r.STATUS==='Result'&&r.ASIALINE!=null&&r.RESULTH!=null&&r.RESULTA!=null&&r.ASIAH!=null&&r.ASIAA!=null;
+    if(r.STATUS!=='Result'||r.ASIALINE==null||r.RESULTH==null||r.RESULTA==null) return false;
+    if(useOpening) return r.ASIAHLN&&r.ASIAHLN>0&&r.ASIAALN&&r.ASIAALN>0;
+    return r.ASIAH!=null&&r.ASIAA!=null;
   });
   if(!results.length){el.style.display='none';return;}
   el.style.display='block';
@@ -13,7 +34,8 @@ function renderBetCalc(data){
   var hPnl=0,aPnl=0,hRunning=[],aRunning=[];
   sorted.forEach(function(r){
     var outcome=asiaOutcome(r);
-    var oh=r.ASIAH,oa=r.ASIAA;
+    var oh=useOpening ? r.ASIAHLN : r.ASIAH;
+    var oa=useOpening ? r.ASIAALN : r.ASIAA;
     var hp=0,ap=0;
     if(outcome==='ww'){hp=oh-1;ap=-1;}
     else if(outcome==='wh'){hp=(oh-1)*0.5;ap=-0.5;}
