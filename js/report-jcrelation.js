@@ -313,14 +313,14 @@ function computeJCRelation(results, allRecords){
     pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
   });
 
-  // ── Per-rule last-20 ROI map — scan full data array newest-first per rule ──
+  // ── Per-rule last-20 and last-40 ROI maps — scan full data array newest-first per rule ──
   var TIP_MAP_DIR3 = TIP_MAP_DIR;
   var dataRev = data.slice().reverse();  // newest first
-  var ruleROI20 = {};
+  var ruleROI20 = {}, ruleROI40 = {};
   verifiedRules.forEach(function(rule){
     var key = rule.ruleKey;
-    var pnl = 0, cnt = 0;
-    for(var di = 0; di < dataRev.length && cnt < 20; di++){
+    var pnl20 = 0, cnt20 = 0, pnl40 = 0, cnt40 = 0;
+    for(var di = 0; di < dataRev.length && cnt40 < 40; di++){
       var r = dataRev[di];
       var tv = TIP_MAP_DIR3[String(r[rule.exp]||'')];
       if(tv == null || tv !== rule.tip_dir) continue;
@@ -332,9 +332,11 @@ function computeJCRelation(results, allRecords){
       }
       var v = rule.bet==='H' ? cH(r) : cA(r);
       if(v === null) continue;
-      pnl += v; cnt++;
+      if(cnt20 < 20){ pnl20 += v; cnt20++; }
+      pnl40 += v; cnt40++;
     }
-    ruleROI20[key] = cnt >= 5 ? Math.round(pnl / cnt * 1000) / 10 : null;
+    ruleROI20[key] = cnt20 >= 5 ? Math.round(pnl20 / cnt20 * 1000) / 10 : null;
+    ruleROI40[key] = cnt40 >= 10 ? Math.round(pnl40 / cnt40 * 1000) / 10 : null;
   });
 
   return {
@@ -345,6 +347,7 @@ function computeJCRelation(results, allRecords){
     upcomingAlerts: upcomingAlerts,
     pastBets: pastBets,
     ruleROI20: ruleROI20,
+    ruleROI40: ruleROI40,
     nRecords: n,
     splitIdx: splitIdx,
   };
@@ -384,7 +387,7 @@ function renderJCRelation(RD){
     h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Quick Scan Summary</div>';
     h += '<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>';
     h += '<th>Date / Time</th><th>Match</th><th class="num">Line</th><th class="num">AH</th><th class="num">AA</th><th class="num">Lean</th>';
-    h += '<th class="num">Bet</th><th class="num">Type</th><th>Rule Fired</th><th class="num">N</th><th class="num">Est ROI</th><th class="num">Past 20</th>';
+    h += '<th class="num">Bet</th><th class="num">Type</th><th>Rule Fired</th><th class="num">N</th><th class="num">Est ROI</th><th class="num">Past 20</th><th class="num">Past 40</th>';
     h += '<th class="num">Tips</th>';
     h += '</tr></thead><tbody>';
 
@@ -428,6 +431,10 @@ function renderJCRelation(RD){
       var p20col = p20val===null ? '#475569' : p20val>=0 ? '#4ade80' : '#f87171';
       var p20str = p20val===null ? '<span style="color:#475569;font-size:9px">—</span>' : '<span style="font-family:var(--mono);font-weight:700;color:'+p20col+'">'+(p20val>=0?'+':'')+p20val.toFixed(1)+'%</span>';
       h += '<td class="num">'+p20str+'</td>';
+      var p40val = jcr.ruleROI40 && topRule.ruleKey ? jcr.ruleROI40[topRule.ruleKey] : null;
+      var p40col = p40val===null ? '#475569' : p40val>=0 ? '#4ade80' : '#f87171';
+      var p40str = p40val===null ? '<span style="color:#475569;font-size:9px">—</span>' : '<span style="font-family:var(--mono);font-weight:700;color:'+p40col+'">'+(p40val>=0?'+':'')+p40val.toFixed(1)+'%</span>';
+      h += '<td class="num">'+p40str+'</td>';
       h += '<td style="font-size:9px;white-space:nowrap">'+tipStr+'</td>';
       h += '</tr>';
       alertIdx++;
@@ -523,7 +530,7 @@ function renderJCRelation(RD){
           +'</div>';
       })():'';
 
-      h += '<tr id="'+detId+'" style="display:none"><td colspan="13" style="padding:0">'
+      h += '<tr id="'+detId+'" style="display:none"><td colspan="14" style="padding:0">'
         +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
         +ahBlock+expertBar+pred1x2+ruleRows+jcNarrative+macNarrative
