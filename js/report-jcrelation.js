@@ -294,7 +294,10 @@ function computeJCRelation(results, allRecords){
   // ── Past bets: last 50 results where at least one verified rule fired ──
   var TIP_MAP_DIR2 = { 'H':1,'1H':1,'FH':1,'A':-1,'1A':-1,'FA':-1,'D':0,'1D':0,'B':0,'1B':0,'1b':0,'S':0,'1S':0,'CB':0,'CS':0 };
   var pastBets = [];
-  data.slice().reverse().forEach(function(r){
+  data.slice().sort(function(a,b){
+    var dc=(b.DATE||'').localeCompare(a.DATE||'');
+    return dc!==0?dc:(b.TIME||0)-(a.TIME||0);
+  }).forEach(function(r){
     if(pastBets.length >= 50) return;
     var fired = [];
     verifiedRules.forEach(function(rule){
