@@ -418,9 +418,25 @@ function renderJCRelation(RD){
       h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       h += '<td><div style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">'+r.TEAMH+' vs '+r.TEAMA+'</div>';
       h += '<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
-      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+lineStr+'</td>';
-      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';
-      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA!=null?r.ASIAA:'—')+'</td>';
+      // Line with movement arrows
+      var _lineLN = r.ASIALINELN, _lineNow = parseFloat(r.ASIALINE);
+      var _lineStr = lineStr;
+      if(_lineLN!=null && _lineNow!=null && !isNaN(_lineLN) && _lineLN!==_lineNow){
+        var _ld=Math.round((_lineNow-_lineLN)*100)/100;
+        if(_ld!==0){var _la=Math.abs(_ld),_ln=_la>=1.0?3:_la>=0.5?2:1,_larr=_ld<0?'▼':'▲',_lcol=_ld<0?'#f87171':'#60a5fa';
+        _lineStr+=('<span style="color:'+_lcol+';font-size:10px;margin-left:2px">'+_larr.repeat(_ln)+'</span>');}
+      }
+      // AH odds with movement arrows
+      function _jcrOddsArrow(lat,opn){
+        if(lat==null||opn==null||opn===0||lat===0||lat===opn)return lat!=null?String(lat):'—';
+        var s=String(lat),n,arr,col;
+        if(lat<opn){n=lat<opn*0.9?3:lat<opn*0.95?2:1;arr='▼';col='#f87171';}
+        else{n=lat>opn*1.1?3:lat>opn*1.05?2:1;arr='▲';col='#60a5fa';}
+        return s+'<span style="color:'+col+';font-size:10px;margin-left:2px">'+arr.repeat(n)+'</span>';
+      }
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_lineStr+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_jcrOddsArrow(r.ASIAH, r.ASIAHLN!=null&&r.ASIAHLN!==0?r.ASIAHLN:null)+'</td>';
+      h += '<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_jcrOddsArrow(r.ASIAA, r.ASIAALN!=null&&r.ASIAALN!==0?r.ASIAALN:null)+'</td>';
       h += '<td class="num" style="font-family:var(--mono);color:#64748b">'+leanPct+'</td>';
       h += '<td class="num"><b style="font-size:14px;color:'+betCol+'">'+topRule.bet+'</b></td>';
       h += '<td class="num"><span style="color:'+typeCol+';font-size:11px;font-weight:700">'+typeLabel+'</span></td>';
