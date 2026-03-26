@@ -421,9 +421,12 @@ function renderJCRelation(RD){
       h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       var _hCol = topRule.bet==='H' ? '#f87171' : '#e2e8f0';
       var _aCol = topRule.bet==='A' ? '#60a5fa' : '#e2e8f0';
-      h += '<td style="min-width:120px">'
-        +'<div style="font-size:11px;font-weight:600;color:'+_hCol+'">'+r.TEAMH+'</div>'
-        +'<div style="font-size:10px;color:'+_aCol+'">'+r.TEAMA+'</div>'
+      h += '<td style="white-space:nowrap">'
+        +'<div style="font-size:11px;font-weight:600">'
+        +'<span style="color:'+_hCol+'">'+r.TEAMH+'</span>'
+        +' <span style="color:#475569;font-weight:400">vs</span> '
+        +'<span style="color:'+_aCol+'">'+r.TEAMA+'</span>'
+        +'</div>'
         +'<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div>'
         +'</td>';
       // Line with movement arrows
