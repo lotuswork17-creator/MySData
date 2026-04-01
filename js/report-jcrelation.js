@@ -571,19 +571,31 @@ function renderJCRelation(RD){
 
   // ── SECTION 1b: Past Bets Table ──
   h += '<div style="margin-bottom:20px;border-top:2px solid var(--border);padding-top:14px">';
-  // Pre-compute ROI for title badge
+  // Pre-compute ROI for title badge (last 100 and last 50)
   var _pbRoiLabel = '';
   if(jcr.pastBets.length){
-    var _pbPnlPre = 0;
+    var _pbPnlAll = 0;
     jcr.pastBets.slice().reverse().forEach(function(pb){
       var bet = pb.rules[0].bet;
-      _pbPnlPre = Math.round((_pbPnlPre + (bet==='H' ? pb.pnl.h : pb.pnl.a)) * 1000) / 1000;
+      _pbPnlAll = Math.round((_pbPnlAll + (bet==='H' ? pb.pnl.h : pb.pnl.a)) * 1000) / 1000;
     });
-    var _pbRoiPre  = Math.round(_pbPnlPre / jcr.pastBets.length * 1000) / 10;
-    var _pbRoiCol  = _pbRoiPre >= 0 ? '#4ade80' : '#f87171';
-    _pbRoiLabel = ' <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:'+_pbRoiCol+';margin-left:8px">'+(_pbRoiPre>=0?'+':'')+_pbRoiPre+'% ROI</span>';
+    var _pbRoiAll = Math.round(_pbPnlAll / jcr.pastBets.length * 1000) / 10;
+    var _pbColAll = _pbRoiAll >= 0 ? '#4ade80' : '#f87171';
+    // Last 50 ROI
+    var _pb50 = jcr.pastBets.slice(0, 50);
+    var _pbPnl50 = 0;
+    _pb50.slice().reverse().forEach(function(pb){
+      var bet = pb.rules[0].bet;
+      _pbPnl50 = Math.round((_pbPnl50 + (bet==='H' ? pb.pnl.h : pb.pnl.a)) * 1000) / 1000;
+    });
+    var _pbRoi50 = _pb50.length ? Math.round(_pbPnl50 / _pb50.length * 1000) / 10 : null;
+    var _pbCol50 = _pbRoi50!==null ? (_pbRoi50 >= 0 ? '#4ade80' : '#f87171') : '#475569';
+    _pbRoiLabel = ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+_pbColAll+';margin-left:8px">'+(_pbRoiAll>=0?'+':'')+_pbRoiAll+'%</span>'
+      + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L'+jcr.pastBets.length+'</span>'
+      + (_pbRoi50!==null ? ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+_pbCol50+';margin-left:6px">'+(_pbRoi50>=0?'+':'')+_pbRoi50+'%</span>'
+        + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L50</span>' : '');
   }
-  h += '<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center">📋 Past Bets — Last '+jcr.pastBets.length+' shown'+_pbRoiLabel+'</div>';
+  h += '<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+jcr.pastBets.length+' shown'+_pbRoiLabel+'</div>';
   h += '<div class="rpt-sub" style="margin-bottom:10px">Most recent completed matches where at least one verified rule fired. Hit reflects the rule\'s recommended bet side.</div>';
   if(!jcr.pastBets.length){
     h += '<div style="padding:14px;color:#475569;font-size:12px;font-style:italic">No past bets found.</div>';
