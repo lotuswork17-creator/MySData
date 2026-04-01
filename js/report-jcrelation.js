@@ -298,7 +298,7 @@ function computeJCRelation(results, allRecords){
     var dc=(b.DATE||'').localeCompare(a.DATE||'');
     return dc!==0?dc:(b.TIME||0)-(a.TIME||0);
   }).forEach(function(r){
-    if(pastBets.length >= 50) return;
+    if(pastBets.length >= 100) return;
     var fired = [];
     verifiedRules.forEach(function(rule){
       var tv = TIP_MAP_DIR2[String(r[rule.exp]||'')];
