@@ -49,10 +49,10 @@ function cA(r){
   if(o==='lw')return od-1; if(o==='lh')return(od-1)*0.5; if(o==='dd')return 0; if(o==='wh')return-0.5; return-1;
 }
 
-// ── Running ROI% ──
+// ── Running P&L ──
 function runPnl(subset, fn){
-  var pnl=0, n=0, pts=[];
-  subset.forEach(function(r){ var v=fn(r); if(v!==null){ pnl=Math.round((pnl+v)*1000)/1000; n++; pts.push(Math.round(pnl/n*1000)/10); } });
+  var pnl=0, pts=[];
+  subset.forEach(function(r){ var v=fn(r); if(v!==null){ pnl=Math.round((pnl+v)*1000)/1000; pts.push(pnl); } });
   return pts;
 }
 
@@ -134,7 +134,7 @@ function drawChart(canvasId, series, monthBoundaries, chartH){
     ctx.fillStyle = col; ctx.textAlign = 'left';
     var lx = xi(thisPts-1)+3, ly = yy(lastV);
     if(lx > w-36) lx = xi(thisPts-1)-40;
-    ctx.fillText(fmtRoi(lastV), lx, ly);
+    ctx.fillText(fmtPnl(lastV), lx, ly);
   });
 }
 
@@ -185,6 +185,7 @@ function computeReport(records){
   // (compute functions are defined in report-*.js and called here)
   return {
     monthBounds : monthBounds,
+    records     : records,      // all records including PREEVE
     allHpts     : allHpts,
     allApts     : allApts,
     results     : results,      // raw sorted results — available to all tab computes
@@ -199,5 +200,6 @@ function computeReport(records){
     escore      : computeEScore(results),
     ml          : computeML(results, records),
     jcrelation  : computeJCRelation(results, records),
+    moverule    : computeMoveRule(results, records),
   };
 }
