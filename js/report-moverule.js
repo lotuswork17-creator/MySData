@@ -57,71 +57,116 @@ function mrRoiOf(arr){ return !arr.length?0:Math.round(arr.reduce(function(s,v){
 var MR_TIP_MAP = {'H':1,'1H':1,'FH':1,'A':-1,'1A':-1,'FA':-1,'D':0,'1D':0,'B':0,'1B':0,'1b':0,'S':0,'1S':0,'CB':0,'CS':0};
 
 var MR_RULES = [
+  // ── MAC rules (strongest signals, re-verified on 9,792 records) ──
+  {
+    label:'MAC→H + Line↓ + H drift + A short → Bet A',
+    desc: 'MAC tips H but line shortened + H drifting + A shortened. Triple market signal against MAC — strongest counter.',
+    exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:'down', hom:'drift', aom:'short',
+    roi:9.7, train:5.7, test:21.0, type:'COUNTER'
+  },
+  {
+    label:'MAC→H + Line↓ + H drift → Bet A',
+    desc: 'MAC tips H but line shortened and H odds drifting — market fading MAC on two dimensions.',
+    exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:'down', hom:'drift', aom:null,
+    roi:9.4, train:6.4, test:18.2, type:'COUNTER'
+  },
   {
     label:'MAC→H + Line↓ → Bet A',
-    desc: 'MAC tips Home but line shortened (H becomes bigger favourite). Market disagrees — bet Away.',
+    desc: 'MAC tips H but line shortened (H handicap grew). Market structurally disagrees with MAC.',
     exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:'down', hom:null, aom:null,
-    roi:23.7, train:28.1, test:6.6, type:'COUNTER'
-  },
-  {
-    label:'MAC→H + H drift + A short → Bet A',
-    desc: 'MAC tips Home but H odds drifting AND A odds shortening — market money flowing Away.',
-    exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:null, hom:'drift', aom:'short',
-    roi:13.5, train:12.9, test:16.6, type:'COUNTER'
-  },
-  {
-    label:'MAC→H + A short → Bet A',
-    desc: 'MAC tips Home but Away odds are shortening — market backing Away. Counter MAC.',
-    exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:null, hom:null, aom:'short',
-    roi:13.1, train:11.4, test:23.0, type:'COUNTER'
-  },
-  {
-    label:'JCSID→A + H short → Bet H',
-    desc: 'JCSID tips Away but H odds shortening — market money flowing Home. Counter JCSID.',
-    exp:'JCTIPSID', tip_dir:-1, bet:'H', lm:null, hom:'short', aom:null,
-    roi:10.6, train:3.5, test:32.0, type:'COUNTER'
+    roi:6.2, train:6.0, test:6.8, type:'COUNTER'
   },
   {
     label:'MAC→H + H drift → Bet A',
-    desc: 'MAC tips Home but H odds are drifting out — market fading the H tip.',
+    desc: 'MAC tips H but H odds drifting outward — market money leaving H side. Fade MAC.',
     exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:null, hom:'drift', aom:null,
-    roi:10.5, train:11.5, test:5.1, type:'COUNTER'
+    roi:6.6, train:5.9, test:8.9, type:'COUNTER'
   },
   {
-    label:'JCSUM→A + Line flat + H drift + A short → Bet H',
-    desc: 'JCSUM tips Away, line unchanged, H drifted and A shortened — market likes Away. Counter JCSUM.',
-    exp:'JCTIPSUM', tip_dir:-1, bet:'H', lm:'flat', hom:'drift', aom:'short',
-    roi:6.9, train:6.5, test:9.3, type:'COUNTER'
+    label:'MAC→H + Line flat + H drift → Bet A',
+    desc: 'MAC tips H, line unchanged, but H odds drifting. Pure odds signal against MAC→H.',
+    exp:'TIPSIDMAC', tip_dir:1, bet:'A', lm:'flat', hom:'drift', aom:null,
+    roi:6.5, train:6.5, test:6.7, type:'COUNTER'
   },
   {
-    label:'MAC→A + H drift + A short → Bet H',
-    desc: 'MAC tips Away but H drifting AND A shortening — contradictory signals. Bet H.',
-    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:null, hom:'drift', aom:'short',
-    roi:6.5, train:6.4, test:7.2, type:'COUNTER'
+    label:'MAC→A + Line↑ + H short + A drift → Bet H',
+    desc: 'MAC tips A but line lengthened + H shortened + A drifted. Full structural reversal — bet H.',
+    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:'up', hom:'short', aom:'drift',
+    roi:6.0, train:4.3, test:14.1, type:'COUNTER'
   },
   {
-    label:'MAC→A + Line flat + H drift → Bet H',
-    desc: 'MAC tips Away on flat line but H odds drifting out. Market money going Away. Counter MAC.',
-    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:'flat', hom:'drift', aom:null,
-    roi:5.6, train:4.0, test:12.8, type:'COUNTER'
+    label:'MAC→A + Line↑ + H short → Bet H',
+    desc: 'MAC tips A but line moved longer (H favored more) + H odds shortened. Market backs H.',
+    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:'up', hom:'short', aom:null,
+    roi:6.0, train:4.3, test:14.1, type:'COUNTER'
   },
   {
-    label:'MAC→A + A short → Bet H',
-    desc: 'MAC tips Away but A odds shortening — conflicting signal. Bet Home.',
-    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:null, hom:null, aom:'short',
-    roi:5.6, train:6.4, test:1.8, type:'COUNTER'
+    label:'MAC→A + Line↑ + A drift → Bet H',
+    desc: 'MAC tips A but line up and A odds drifting — double signal that market prefers H.',
+    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:'up', hom:null, aom:'drift',
+    roi:4.5, train:4.1, test:6.3, type:'COUNTER'
   },
   {
-    label:'JCSUM→A + Line flat + H drift → Bet H',
-    desc: 'JCSUM tips Away on flat line but H odds drifting outward. Market fading Away. Counter JCSUM.',
-    exp:'JCTIPSUM', tip_dir:-1, bet:'H', lm:'flat', hom:'drift', aom:null,
-    roi:5.5, train:1.2, test:33.3, type:'COUNTER'
+    label:'MAC→A + Line↑ → Bet H',
+    desc: 'MAC tips A but line moved up (H handicap grew). Market structure contradicts MAC.',
+    exp:'TIPSIDMAC', tip_dir:-1, bet:'H', lm:'up', hom:null, aom:null,
+    roi:3.9, train:3.9, test:4.1, type:'COUNTER'
+  },
+  // ── JCSID rules ──
+  {
+    label:'JCSID→H + Line flat + H drift + A short → Bet A',
+    desc: 'JCSID tips H on flat line but H drifting + A shortening — odds movement strongly against JCSID.',
+    exp:'JCTIPSID', tip_dir:1, bet:'A', lm:'flat', hom:'drift', aom:'short',
+    roi:5.7, train:4.1, test:11.1, type:'COUNTER'
   },
   {
-    label:'JCSUM→H + Line flat + A drift → Bet H',
-    desc: 'JCSUM tips Home, line flat, A odds drifting outward — confirms Home signal. Follow JCSUM.',
-    exp:'JCTIPSUM', tip_dir:1, bet:'H', lm:'flat', hom:null, aom:'drift',
-    roi:5.4, train:5.6, test:5.1, type:'WITH'
+    label:'JCSID→H + Line flat + A short → Bet A',
+    desc: 'JCSID tips H on flat line but A odds shortening — market backing Away.',
+    exp:'JCTIPSID', tip_dir:1, bet:'A', lm:'flat', hom:null, aom:'short',
+    roi:5.2, train:4.0, test:9.3, type:'COUNTER'
+  },
+  {
+    label:'JCSID→H + H drift + A short → Bet A',
+    desc: 'JCSID tips H but H drifting + A shortening — both odds signals say Away.',
+    exp:'JCTIPSID', tip_dir:1, bet:'A', lm:null, hom:'drift', aom:'short',
+    roi:4.8, train:2.0, test:13.4, type:'COUNTER'
+  },
+  {
+    label:'JCSID→H + A short → Bet A',
+    desc: 'JCSID tips H but Away odds shortening — market money flowing contrary to JCSID.',
+    exp:'JCTIPSID', tip_dir:1, bet:'A', lm:null, hom:null, aom:'short',
+    roi:4.5, train:2.0, test:12.2, type:'COUNTER'
+  },
+  {
+    label:'JCSID→A + Line↓ + H drift → Bet H',
+    desc: 'JCSID tips A but line shortened + H drifting. Mixed signal favors H.',
+    exp:'JCTIPSID', tip_dir:-1, bet:'H', lm:'down', hom:'drift', aom:null,
+    roi:5.2, train:3.7, test:9.9, type:'COUNTER'
+  },
+  // ── ONID rules ──
+  {
+    label:'ONID→H + Line flat + H drift + A short → Bet A',
+    desc: 'ONID tips H on flat line but H drifting + A shortening. Strongest ONID counter signal.',
+    exp:'TIPSONID', tip_dir:1, bet:'A', lm:'flat', hom:'drift', aom:'short',
+    roi:9.9, train:12.9, test:1.7, type:'COUNTER'
+  },
+  {
+    label:'ONID→H + Line flat + A short → Bet A',
+    desc: 'ONID tips H on flat line but A odds shortening — market backing Away against ONID.',
+    exp:'TIPSONID', tip_dir:1, bet:'A', lm:'flat', hom:null, aom:'short',
+    roi:9.4, train:12.2, test:1.7, type:'COUNTER'
+  },
+  {
+    label:'ONID→H + H drift → Bet A',
+    desc: 'ONID tips H but H odds drifting — market fading ONID→H signal.',
+    exp:'TIPSONID', tip_dir:1, bet:'A', lm:null, hom:'drift', aom:null,
+    roi:5.4, train:6.2, test:2.7, type:'COUNTER'
+  },
+  {
+    label:'ONID→A + Line↓ + A short → Bet A',
+    desc: 'ONID tips A, line shortened, A odds shortening — market confirms ONID. Follow ONID.',
+    exp:'TIPSONID', tip_dir:-1, bet:'A', lm:'down', hom:null, aom:'short',
+    roi:3.9, train:2.1, test:9.4, type:'WITH'
   },
 ];
 
