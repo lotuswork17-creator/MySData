@@ -186,12 +186,12 @@
       <div class="fl">A Odds Move</div>
       <select id="aMoveSelect">
         <option value="">Any</option>
-        <option value="short">▲ Any Shorten</option>
-        <option value="short2">▲▲ Shortened ≥5%</option>
-        <option value="short3">▲▲▲ Shortened ≥10%</option>
-        <option value="drift">▼ Any Lengthen</option>
-        <option value="drift2">▼▼ Lengthened ≥5%</option>
-        <option value="drift3">▼▼▼ Lengthened ≥10%</option>
+        <option value="short">▼ Any Shorten</option>
+        <option value="short2">▼▼ Shortened ≥5%</option>
+        <option value="short3">▼▼▼ Shortened ≥10%</option>
+        <option value="drift">▲ Any Lengthen</option>
+        <option value="drift2">▲▲ Lengthened ≥5%</option>
+        <option value="drift3">▲▲▲ Lengthened ≥10%</option>
         <option value="flat">— Unchanged</option>
       </select>
     </div>
@@ -243,14 +243,7 @@
 
 <div id="betCalc">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1">
-      <div class="bc-title" style="margin-bottom:0">💰 $1/Match Return Calculator</div>
-      <div style="display:flex;gap:4px;margin-left:4px">
-        <button id="oddsToggleLatest" onclick="setOddsMode('latest')" style="font-size:10px;font-family:var(--mono);padding:2px 9px;border-radius:5px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700">Latest</button>
-        <button id="oddsToggleOpening" onclick="setOddsMode('opening')" style="font-size:10px;font-family:var(--mono);padding:2px 9px;border-radius:5px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer">Opening</button>
-      </div>
-      <span id="oddsModeLabel" style="font-size:9px;color:#64748b;font-family:var(--mono)">Results Only</span>
-    </div>
+    <div class="bc-title" style="margin-bottom:0">💰 $1/Match Return Calculator (Latest Odds, Results Only)</div>
     <button class="filter-toggle active" id="betCalcToggle" onclick="toggleBetCalc()"><span id="betCalcLabel">Hide</span> <span class="ft-arrow">▼</span></button>
   </div>
   <div class="bc-summary" id="betCalcBody">
