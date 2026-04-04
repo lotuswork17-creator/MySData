@@ -144,8 +144,10 @@ function applyFilters(){
       var fh2=rh2/vig2*100,vigPct2=(vig2-1)*100;
       if(mf==='balanced'&&(fh2<48||fh2>52))return false;
       if(mf==='dead-even'&&(fh2<49||fh2>51))return false;
+      if(mf==='h-50to55'&&(fh2<=50||fh2>=55))return false;
       if(mf==='h-slight'&&(fh2<52||fh2>=55))return false;
       if(mf==='h-clear'&&fh2<55)return false;
+      if(mf==='a-45to50'&&(fh2<=45||fh2>=50))return false;
       if(mf==='a-slight'&&(fh2<45||fh2>=48))return false;
       if(mf==='a-clear'&&fh2>=45)return false;
       if(vf==='vig-tight'&&vigPct2>=5)return false;
@@ -155,7 +157,7 @@ function applyFilters(){
     }
     // Line / H / A movement filters
     if(lmf){
-      if(r.ASIALINE==null||r.ASIALINELN==null||r.ASIAHLN===0){return false;}
+      if(r.ASIALINE==null||r.ASIALINELN==null){return false;}
       var ld=r.ASIALINE-r.ASIALINELN,la=Math.abs(ld);
       if(lmf==='up'&&ld<=0)return false;
       if(lmf==='up2'&&ld<0.5)return false;
@@ -166,7 +168,7 @@ function applyFilters(){
       if(lmf==='flat'&&ld!==0)return false;
     }
     if(hmf){
-      if(r.ASIAH==null||r.ASIAHLN==null||r.ASIAHLN===0){return false;}
+      if(r.ASIAH==null||r.ASIAHLN==null){return false;}
       var hd=r.ASIAH-r.ASIAHLN;
       if(hmf==='short'&&hd>=0)return false;
       if(hmf==='short2'&&(hd>=0||r.ASIAH>r.ASIAHLN*0.95))return false;
@@ -177,7 +179,7 @@ function applyFilters(){
       if(hmf==='flat'&&hd!==0)return false;
     }
     if(amf){
-      if(r.ASIAA==null||r.ASIAALN==null||r.ASIAHLN===0){return false;}
+      if(r.ASIAA==null||r.ASIAALN==null){return false;}
       var ad=r.ASIAA-r.ASIAALN;
       if(amf==='short'&&ad>=0)return false;
       if(amf==='short2'&&(ad>=0||r.ASIAA>r.ASIAALN*0.95))return false;
