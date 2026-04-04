@@ -347,9 +347,16 @@ function renderMoveRule(RD){
 
       h+='<tr style="cursor:pointer" onclick="var el=document.getElementById(\''+detId+'\');el.style.display=el.style.display===\'none\'?\'table-row\':\'none\'">';
       h+=(function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
-      var _hCol=rule.bet==='H'?'#f87171':'#60a5fa', _aCol=rule.bet==='A'?'#f87171':'#60a5fa';
-      h+='<td><div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px"><span style="color:'+_hCol+'">'+r.TEAMH+'</span> <span style="color:#475569;font-weight:400">vs</span> <span style="color:'+_aCol+'">'+r.TEAMA+'</span></div>';
-      h+='<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
+      var _hCol=rule.bet==='H'?'#f87171':'#e2e8f0';
+      var _aCol=rule.bet==='A'?'#60a5fa':'#e2e8f0';
+      h+='<td style="white-space:nowrap">'
+        +'<div style="font-size:11px;font-weight:600">'
+        +'<span style="color:'+_hCol+'">'+r.TEAMH+'</span>'
+        +' <span style="color:#475569;font-weight:400">vs</span> '
+        +'<span style="color:'+_aCol+'">'+r.TEAMA+'</span>'
+        +'</div>'
+        +'<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div>'
+        +'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_lineStr+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_oddsArrow(r.ASIAH,r.ASIAHLN)+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_oddsArrow(r.ASIAA,r.ASIAALN)+'</td>';
