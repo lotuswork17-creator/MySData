@@ -243,6 +243,11 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderMoveRule() -->
 </div>
 
+<!-- TAB 13: ODDS ADVANTAGE RULES -->
+<div class="rpt-section" id="tab13">
+  <!-- content injected by renderOddsRule() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -281,6 +286,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-gem.js"></script>
 <script src="js/report-jcrelation.js"></script>
 <script src="js/report-moverule.js"></script>
+<script src="js/report-oddsrule.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -300,6 +306,7 @@ var TABS = [
   { label:'⚡ GEM/GPT ML',  render: function(RD){ renderGEM(RD.results||RD); } },
   { label:'🔗 JC Relations', render: renderJCRelation },
   { label:'📡 Move Rules',   render: renderMoveRule },
+  { label:'💹 Odds Rules',    render: renderOddsRule },
 ];
 
 // Build tab bar from registry
