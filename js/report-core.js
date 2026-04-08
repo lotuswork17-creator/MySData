@@ -201,5 +201,6 @@ function computeReport(records){
     ml          : computeML(results, records),
     jcrelation  : computeJCRelation(results, records),
     moverule    : computeMoveRule(results, records),
+    oddsrule    : computeOddsRule(results, records),
   };
 }
