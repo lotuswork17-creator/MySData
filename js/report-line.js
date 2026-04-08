@@ -428,14 +428,10 @@ function renderLineOdds(d, od){
       +'<th class="num">N</th><th class="num">Avg Diff</th>'
       +'<th class="num" style="color:#f87171">HKJC H ROI</th>'
       +'<th class="num" style="color:#f87171">HKJC A ROI</th>'
-      +'<th class="num" style="color:'+oColor+'">'+oLabel+' H ROI</th>'
-      +'<th class="num" style="color:'+oColor+'">'+oLabel+' A ROI</th>'
       +'</tr></thead><tbody>';
     rows.forEach(function(row){
       var hc=row.hkjcH!==null?(row.hkjcH>=0?'#4ade80':'#f87171'):'#475569';
       var ac=row.hkjcA!==null?(row.hkjcA>=0?'#4ade80':'#f87171'):'#475569';
-      var ohc=row.otherH!==null?(row.otherH>=0?'#4ade80':'#f87171'):'#475569';
-      var oac=row.otherA!==null?(row.otherA>=0?'#4ade80':'#f87171'):'#475569';
       var dc=row.avgDiff>0?'#4ade80':row.avgDiff<0?'#f87171':'#64748b';
       t+='<tr>'
         +'<td><span style="color:'+row.color+';font-size:10px;font-weight:600">'+row.label+'</span></td>'
@@ -443,8 +439,6 @@ function renderLineOdds(d, od){
         +'<td class="num" style="font-family:var(--mono);color:'+dc+'">'+(row.avgDiff>=0?'+':'')+row.avgDiff.toFixed(2)+'%</td>'
         +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+hc+'">'+(row.hkjcH!==null?fmtRoi(row.hkjcH):'—')+'</td>'
         +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+ac+'">'+(row.hkjcA!==null?fmtRoi(row.hkjcA):'—')+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+ohc+'">'+(row.otherH!==null?fmtRoi(row.otherH):'—')+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+oac+'">'+(row.otherA!==null?fmtRoi(row.otherA):'—')+'</td>'
         +'</tr>';
     });
     return t+'</tbody></table></div>';
