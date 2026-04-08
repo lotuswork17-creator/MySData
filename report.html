@@ -145,12 +145,12 @@ body{display:block;padding-bottom:40px}
 
 <!-- TAB 2: LINE -->
 <div class="rpt-section" id="tab2">
-  <div class="rpt-title">ROI by Asia Line</div>
-  <div class="rpt-sub">One chart per handicap line. H bet (red) vs A bet (blue) — compare both sides on the same scale.</div>
+  <div class="rpt-title">📊 Bookmaker Odds Comparison</div>
+  <div class="rpt-sub">H bet and A bet ROI compared across HKJC, Macau and SBO. Each bookmaker uses its own handicap line and odds. Only records where that bookmaker's odds are available are included.</div>
   <div class="rpt-cards" id="lineCards"></div>
   <div id="lineChartsArea"></div>
   <div class="rpt-table-wrap"><table class="rpt-table">
-    <thead><tr><th>Line</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Best</th></tr></thead>
+    <thead><tr></tr></thead>
     <tbody id="tbLine"></tbody>
   </table></div>
 </div>
@@ -289,7 +289,7 @@ body{display:block;padding-bottom:40px}
 var TABS = [
   { label:'📊 League',        render: renderLeague },
   { label:'📅 Month',         render: renderMonth  },
-  { label:'📐 Line',          render: renderLine   },
+  { label:'📊 Bookie Odds',   render: renderLine   },
   { label:'🧠 Expert',        render: renderExpert },
   { label:'⚡ Smart Money',   render: renderSmart  },
   { label:'↕️ Line × Expert', render: renderLM     },
