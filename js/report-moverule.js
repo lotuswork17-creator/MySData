@@ -482,7 +482,16 @@ function renderMoveRule(RD){
         +'<span style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+aomCol+'15;border:1px solid '+aomCol+'33;color:'+aomCol+'">A odds: '+aomLabel+'</span>'
         +'</div>'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
-        +expertBar+ruleRows+jcNarrative+macNarrative
+
+      var _pred1x2=(r.PREDICTH||r.PREDICTD||r.PREDICTA)?(function(){
+        var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
+        return '<div style="margin-bottom:8px">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Prediction %</div>'
+          +'<div style="display:flex;gap:8px;font-size:10px;font-family:var(--mono);margin-bottom:4px"><span style="color:#f87171">H '+ph+'%</span><span style="color:#4ade80">D '+pd+'%</span><span style="color:#60a5fa">A '+pa+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;overflow:hidden;display:flex"><div style="width:'+(ph/pt*100).toFixed(1)+'%;background:#f87171"></div><div style="width:'+(pd/pt*100).toFixed(1)+'%;background:#4ade80"></div><div style="width:'+(pa/pt*100).toFixed(1)+'%;background:#60a5fa"></div></div>'
+          +'</div>';
+      })():'';
+        +expertBar+_pred1x2+ruleRows+jcNarrative+macNarrative
         +'</div></td></tr>';
     });
 

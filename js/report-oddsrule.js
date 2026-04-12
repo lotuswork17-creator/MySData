@@ -375,10 +375,46 @@ function renderOddsRule(RD){
           +'<span style="color:#94a3b8;font-family:var(--mono);font-size:9px;white-space:nowrap">n='+rs.n+' tr='+(rs.train>=0?'+':'')+rs.train.toFixed(1)+'% te='+(rs.test>=0?'+':'')+rs.test.toFixed(1)+'%</span>'
           +'</div>';
       }).join('');
+      var _orExpertBar=(function(){
+        if(typeof expertScore!=='function') return '';
+        var e=expertScore(r); if(!e) return '';
+        var et=e.h+e.d+e.a||1;
+        return '<div style="margin-bottom:8px">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Expert Signal</div>'
+          +'<div style="display:flex;gap:8px;font-size:10px;font-family:var(--mono);margin-bottom:4px">'
+          +'<span style="color:#f87171">H '+e.h+'%</span><span style="color:#4ade80">D '+e.d+'%</span><span style="color:#60a5fa">A '+e.a+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;overflow:hidden;display:flex">'
+          +'<div style="width:'+(e.h/et*100).toFixed(1)+'%;background:#f87171"></div>'
+          +'<div style="width:'+(e.d/et*100).toFixed(1)+'%;background:#4ade80"></div>'
+          +'<div style="width:'+(e.a/et*100).toFixed(1)+'%;background:#60a5fa"></div>'
+          +'</div></div>';
+      })();
+      var _orPred=(r.PREDICTH||r.PREDICTD||r.PREDICTA)?(function(){
+        var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0,pt=ph+pd+pa||1;
+        return '<div style="margin-bottom:8px">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Prediction %</div>'
+          +'<div style="display:flex;gap:8px;font-size:10px;font-family:var(--mono);margin-bottom:4px"><span style="color:#f87171">H '+ph+'%</span><span style="color:#4ade80">D '+pd+'%</span><span style="color:#60a5fa">A '+pa+'%</span></div>'
+          +'<div style="height:6px;border-radius:3px;overflow:hidden;display:flex"><div style="width:'+(ph/pt*100).toFixed(1)+'%;background:#f87171"></div><div style="width:'+(pd/pt*100).toFixed(1)+'%;background:#4ade80"></div><div style="width:'+(pa/pt*100).toFixed(1)+'%;background:#60a5fa"></div></div>'
+          +'</div>';
+      })():'';
+      var _orJcNarrative=(r.JCTIPS1||r.JCTIPS2||r.JCTIPS3)?(function(){
+        return '<div style="margin-bottom:8px;padding-top:7px;border-top:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">JC Analysis</div>'
+          +(r.JCTIPS1?'<div style="font-size:11px;color:#fbbf24;font-weight:600;margin-bottom:4px">'+r.JCTIPS1+'</div>':'')
+          +(r.JCTIPS2?'<div style="font-size:10px;color:#e2e8f0;line-height:1.6;margin-bottom:4px">'+r.JCTIPS2+'</div>':'')
+          +(r.JCTIPS3?'<div style="font-size:10px;color:#94a3b8;line-height:1.6">'+r.JCTIPS3+'</div>':'')
+          +'</div>';
+      })():'';
+      var _orMacNarrative=r.TIPSMAC?(function(){
+        return '<div style="margin-bottom:8px;padding-top:7px;border-top:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">🎰 Macau Tips</div>'
+          +'<div style="font-size:10px;color:#e2e8f0;line-height:1.7">'+r.TIPSMAC+'</div>'
+          +'</div>';
+      })():'';
       h+='<tr id="'+detId+'" style="display:none"><td colspan="12" style="padding:0">'
         +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
-        +oddsRows+ruleRows
+        +oddsRows+_orExpertBar+_orPred+ruleRows+_orJcNarrative+_orMacNarrative
         +'</div></td></tr>';
       alertIdx++;
     });
