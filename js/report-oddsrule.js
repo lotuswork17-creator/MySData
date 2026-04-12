@@ -514,13 +514,17 @@ function renderOddsRule(RD){
       if(first===null) return arr;
       return arr.map(function(v){return v===null?first:v;});
     }
-    var fullSeries=[
-      {label:'Running ROI%', color:'#60a5fa', pts:cd.roiPts},
-    ];
+    var lastRoi  = cd.roiPts.length  ? cd.roiPts[cd.roiPts.length-1]   : null;
     var ma50f=fillNulls(cd.ma50Pts);
     var ma100f=fillNulls(cd.ma100Pts);
-    if(ma50f.some(function(v){return v!==null;}))  fullSeries.push({label:'MA 50',  color:'#fbbf24', pts:ma50f});
-    if(ma100f.some(function(v){return v!==null;})) fullSeries.push({label:'MA 100', color:'#4ade80', pts:ma100f});
+    var lastMa50  = ma50f.length   ? cd.ma50Pts[cd.ma50Pts.length-1]   : null;
+    var lastMa100 = ma100f.length  ? cd.ma100Pts[cd.ma100Pts.length-1] : null;
+    function fmtLatest(v){ return v!==null ? ' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>' : ''; }
+    var fullSeries=[
+      {label:'Running ROI%'+fmtLatest(lastRoi),   color:'#60a5fa', pts:cd.roiPts},
+    ];
+    if(ma50f.some(function(v){return v!==null;}))  fullSeries.push({label:'MA 50'+fmtLatest(lastMa50),   color:'#fbbf24', pts:ma50f});
+    if(ma100f.some(function(v){return v!==null;})) fullSeries.push({label:'MA 100'+fmtLatest(lastMa100), color:'#4ade80', pts:ma100f});
     makeLegend('lgdOrRoi', fullSeries);
     setTimeout(function(){ drawChart('cOrRoi', fullSeries, RD.monthBounds, 150); }, 30);
   }
