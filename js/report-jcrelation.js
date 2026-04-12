@@ -407,6 +407,28 @@ function renderJCRelation(RD){
 
   // ── SECTION 1: Auto-Apply Rules to Upcoming Matches ──
   h += '<div style="margin-bottom:20px">';
+  // ── ROI History Chart ──
+  if(jcr.chartData && jcr.chartData.roiPts.length){
+    var _cd=jcr.chartData;
+    function _fillNulls(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
+    var _lastRoi=_cd.roiPts[_cd.roiPts.length-1];
+    var _ma50f=_fillNulls(_cd.ma50Pts), _ma100f=_fillNulls(_cd.ma100Pts);
+    var _lastMa50=_cd.ma50Pts[_cd.ma50Pts.length-1], _lastMa100=_cd.ma100Pts[_cd.ma100Pts.length-1];
+    function _fmtLast(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
+    var _jcrSeries=[{label:'Running ROI%'+_fmtLast(_lastRoi),color:'#60a5fa',pts:_cd.roiPts}];
+    if(_ma50f.some(function(v){return v!==null;}))  _jcrSeries.push({label:'MA 50'+_fmtLast(_lastMa50),  color:'#fbbf24',pts:_ma50f});
+    if(_ma100f.some(function(v){return v!==null;})) _jcrSeries.push({label:'MA 100'+_fmtLast(_lastMa100),color:'#4ade80',pts:_ma100f});
+    h += '<div class="chart-box" style="margin-bottom:16px">'
+      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_cd.skip+' bets hidden · '+_cd.totalBets+' total)</div>'
+      +'<div class="chart-legend" id="lgdJcrRoi"></div>'
+      +'<canvas id="cJcrRoi"></canvas>'
+      +'</div>';
+    setTimeout(function(){
+      makeLegend('lgdJcrRoi', _jcrSeries);
+      drawChart('cJcrRoi', _jcrSeries, null, 150);
+    }, 30);
+  }
+
   h += '<div class="rpt-title" style="margin-bottom:4px">🎯 Auto-Apply Rules to Upcoming Matches</div>';
   h += '<div style="font-size:10px;color:#64748b;margin-bottom:10px">All verified rules automatically scanned against upcoming matches. Rules fire on first-match-wins basis (highest ROI rule listed per match). All 4 experts (MAC / JCSUM / JCSID / ONID) included.</div>';
 
@@ -622,27 +644,6 @@ function renderJCRelation(RD){
       + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L'+jcr.pastBets.length+'</span>'
       + (_pbRoi50!==null ? ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+_pbCol50+';margin-left:6px">'+(_pbRoi50>=0?'+':'')+_pbRoi50+'%</span>'
         + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L50</span>' : '');
-  }
-  // ── ROI History Chart ──
-  if(jcr.chartData && jcr.chartData.roiPts.length){
-    var _cd=jcr.chartData;
-    function _fillNulls(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
-    var _lastRoi=_cd.roiPts[_cd.roiPts.length-1];
-    var _ma50f=_fillNulls(_cd.ma50Pts), _ma100f=_fillNulls(_cd.ma100Pts);
-    var _lastMa50=_cd.ma50Pts[_cd.ma50Pts.length-1], _lastMa100=_cd.ma100Pts[_cd.ma100Pts.length-1];
-    function _fmtLast(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
-    var _jcrSeries=[{label:'Running ROI%'+_fmtLast(_lastRoi),color:'#60a5fa',pts:_cd.roiPts}];
-    if(_ma50f.some(function(v){return v!==null;}))  _jcrSeries.push({label:'MA 50'+_fmtLast(_lastMa50),  color:'#fbbf24',pts:_ma50f});
-    if(_ma100f.some(function(v){return v!==null;})) _jcrSeries.push({label:'MA 100'+_fmtLast(_lastMa100),color:'#4ade80',pts:_ma100f});
-    h += '<div class="chart-box" style="margin-bottom:16px">'
-      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_cd.skip+' bets hidden · '+_cd.totalBets+' total)</div>'
-      +'<div class="chart-legend" id="lgdJcrRoi"></div>'
-      +'<canvas id="cJcrRoi"></canvas>'
-      +'</div>';
-    setTimeout(function(){
-      makeLegend('lgdJcrRoi', _jcrSeries);
-      drawChart('cJcrRoi', _jcrSeries, null, 150);
-    }, 30);
   }
   h += '<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+jcr.pastBets.length+' shown'+_pbRoiLabel+'</div>';
   h += '<div class="rpt-sub" style="margin-bottom:10px">Most recent completed matches where at least one verified rule fired. Hit reflects the rule\'s recommended bet side.</div>';

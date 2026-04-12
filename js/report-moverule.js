@@ -320,6 +320,28 @@ function renderMoveRule(RD){
 
   // ── SECTION 1: Upcoming alerts ──
   h+='<div style="margin-bottom:20px">';
+  // ── ROI History Chart ──
+  if(mr.chartData && mr.chartData.roiPts.length){
+    var _mcd=mr.chartData;
+    function _mrFill(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
+    var _mrLastRoi=_mcd.roiPts[_mcd.roiPts.length-1];
+    var _mrF50=_mrFill(_mcd.ma50Pts), _mrF100=_mrFill(_mcd.ma100Pts);
+    var _mrLast50=_mcd.ma50Pts[_mcd.ma50Pts.length-1], _mrLast100=_mcd.ma100Pts[_mcd.ma100Pts.length-1];
+    function _mrFmtL(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
+    var _mrSeries=[{label:'Running ROI%'+_mrFmtL(_mrLastRoi),color:'#60a5fa',pts:_mcd.roiPts}];
+    if(_mrF50.some(function(v){return v!==null;}))  _mrSeries.push({label:'MA 50'+_mrFmtL(_mrLast50),  color:'#fbbf24',pts:_mrF50});
+    if(_mrF100.some(function(v){return v!==null;})) _mrSeries.push({label:'MA 100'+_mrFmtL(_mrLast100),color:'#4ade80',pts:_mrF100});
+    h+='<div class="chart-box" style="margin-bottom:16px">'
+      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_mcd.skip+' bets hidden · '+_mcd.totalBets+' total)</div>'
+      +'<div class="chart-legend" id="lgdMrRoi"></div>'
+      +'<canvas id="cMrRoi"></canvas>'
+      +'</div>';
+    setTimeout(function(){
+      makeLegend('lgdMrRoi', _mrSeries);
+      drawChart('cMrRoi', _mrSeries, null, 150);
+    }, 30);
+  }
+
   h+='<div class="rpt-title" style="margin-bottom:4px">🎯 Upcoming Matches — Rules Firing</div>';
   h+='<div style="font-size:10px;color:#64748b;margin-bottom:10px">Upcoming matches where at least one movement rule fires. Requires opening odds to be available.</div>';
 
@@ -500,27 +522,6 @@ function renderMoveRule(RD){
   h+='</div>';
 
   // ── SECTION 3: Past Bets ──
-  // ── ROI History Chart ──
-  if(mr.chartData && mr.chartData.roiPts.length){
-    var _mcd=mr.chartData;
-    function _mrFill(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
-    var _mrLastRoi=_mcd.roiPts[_mcd.roiPts.length-1];
-    var _mrF50=_mrFill(_mcd.ma50Pts), _mrF100=_mrFill(_mcd.ma100Pts);
-    var _mrLast50=_mcd.ma50Pts[_mcd.ma50Pts.length-1], _mrLast100=_mcd.ma100Pts[_mcd.ma100Pts.length-1];
-    function _mrFmtL(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
-    var _mrSeries=[{label:'Running ROI%'+_mrFmtL(_mrLastRoi),color:'#60a5fa',pts:_mcd.roiPts}];
-    if(_mrF50.some(function(v){return v!==null;}))  _mrSeries.push({label:'MA 50'+_mrFmtL(_mrLast50),  color:'#fbbf24',pts:_mrF50});
-    if(_mrF100.some(function(v){return v!==null;})) _mrSeries.push({label:'MA 100'+_mrFmtL(_mrLast100),color:'#4ade80',pts:_mrF100});
-    h+='<div class="chart-box" style="margin-bottom:16px">'
-      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_mcd.skip+' bets hidden · '+_mcd.totalBets+' total)</div>'
-      +'<div class="chart-legend" id="lgdMrRoi"></div>'
-      +'<canvas id="cMrRoi"></canvas>'
-      +'</div>';
-    setTimeout(function(){
-      makeLegend('lgdMrRoi', _mrSeries);
-      drawChart('cMrRoi', _mrSeries, null, 150);
-    }, 30);
-  }
   var pbLen=mr.pastBets.length;
   var _pbRoiLabel='';
   if(pbLen){
