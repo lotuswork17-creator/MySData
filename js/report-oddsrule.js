@@ -229,8 +229,40 @@ function computeOddsRule(results, allRecords){
     ruleROI40[rs.ruleKey]=c40>=10?Math.round(p40/c40*1000)/10:null;
   });
 
+  // ── ROI history chart series — sorted chronologically, skip first 300 ──
+  var SKIP=300;
+  var chronoBets=[];
+  // Collect all matched bets in chronological order
+  all3.forEach(function(r){
+    var fired=[];
+    ruleSignals.forEach(function(rs){ if(matchRule(r,rs.rule)) fired.push(rs); });
+    if(!fired.length) return;
+    var pnlFn=fired[0].rule.bet==='H'?pnlH:pnlA;
+    var v=pnlFn(r); if(v===null) return;
+    chronoBets.push(v);
+  });
+  // Build running ROI and moving averages, skip first SKIP
+  var roiPts=[], ma50Pts=[], ma100Pts=[];
+  var cumPnl=0;
+  chronoBets.forEach(function(v,i){
+    cumPnl=Math.round((cumPnl+v)*1000)/1000;
+    var n=i+1;
+    var runRoi=Math.round(cumPnl/n*10000)/100;
+    // MA50: avg ROI of last 50 bets
+    var ma50=null;
+    if(n>=50){ var sl50=chronoBets.slice(n-50,n); var s50=sl50.reduce(function(a,b){return a+b;},0); ma50=Math.round(s50/50*10000)/100; }
+    var ma100=null;
+    if(n>=100){ var sl100=chronoBets.slice(n-100,n); var s100=sl100.reduce(function(a,b){return a+b;},0); ma100=Math.round(s100/100*10000)/100; }
+    if(i>=SKIP){
+      roiPts.push(runRoi);
+      ma50Pts.push(ma50);
+      ma100Pts.push(ma100);
+    }
+  });
+
   return{ruleSignals:ruleSignals,upcomingAlerts:upcomingAlerts,pastBets:pastBets,
-    ruleROI20:ruleROI20,ruleROI40:ruleROI40,nRecords:n};
+    ruleROI20:ruleROI20,ruleROI40:ruleROI40,nRecords:n,
+    chartData:{roiPts:roiPts,ma50Pts:ma50Pts,ma100Pts:ma100Pts,totalBets:chronoBets.length,skip:SKIP}};
 }
 
 function renderOddsRule(RD){
@@ -251,6 +283,16 @@ function renderOddsRule(RD){
     +'When HKJC odds diverge from other books, it reveals market positioning — combined with expert tips this creates edge. '
     +'All ROI is HKJC bets only. Verified on train (75%) + test (25%) temporal splits.</div>';
   h+='<div style="font-size:10px;color:#64748b;margin-bottom:14px">Same-match pool: <b style="color:#e2e8f0">'+or.nRecords+'</b> records</div>';
+
+  // ── ROI History Chart ──
+  if(or.chartData && or.chartData.roiPts.length){
+    var cd=or.chartData;
+    h+='<div class="chart-box" style="margin-bottom:16px">'
+      +'<div class="chart-box-label">Running ROI% History (first '+cd.skip+' bets hidden · '+cd.totalBets+' total matched bets)</div>'
+      +'<div class="chart-legend" id="lgdOrRoi"></div>'
+      +'<canvas id="cOrRoi"></canvas>'
+      +'</div>';
+  }
 
   // ── Upcoming alerts ──
   h+='<div style="margin-bottom:20px">';
@@ -460,4 +502,26 @@ function renderOddsRule(RD){
   h+='</div>';
 
   el.innerHTML=h;
+
+  // Draw ROI history chart
+  if(or.chartData && or.chartData.roiPts.length){
+    var cd=or.chartData;
+    // MA series are already aligned (same length as roiPts, null where not enough history)
+    // Replace nulls with the first valid value for chart continuity
+    function fillNulls(arr){
+      var first=null;
+      for(var i=0;i<arr.length;i++){if(arr[i]!==null){first=arr[i];break;}}
+      if(first===null) return arr;
+      return arr.map(function(v){return v===null?first:v;});
+    }
+    var fullSeries=[
+      {label:'Running ROI%', color:'#60a5fa', pts:cd.roiPts},
+    ];
+    var ma50f=fillNulls(cd.ma50Pts);
+    var ma100f=fillNulls(cd.ma100Pts);
+    if(ma50f.some(function(v){return v!==null;}))  fullSeries.push({label:'MA 50',  color:'#fbbf24', pts:ma50f});
+    if(ma100f.some(function(v){return v!==null;})) fullSeries.push({label:'MA 100', color:'#4ade80', pts:ma100f});
+    makeLegend('lgdOrRoi', fullSeries);
+    setTimeout(function(){ drawChart('cOrRoi', fullSeries, RD.monthBounds, 150); }, 30);
+  }
 }
