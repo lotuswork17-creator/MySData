@@ -273,8 +273,29 @@ function computeMoveRule(results, allRecords){
     ruleROI40[key]=cnt40>=10?Math.round(pnl40/cnt40*1000)/10:null;
   });
 
+  // ── ROI history chart data ──
+  var _mrSkip=300;
+  var _mrBets=[];
+  data.slice().sort(function(a,b){return(a.DATE||'')>(b.DATE||'')?1:-1;}).forEach(function(r){
+    var fired=[];
+    ruleSignals.forEach(function(rs){if(matchRule(r,rs.rule))fired.push(rs);});
+    if(!fired.length)return;
+    var p=mrPnl(r); if(!p)return;
+    var bet=fired[0].rule.bet, v=bet==='H'?p.h:p.a;
+    if(v!==null)_mrBets.push(v);
+  });
+  var _mrRoi=[],_mrMa50=[],_mrMa100=[],_mrCum=0;
+  _mrBets.forEach(function(v,i){
+    _mrCum=Math.round((_mrCum+v)*1000)/1000;
+    var n=i+1, rr=Math.round(_mrCum/n*10000)/100;
+    var m50=n>=50?Math.round(_mrBets.slice(n-50,n).reduce(function(s,x){return s+x;},0)/50*10000)/100:null;
+    var m100=n>=100?Math.round(_mrBets.slice(n-100,n).reduce(function(s,x){return s+x;},0)/100*10000)/100:null;
+    if(i>=_mrSkip){_mrRoi.push(rr);_mrMa50.push(m50);_mrMa100.push(m100);}
+  });
+
   return {ruleSignals:ruleSignals, upcomingAlerts:upcomingAlerts, pastBets:pastBets,
-          ruleROI20:ruleROI20, ruleROI40:ruleROI40, nRecords:n, splitIdx:splitIdx};
+          ruleROI20:ruleROI20, ruleROI40:ruleROI40, nRecords:n, splitIdx:splitIdx,
+          chartData:{roiPts:_mrRoi,ma50Pts:_mrMa50,ma100Pts:_mrMa100,totalBets:_mrBets.length,skip:_mrSkip}};
 }
 
 // ── renderMoveRule ──
@@ -479,6 +500,27 @@ function renderMoveRule(RD){
   h+='</div>';
 
   // ── SECTION 3: Past Bets ──
+  // ── ROI History Chart ──
+  if(mr.chartData && mr.chartData.roiPts.length){
+    var _mcd=mr.chartData;
+    function _mrFill(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
+    var _mrLastRoi=_mcd.roiPts[_mcd.roiPts.length-1];
+    var _mrF50=_mrFill(_mcd.ma50Pts), _mrF100=_mrFill(_mcd.ma100Pts);
+    var _mrLast50=_mcd.ma50Pts[_mcd.ma50Pts.length-1], _mrLast100=_mcd.ma100Pts[_mcd.ma100Pts.length-1];
+    function _mrFmtL(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
+    var _mrSeries=[{label:'Running ROI%'+_mrFmtL(_mrLastRoi),color:'#60a5fa',pts:_mcd.roiPts}];
+    if(_mrF50.some(function(v){return v!==null;}))  _mrSeries.push({label:'MA 50'+_mrFmtL(_mrLast50),  color:'#fbbf24',pts:_mrF50});
+    if(_mrF100.some(function(v){return v!==null;})) _mrSeries.push({label:'MA 100'+_mrFmtL(_mrLast100),color:'#4ade80',pts:_mrF100});
+    h+='<div class="chart-box" style="margin-bottom:16px">'
+      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_mcd.skip+' bets hidden · '+_mcd.totalBets+' total)</div>'
+      +'<div class="chart-legend" id="lgdMrRoi"></div>'
+      +'<canvas id="cMrRoi"></canvas>'
+      +'</div>';
+    setTimeout(function(){
+      makeLegend('lgdMrRoi', _mrSeries);
+      drawChart('cMrRoi', _mrSeries, null, 150);
+    }, 30);
+  }
   var pbLen=mr.pastBets.length;
   var _pbRoiLabel='';
   if(pbLen){

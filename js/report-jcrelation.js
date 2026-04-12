@@ -342,6 +342,33 @@ function computeJCRelation(results, allRecords){
     ruleROI40[key] = cnt40 >= 10 ? Math.round(pnl40 / cnt40 * 1000) / 10 : null;
   });
 
+  // ── ROI history chart data (chronological, skip first 300) ──
+  var _chartSkip=300;
+  var _chronoBets=[];
+  data.slice().sort(function(a,b){return(a.DATE||'')>(b.DATE||'')?1:-1;}).forEach(function(r){
+    var fired=[];
+    verifiedRules.forEach(function(rule){
+      var tv=TIP_MAP_DIR[String(r[rule.exp]||'')];
+      if(tv==null||tv!==rule.tip_dir)return;
+      var lv=parseFloat(r.ASIALINE)||0;
+      if(Math.abs(lv-rule.line)>0.01)return;
+      if(rule.lean_min){var lk=jcrLean(r);if(lk==null||lk<rule.lean_min)return;}
+      fired.push(rule);
+    });
+    if(!fired.length)return;
+    var p=jcrPnl(r); if(!p)return;
+    var bet=fired[0].bet, v=bet==='H'?p.h:p.a;
+    if(v!==null)_chronoBets.push(v);
+  });
+  var _roiPts=[],_ma50Pts=[],_ma100Pts=[],_cumPnl=0;
+  _chronoBets.forEach(function(v,i){
+    _cumPnl=Math.round((_cumPnl+v)*1000)/1000;
+    var n=i+1, rr=Math.round(_cumPnl/n*10000)/100;
+    var m50=n>=50?Math.round(_chronoBets.slice(n-50,n).reduce(function(s,x){return s+x;},0)/50*10000)/100:null;
+    var m100=n>=100?Math.round(_chronoBets.slice(n-100,n).reduce(function(s,x){return s+x;},0)/100*10000)/100:null;
+    if(i>=_chartSkip){_roiPts.push(rr);_ma50Pts.push(m50);_ma100Pts.push(m100);}
+  });
+
   return {
     matrix: matrix,
     matrixWithLean: matrixWithLean,
@@ -353,6 +380,7 @@ function computeJCRelation(results, allRecords){
     ruleROI40: ruleROI40,
     nRecords: n,
     splitIdx: splitIdx,
+    chartData:{roiPts:_roiPts,ma50Pts:_ma50Pts,ma100Pts:_ma100Pts,totalBets:_chronoBets.length,skip:_chartSkip},
   };
 }
 
@@ -594,6 +622,27 @@ function renderJCRelation(RD){
       + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L'+jcr.pastBets.length+'</span>'
       + (_pbRoi50!==null ? ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+_pbCol50+';margin-left:6px">'+(_pbRoi50>=0?'+':'')+_pbRoi50+'%</span>'
         + ' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L50</span>' : '');
+  }
+  // ── ROI History Chart ──
+  if(jcr.chartData && jcr.chartData.roiPts.length){
+    var _cd=jcr.chartData;
+    function _fillNulls(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
+    var _lastRoi=_cd.roiPts[_cd.roiPts.length-1];
+    var _ma50f=_fillNulls(_cd.ma50Pts), _ma100f=_fillNulls(_cd.ma100Pts);
+    var _lastMa50=_cd.ma50Pts[_cd.ma50Pts.length-1], _lastMa100=_cd.ma100Pts[_cd.ma100Pts.length-1];
+    function _fmtLast(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
+    var _jcrSeries=[{label:'Running ROI%'+_fmtLast(_lastRoi),color:'#60a5fa',pts:_cd.roiPts}];
+    if(_ma50f.some(function(v){return v!==null;}))  _jcrSeries.push({label:'MA 50'+_fmtLast(_lastMa50),  color:'#fbbf24',pts:_ma50f});
+    if(_ma100f.some(function(v){return v!==null;})) _jcrSeries.push({label:'MA 100'+_fmtLast(_lastMa100),color:'#4ade80',pts:_ma100f});
+    h += '<div class="chart-box" style="margin-bottom:16px">'
+      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_cd.skip+' bets hidden · '+_cd.totalBets+' total)</div>'
+      +'<div class="chart-legend" id="lgdJcrRoi"></div>'
+      +'<canvas id="cJcrRoi"></canvas>'
+      +'</div>';
+    setTimeout(function(){
+      makeLegend('lgdJcrRoi', _jcrSeries);
+      drawChart('cJcrRoi', _jcrSeries, null, 150);
+    }, 30);
   }
   h += '<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+jcr.pastBets.length+' shown'+_pbRoiLabel+'</div>';
   h += '<div class="rpt-sub" style="margin-bottom:10px">Most recent completed matches where at least one verified rule fired. Hit reflects the rule\'s recommended bet side.</div>';
