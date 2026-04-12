@@ -281,9 +281,24 @@ function renderOddsRule(RD){
       h+=(function(){var dd=(r.DATE||'').slice(5),t=r.TIME,ts=t?String(t).padStart(4,'0'):'',tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(dd+(tm?' '+tm:''))+'</td>';})();
       h+='<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600"><span style="color:'+hCol+'">'+r.TEAMH+'</span> <span style="color:#475569;font-weight:400">vs</span> <span style="color:'+aCol+'">'+r.TEAMA+'</span></div>'
         +'<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
-      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(parseFloat(r.ASIALINE)>=0?'+':'')+parseFloat(r.ASIALINE).toFixed(2)+'</td>';
-      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+r.ASIAH+'</td>';
-      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+r.ASIAA+'</td>';
+      // Line arrow
+      var _lineNow=parseFloat(r.ASIALINE), _lineLN=r.ASIALINELN;
+      var _lineStr=(_lineNow>=0?'+':'')+_lineNow.toFixed(2);
+      if(_lineLN!=null&&_lineLN!==_lineNow){
+        var _ld=Math.round((_lineNow-_lineLN)*100)/100;
+        if(_ld!==0){var _la=Math.abs(_ld),_ln=_la>=1.0?3:_la>=0.5?2:1,_larr=_ld<0?'▼':'▲',_lcol=_ld<0?'#f87171':'#60a5fa';
+          _lineStr+=('<span style="color:'+_lcol+';font-size:10px;margin-left:2px">'+_larr.repeat(_ln)+'</span>');}
+      }
+      function _orOddsArrow(lat,opn){
+        if(!opn||opn===0||lat===opn)return lat!=null?String(lat):'—';
+        var s=String(lat),n,arr,col;
+        if(lat<opn){n=lat<opn*0.9?3:lat<opn*0.95?2:1;arr='▼';col='#f87171';}
+        else{n=lat>opn*1.1?3:lat>opn*1.05?2:1;arr='▲';col='#60a5fa';}
+        return s+'<span style="color:'+col+';font-size:10px;margin-left:2px">'+arr.repeat(n)+'</span>';
+      }
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_lineStr+'</td>';
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_orOddsArrow(r.ASIAH, r.ASIAHLN!=null&&r.ASIAHLN>0?r.ASIAHLN:null)+'</td>';
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_orOddsArrow(r.ASIAA, r.ASIAALN!=null&&r.ASIAALN>0?r.ASIAALN:null)+'</td>';
       h+='<td class="num"><b style="font-size:14px;color:'+betCol+'">'+rule.bet+'</b></td>';
       h+='<td class="num"><span style="color:'+typeCol+';font-size:11px;font-weight:700">'+(rule.type==='COUNTER'?'⚡':'✓')+'</span></td>';
       h+='<td style="font-size:10px;color:#e2e8f0;max-width:200px">'+rule.label+multiMark+'</td>';
