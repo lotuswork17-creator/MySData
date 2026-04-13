@@ -610,8 +610,9 @@ function renderMoveRule(RD){
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH!=null?r.ASIAH:'—')+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA!=null?r.ASIAA:'—')+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>';
+      var _mrTypeIcon=rule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
       h+='<td class="num"><b style="color:'+betCol+'">'+bet+'</b></td>';
-      h+='<td style="font-size:9px;color:#94a3b8;max-width:140px">'+rule.label+ruleExtra+'</td>';
+      h+='<td style="font-size:9px;color:#94a3b8;max-width:140px">'+_mrTypeIcon+rule.label+ruleExtra+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#64748b">'+topRS.n+'</td>';
       h+='<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
       h+='<td class="num">'+hitHtml+'</td>';
