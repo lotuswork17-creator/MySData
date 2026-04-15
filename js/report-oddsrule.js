@@ -180,10 +180,13 @@ function computeOddsRule(results, allRecords){
   var upcomingAlerts = [];
   upcoming.forEach(function(r){
     var fired = [];
+    var _linesAllSame = r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB;
     ruleSignals.forEach(function(rs){
-      // For upcoming, pool check doesn't apply (PREEVE not in same/diff) — just check tip+odds
       var tv = TM[String(r[rs.rule.exp]||'')];
       if(tv !== rs.rule.tip) return;
+      // Apply same/diff pool condition consistently with pastBets
+      if(rs.rule.pool==='same' && !_linesAllSame) return;
+      if(rs.rule.pool==='diff' &&  _linesAllSame) return;
       var ratio = oddsRatio(r, rs.rule.oddsKey);
       var ok = rs.rule.oddsDir>0
         ? ratio >= rs.rule.oddsThresh && (!rs.rule.oddsMax || ratio <= rs.rule.oddsMax)
