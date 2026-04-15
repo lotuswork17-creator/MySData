@@ -476,6 +476,18 @@ function renderOddsRule(RD){
   }
   h+='<div style="border-top:2px solid var(--border);padding-top:14px">';
   h+='<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+pbLen+' shown'+_pbRoiLabel+'</div>';
+  if(or.pastBets.length){
+    h+='<span id="or2-pb-roi-lbl"></span>';
+    var _B='<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:8px">';
+    _B+='<button class="or2-fb" data-key="all" onclick="or2FB(\'all\')" style="font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;margin:2px;font-weight:700">All Rules</button>';
+    or.ruleSignals.forEach(function(rs){
+      var rl=rs.rule,tc=rl.type==='COUNTER'?'#fbbf24':'#4ade80';
+      _B+='<button class="or2-fb" data-key="'+rs.ruleKey+'" onclick="or2FB(\''+rs.ruleKey+'\')" style="font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer;margin:2px">'
+        +'<span style="color:'+tc+';margin-right:2px">'+(rl.type==='COUNTER'?'⚡':'✓')+'</span>'+rl.label+'</button>';
+    });
+    _B+='</div>';
+    h+=_B;
+  }
   h+='<div class="rpt-sub" style="margin-bottom:10px">Completed matches where at least one odds-advantage rule fired. HKJC bets only.</div>';
   if(!pbLen){
     h+='<div style="padding:14px;color:#475569;font-size:12px;font-style:italic">No past bets found.</div>';
@@ -493,7 +505,7 @@ function renderOddsRule(RD){
       +'<th>Date/Time</th><th>Match</th><th class="num">Line</th><th class="num">AH</th><th class="num">AA</th>'
       +'<th class="num">Score</th><th class="num">Bet</th><th>Rule</th><th class="num">N</th>'
       +'<th>Outcome</th><th class="num">Hit</th><th class="num">Run ROI</th>'
-      +'</tr></thead><tbody>';
+      +'</tr></thead><tbody id="or2-pb-tbody">';
 
     or.pastBets.forEach(function(pb,i){
       var r=pb.r, topRS=pb.fired[0], rule=topRS.rule, bet=rule.bet;
@@ -565,4 +577,47 @@ function renderOddsRule(RD){
     makeLegend('lgdOrRoi', fullSeries);
     setTimeout(function(){ drawChart('cOrRoi', fullSeries, RD.monthBounds, 150); }, 30);
   }
+
+  var _or2APb=or.pastBets.slice();
+  window.or2FB=function(key){
+    var f=key==='all'?_or2APb:_or2APb.filter(function(pb){return pb.fired.some(function(rs){return rs.ruleKey===key;});});
+    var pnl=0,n=0;
+    f.slice().reverse().forEach(function(pb){var bet=pb.fired[0].rule.bet,v=bet==='H'?pb.pnl.h:pb.pnl.a;if(v!==null){pnl=Math.round((pnl+v)*1000)/1000;n++;}});
+    var r2=n?Math.round(pnl/n*1000)/10:null,c2=r2!==null?(r2>=0?'#4ade80':'#f87171'):null;
+    var roiEl=document.getElementById('or2-pb-roi-lbl');
+    if(roiEl)roiEl.innerHTML=r2!==null?' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+c2+'">'+(r2>=0?'+':'')+r2.toFixed(1)+'%</span><span style="font-size:9px;color:#475569;font-family:var(--mono)"> L'+n+'</span>':'';
+    document.querySelectorAll('.or2-fb').forEach(function(b){var a=b.getAttribute('data-key')===key;b.style.cssText=a?'font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;margin:2px;font-weight:700':'font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer;margin:2px';});
+    var tbody=document.getElementById('or2-pb-tbody');if(!tbody)return;
+    var rrs=[],rp=0,rn=0;
+    f.slice().reverse().forEach(function(pb){var bet=pb.fired[0].rule.bet,v=bet==='H'?pb.pnl.h:pb.pnl.a;if(v!==null){rp=Math.round((rp+v)*1000)/1000;rn++;}rrs.push(Math.round(rp/Math.max(rn,1)*1000)/10);});
+    rrs.reverse();
+    var rows='';
+    f.forEach(function(pb,i){
+      var rec=pb.r,topRule=pb.fired[0].rule,bet=topRule.bet,bCol=bet==='H'?'#f87171':'#60a5fa';
+      var oL,pW;if(pb.outcome==='HW'){oL='H WIN';pW=bet==='H';}else if(pb.outcome==='HH'){oL='H ½WIN';pW=bet==='H';}else if(pb.outcome==='P'){oL='PUSH';pW=null;}else if(pb.outcome==='AH'){oL='A ½WIN';pW=bet==='A';}else{oL='A WIN';pW=bet==='A';}
+      var oBg=pW===null?'rgba(148,163,184,0.15)':pW?'rgba(74,222,128,0.18)':'rgba(248,113,113,0.18)',oCl=pW===null?'#94a3b8':pW?'#4ade80':'#f87171';
+      var pfw=(bet==='H'&&pb.outcome==='HW')||(bet==='A'&&pb.outcome==='AW'),phw=(bet==='H'&&pb.outcome==='HH')||(bet==='A'&&pb.outcome==='AH'),phl=(bet==='H'&&pb.outcome==='AH')||(bet==='A'&&pb.outcome==='HH');
+      var hit=pfw?'✅✅':phw?'✅':pb.outcome==='P'?'⬜':phl?'❌':'❌❌',rr=rrs[i]||0,rrc=rr>=0?'#4ade80':'#f87171';
+      var sc=(rec.RESULTH!=null&&rec.RESULTA!=null)?rec.RESULTH+'–'+rec.RESULTA:'—';
+      var ex=pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'';
+      var ti=topRule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
+      var dd=(rec.DATE||'').slice(5),t=rec.TIME,ts=t?String(t).padStart(4,'0'):'',tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
+      rows+='<tr>'
+        +'<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(dd+(tm?' '+tm:''))+'</td>'
+        +'<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;font-size:10px;white-space:nowrap">'+rec.TEAMH+' <span style="color:#475569">vs</span> '+rec.TEAMA+'</span></td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIALINE>=0?'+':'')+rec.ASIALINE+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIAH||'—')+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIAA||'—')+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+sc+'</td>'
+        +'<td class="num"><b style="color:'+bCol+'">'+bet+'</b></td>'
+        +'<td style="font-size:9px;color:#94a3b8;max-width:140px">'+ti+topRule.label+ex+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+topRule.n+'</td>'
+        +'<td><span style="background:'+oBg+';color:'+oCl+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+oL+'</span></td>'
+        +'<td class="num" style="font-size:13px">'+hit+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:10px;color:'+rrc+'">'+(rr>=0?'+':'')+rr.toFixed(1)+'%</td>'
+        +'</tr>';
+    });
+    tbody.innerHTML=rows||'<tr><td colspan="12" style="color:#475569;font-size:11px;padding:12px;text-align:center;font-style:italic">No bets for this rule.</td></tr>';
+  };
+
 }

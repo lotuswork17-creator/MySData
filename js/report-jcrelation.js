@@ -897,4 +897,74 @@ function renderJCRelation(RD){
       row.style.display = show ? '' : 'none';
     });
   };
+
+  // ── Past bets rule filter ──
+  var _jcrAllPb = jcr.pastBets.slice();
+  window.jcrFilterBets = function(key){
+    var filtered = key==='all' ? _jcrAllPb
+      : _jcrAllPb.filter(function(pb){ return pb.rules.some(function(rule){ return rule.ruleKey===key; }); });
+    // ROI label
+    var pnl=0,n=0;
+    filtered.slice().reverse().forEach(function(pb){
+      var bet=pb.rules[0].bet, v=bet==='H'?pb.pnl.h:pb.pnl.a;
+      if(v!==null){pnl=Math.round((pnl+v)*1000)/1000;n++;}
+    });
+    var r2=n?Math.round(pnl/n*1000)/10:null;
+    var lbl=document.getElementById('jcr-pb-roi-lbl');
+    if(lbl) lbl.innerHTML=r2!==null?' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+(r2>=0?'#4ade80':'#f87171')+'">'+(r2>=0?'+':'')+r2.toFixed(1)+'%</span><span style="font-size:9px;color:#475569;font-family:var(--mono)"> L'+n+'</span>':'';
+    // Button styles
+    document.querySelectorAll('.jcr-filter-btn').forEach(function(btn){
+      var active=btn.getAttribute('data-key')===key;
+      btn.style.cssText=active
+        ?'font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;margin:2px;font-weight:700'
+        :'font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer;margin:2px';
+    });
+    // Re-render rows
+    var tbody=document.getElementById('jcr-pb-tbody'); if(!tbody) return;
+    // Running ROI oldest-first
+    var runRois=[], rp=0, rn=0;
+    filtered.slice().reverse().forEach(function(pb){
+      var bet=pb.rules[0].bet, v=bet==='H'?pb.pnl.h:pb.pnl.a;
+      if(v!==null){rp=Math.round((rp+v)*1000)/1000;rn++;}
+      runRois.push(Math.round(rp/Math.max(rn,1)*1000)/10);
+    });
+    runRois.reverse();
+    var rows='';
+    filtered.forEach(function(pb,i){
+      var rec=pb.r, topRule=pb.rules[0], bet=topRule.bet;
+      var betCol=bet==='H'?'#f87171':'#60a5fa';
+      var outLabel,predWon;
+      if(pb.outcome==='HW'){outLabel='H WIN';predWon=(bet==='H');}
+      else if(pb.outcome==='HH'){outLabel='H ½WIN';predWon=(bet==='H');}
+      else if(pb.outcome==='P'){outLabel='PUSH';predWon=null;}
+      else if(pb.outcome==='AH'){outLabel='A ½WIN';predWon=(bet==='A');}
+      else{outLabel='A WIN';predWon=(bet==='A');}
+      var oBg=predWon===null?'rgba(148,163,184,0.15)':predWon?'rgba(74,222,128,0.18)':'rgba(248,113,113,0.18)';
+      var oCol=predWon===null?'#94a3b8':predWon?'#4ade80':'#f87171';
+      var pfw=(bet==='H'&&pb.outcome==='HW')||(bet==='A'&&pb.outcome==='AW');
+      var phw=(bet==='H'&&pb.outcome==='HH')||(bet==='A'&&pb.outcome==='AH');
+      var phl=(bet==='H'&&pb.outcome==='AH')||(bet==='A'&&pb.outcome==='HH');
+      var hitHtml=pfw?'✅✅':phw?'✅':pb.outcome==='P'?'⬜':phl?'❌':'❌❌';
+      var rr=runRois[i]||0, rrc=rr>=0?'#4ade80':'#f87171';
+      var score=(rec.RESULTH!=null&&rec.RESULTA!=null)?rec.RESULTH+'–'+rec.RESULTA:'—';
+      var extra=pb.rules.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.rules.length-1)+'</span>':'';
+      var typeIcon=topRule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
+      var d=(rec.DATE||'').slice(5),t=rec.TIME,ts=t?String(t).padStart(4,'0'):'',tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
+      rows+='<tr>'
+        +'<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>'
+        +'<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+rec.TEAMH+' <span style="color:#475569">vs</span> '+rec.TEAMA+'</span></td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIALINE>=0?'+':'')+rec.ASIALINE+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIAH||'—')+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIAA||'—')+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>'
+        +'<td class="num"><b style="color:'+betCol+'">'+bet+'</b></td>'
+        +'<td style="font-size:9px;color:#94a3b8;max-width:140px">'+typeIcon+topRule.label+extra+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+topRule.n+'</td>'
+        +'<td><span style="background:'+oBg+';color:'+oCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>'
+        +'<td class="num" style="font-size:13px">'+hitHtml+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:10px;color:'+rrc+'">'+(rr>=0?'+':'')+rr.toFixed(1)+'%</td>'
+        +'</tr>';
+    });
+    tbody.innerHTML=rows||'<tr><td colspan="12" style="color:#475569;font-size:11px;padding:12px;text-align:center;font-style:italic">No bets found for this rule in last 100.</td></tr>';
+  };
 }
