@@ -124,10 +124,17 @@ function computeOddsRule(results, allRecords){
   var n = all3.length, split = Math.floor(n * 0.75);
 
   function oddsRatio(r, oddsKey){
-    if(oddsKey==='H_vs_mac') return (r.ASIAH-r.ASIAHMAC)/r.ASIAHMAC;
-    if(oddsKey==='H_vs_sbo') return (r.ASIAH-r.ASIAHSBO)/r.ASIAHSBO;
-    if(oddsKey==='A_vs_mac') return (r.ASIAA-r.ASIAAMAC)/r.ASIAAMAC;
-    if(oddsKey==='A_vs_sbo') return (r.ASIAA-r.ASIAASBO)/r.ASIAASBO;
+    // Use opening odds (LN) when available — matches what PREEVE records show at alert time
+    var h  = (r.ASIAHLN  && r.ASIAHLN>0)  ? r.ASIAHLN  : r.ASIAH;
+    var a  = (r.ASIAALN  && r.ASIAALN>0)  ? r.ASIAALN  : r.ASIAA;
+    var mh = (r.ASIAHMACLN && r.ASIAHMACLN>0) ? r.ASIAHMACLN : r.ASIAHMAC;
+    var ma = (r.ASIAAMACLN && r.ASIAAMACLN>0) ? r.ASIAAMACLN : r.ASIAAMAC;
+    var sh = (r.ASIAHSBOLN && r.ASIAHSBOLN>0) ? r.ASIAHSBOLN : r.ASIAHSBO;
+    var sa = (r.ASIAASBOLN && r.ASIAASBOLN>0) ? r.ASIAASBOLN : r.ASIAASBO;
+    if(oddsKey==='H_vs_mac') return mh ? (h-mh)/mh : 0;
+    if(oddsKey==='H_vs_sbo') return sh ? (h-sh)/sh : 0;
+    if(oddsKey==='A_vs_mac') return ma ? (a-ma)/ma : 0;
+    if(oddsKey==='A_vs_sbo') return sa ? (a-sa)/sa : 0;
     return 0;
   }
 
@@ -215,40 +222,20 @@ function computeOddsRule(results, allRecords){
   } catch(e){}
 
   // Past bets (newest first, up to 100)
-  // Load cached alerts from localStorage (fired at PREEVE time)
-  var _alertCache = {};
-  try { _alertCache = JSON.parse(localStorage.getItem('or_alerts_cache')||'{}'); } catch(e){}
-  // Build ruleKey → ruleSignal lookup
-  var _rsMap = {};
-  ruleSignals.forEach(function(rs){ _rsMap[rs.ruleKey] = rs; });
-
   var pastBets = [];
   all3.slice().sort(function(a,b){
     var dc=(b.DATE||'').localeCompare(a.DATE||''); return dc!==0?dc:(b.TIME||0)-(a.TIME||0);
   }).forEach(function(r){
     if(pastBets.length>=100) return;
-    // First: check if this match was cached as an upcoming alert
-    var cacheKey = (r.DATE||'')+'|'+(r.TEAMH||'')+'|'+(r.TEAMA||'');
-    var cached = _alertCache[cacheKey];
     var fired = [];
-    if(cached && cached.ruleKeys && cached.ruleKeys.length){
-      // Use rules that fired at PREEVE time
-      cached.ruleKeys.forEach(function(rk){
-        if(_rsMap[rk]) fired.push(_rsMap[rk]);
-      });
-    }
-    // Fallback: re-match on closing odds if no cache entry
-    if(!fired.length){
-      ruleSignals.forEach(function(rs){
-        if(matchRule(r, rs.rule)) fired.push(rs);
-      });
-    }
+    ruleSignals.forEach(function(rs){
+      if(matchRule(r, rs.rule)) fired.push(rs);
+    });
     if(!fired.length) return;
     var m=adjM(r);
     var outcome=m>0.25?'HW':m===0.25?'HH':m===0?'P':m===-0.25?'AH':'AW';
     var pnl={h:pnlH(r),a:pnlA(r)};
-    var fromCache=!!(cached&&cached.ruleKeys&&cached.ruleKeys.length);
-    pastBets.push({r:r,fired:fired,pnl:pnl,outcome:outcome,fromCache:fromCache});
+    pastBets.push({r:r,fired:fired,pnl:pnl,outcome:outcome});
   });
 
   // Per-rule last 20/40
@@ -460,7 +447,7 @@ function renderOddsRule(RD){
       alertIdx++;
     });
     h+='</tbody></table></div>';
-    h+='<div style="font-size:9px;color:#475569;margin-top:4px">⚡=COUNTER · ✓=WITH · <span style="color:#60a5fa">●</span>=matched at opening odds (reliable) · <span style="color:#475569">○</span>=re-matched on closing odds · Odds diff% = (HKJC − Other) / Other × 100%</div>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:4px">⚡=COUNTER · ✓=WITH · Only matches that appeared in your Upcoming Alerts are shown. Odds diff% = (HKJC − Other) / Other × 100%</div>';
   }
   h+='</div>';
 
@@ -531,7 +518,7 @@ function renderOddsRule(RD){
   }
   h+='<div class="rpt-sub" style="margin-bottom:10px">Completed matches where at least one odds-advantage rule fired. HKJC bets only.</div>';
   if(!pbLen){
-    h+='<div style="padding:14px;color:#475569;font-size:12px;font-style:italic">No past bets found.</div>';
+    h+='<div style="padding:14px;color:#475569;font-size:12px;font-style:italic">No past bets yet. Past bets only appear here after matches you viewed in the Upcoming Alerts table have settled.</div>';
   } else {
     var _pbPnl=0,_pbN=0;
     var pbRunROI=or.pastBets.slice().reverse().map(function(pb){
@@ -575,8 +562,7 @@ function renderOddsRule(RD){
       h+='<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+score+'</td>';
       var _orTypeIcon=rule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
       h+='<td class="num"><b style="color:'+betCol+'">'+bet+'</b></td>';
-      var _cacheTag=pb.fromCache?'<span style="font-size:8px;color:#60a5fa;margin-left:3px" title="Matched at opening odds">●</span>':'<span style="font-size:8px;color:#475569;margin-left:3px" title="Re-matched on closing odds">○</span>';
-      h+='<td style="font-size:9px;color:#94a3b8;max-width:140px">'+_orTypeIcon+rule.label+extra+_cacheTag+'</td>';
+      h+='<td style="font-size:9px;color:#94a3b8;max-width:140px">'+_orTypeIcon+rule.label+extra+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#64748b">'+topRS.n+'</td>';
       h+='<td><span style="background:'+outBg+';color:'+outCol+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+outLabel+'</span></td>';
       h+='<td class="num" style="font-size:13px">'+hitHtml+'</td>';
@@ -652,7 +638,7 @@ function renderOddsRule(RD){
         +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(rec.ASIAA||'—')+'</td>'
         +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+sc+'</td>'
         +'<td class="num"><b style="color:'+bCol+'">'+bet+'</b></td>'
-        +'<td style="font-size:9px;color:#94a3b8;max-width:140px">'+ti+topRule.label+ex+(pb.fromCache?'<span style="font-size:8px;color:#60a5fa;margin-left:3px">●</span>':'<span style="font-size:8px;color:#475569;margin-left:3px">○</span>')+'</td>'
+        +'<td style="font-size:9px;color:#94a3b8;max-width:140px">'+ti+topRule.label+ex+'</td>'
         +'<td class="num" style="font-family:var(--mono);color:#64748b">'+topRule.n+'</td>'
         +'<td><span style="background:'+oBg+';color:'+oCl+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+oL+'</span></td>'
         +'<td class="num" style="font-size:13px">'+hit+'</td>'
