@@ -232,7 +232,10 @@ function computeMoveRule(results, allRecords){
     ruleSignals.forEach(function(rs){
       if(matchRule(r, rs.rule)) fired.push(rs);
     });
-    if(fired.length) upcomingAlerts.push({r:r, fired:fired, lean:mrLean(r)});
+    if(fired.length){
+      var _mrConflict=fired.some(function(rs){return rs.rule.bet!==fired[0].rule.bet;});
+      upcomingAlerts.push({r:r, fired:fired, lean:mrLean(r), conflict:_mrConflict});
+    }
   });
 
   // Past bets (last 100, newest first)
@@ -249,7 +252,8 @@ function computeMoveRule(results, allRecords){
     if(!pnl) return;
     var adj = Math.round(((parseFloat(r.RESULTH)||0)-(parseFloat(r.RESULTA)||0)+(parseFloat(r.ASIALINE)||0))*4)/4;
     var outcome = adj>0.25?'HW':adj===0.25?'HH':adj===0?'P':adj===-0.25?'AH':'AW';
-    pastBets.push({r:r, fired:fired, pnl:pnl, outcome:outcome});
+    var _mrPbConflict=fired.some(function(rs){return rs.rule.bet!==fired[0].rule.bet;});
+    pastBets.push({r:r, fired:fired, pnl:pnl, outcome:outcome, conflict:_mrPbConflict});
   });
 
   // Per-rule last-20 and last-40 ROI
@@ -362,7 +366,8 @@ function renderMoveRule(RD){
       var typeCol=rule.type==='COUNTER'?'#fbbf24':'#4ade80';
       var typeLabel=rule.type==='COUNTER'?'⚡':'✓';
       var roiCol=topRS.roi>=7?'#4ade80':topRS.roi>=4?'#a3e635':'#94a3b8';
-      var multiMark=alert.fired.length>1?' <span style="color:#a78bfa;font-size:8px">+'+(alert.fired.length-1)+'</span>':'';
+      var _mrWarn=alert.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules: H and A bets both fire">⚠️</span>':'';
+      var multiMark=(alert.fired.length>1?' <span style="color:#a78bfa;font-size:8px">+'+(alert.fired.length-1)+'</span>':'')+_mrWarn;
       var detId='mrup_'+alertIdx;
 
       // Line arrows
@@ -613,7 +618,8 @@ function renderMoveRule(RD){
       var runRoi=pbRunROI[i];
       var runRoiCol=runRoi>=0?'#4ade80':'#f87171';
       var score=(r.RESULTH!=null&&r.RESULTA!=null)?r.RESULTH+'–'+r.RESULTA:'—';
-      var ruleExtra=pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'';
+      var _mrPbWarn=pb.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules">⚠️</span>':'';
+      var ruleExtra=(pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'')+_mrPbWarn;
 
       h+='<tr>';
       h+=(function(){var dd=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(dd+(tm?' '+tm:''))+'</td>';})();
@@ -677,7 +683,8 @@ function renderMoveRule(RD){
       var pfw=(bet==='H'&&pb.outcome==='HW')||(bet==='A'&&pb.outcome==='AW'),phw=(bet==='H'&&pb.outcome==='HH')||(bet==='A'&&pb.outcome==='AH'),phl=(bet==='H'&&pb.outcome==='AH')||(bet==='A'&&pb.outcome==='HH');
       var hit=pfw?'✅✅':phw?'✅':pb.outcome==='P'?'⬜':phl?'❌':'❌❌',rr=rrs[i]||0,rrc=rr>=0?'#4ade80':'#f87171';
       var sc=(rec.RESULTH!=null&&rec.RESULTA!=null)?rec.RESULTH+'–'+rec.RESULTA:'—';
-      var ex=pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'';
+      var _mrFWarn=pb.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules">⚠️</span>':'';
+      var ex=(pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'')+_mrFWarn;
       var ti=topRule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
       var dd=(rec.DATE||'').slice(5),t=rec.TIME,ts=t?String(t).padStart(4,'0'):'',tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
       rows+='<tr>'

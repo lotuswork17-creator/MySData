@@ -454,7 +454,8 @@ function renderJCRelation(RD){
       var leanPct = alert.lean ? Math.round(alert.lean*100)+'%' : '—';
       var lineStr = (parseFloat(r.ASIALINE)>=0?'+':'')+parseFloat(r.ASIALINE).toFixed(2);
       var roiCol  = topRule.roi >= 7 ? '#4ade80' : topRule.roi >= 4 ? '#a3e635' : '#94a3b8';
-      var multiMark = alert.rules.length > 1 ? ' <span style="color:#a78bfa;font-size:8px">+'+( alert.rules.length-1)+'</span>' : '';
+      var _jcrWarn=alert.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules: H and A bets both fire">⚠️</span>':'';
+      var multiMark=(alert.rules.length>1?' <span style="color:#a78bfa;font-size:8px">+'+(alert.rules.length-1)+'</span>':'')+_jcrWarn;
 
       // Tips mini-badge
       var tipFields = [{key:'JCTIPSUM',label:'JCS'},{key:'JCTIPSID',label:'SID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONI'}];
@@ -692,7 +693,8 @@ function renderJCRelation(RD){
       var runRoiCol = runRoi>=0 ? '#4ade80' : '#f87171';
 
       var score = (r.RESULTH!=null&&r.RESULTA!=null) ? r.RESULTH+'–'+r.RESULTA : '—';
-      var ruleExtra = pb.rules.length>1 ? ' <span style="color:#fbbf24;font-size:9px">+' + (pb.rules.length-1)+'</span>' : '';
+      var _pbJcrWarn=pb.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules">⚠️</span>':'';
+      var ruleExtra=(pb.rules.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.rules.length-1)+'</span>':'')+_pbJcrWarn;
       h += '<tr>';
       h += (function(){var d=(r.DATE||'').slice(5);var t=r.TIME;var ts=t?String(t).padStart(4,'0'):'';var tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';return '<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(d+(tm?' '+tm:''))+'</td>';})();
       h += '<td style="max-width:110px;overflow:hidden"><span style="color:#e2e8f0;white-space:nowrap;font-size:10px">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
@@ -947,7 +949,8 @@ function renderJCRelation(RD){
       var hitHtml=pfw?'✅✅':phw?'✅':pb.outcome==='P'?'⬜':phl?'❌':'❌❌';
       var rr=runRois[i]||0, rrc=rr>=0?'#4ade80':'#f87171';
       var score=(rec.RESULTH!=null&&rec.RESULTA!=null)?rec.RESULTH+'–'+rec.RESULTA:'—';
-      var extra=pb.rules.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.rules.length-1)+'</span>':'';
+      var _jcrFWarn=pb.conflict?'<span style="color:#f59e0b;font-size:11px;margin-left:2px" title="Conflicting rules">⚠️</span>':'';
+      var extra=(pb.rules.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.rules.length-1)+'</span>':'')+_jcrFWarn;
       var typeIcon=topRule.type==='COUNTER'?'<span style="color:#fbbf24;font-weight:700;font-family:var(--mono);margin-right:3px">⚡</span>':'<span style="color:#4ade80;font-weight:700;font-family:var(--mono);margin-right:3px">✓</span>';
       var d=(rec.DATE||'').slice(5),t=rec.TIME,ts=t?String(t).padStart(4,'0'):'',tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
       rows+='<tr>'
