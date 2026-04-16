@@ -138,11 +138,14 @@ function computeOddsRule(results, allRecords){
     return 0;
   }
 
-  function matchRule(r, rule){
-    var pool = rule.pool==='same' ? same : rule.pool==='diff' ? diff : all3;
-    if(pool.indexOf(r)<0) return false; // rough pool check - handled at scan level
+  // Single unified rule tester — used for both upcoming (PREEVE) and pastBets (Result)
+  // Pool check uses line-equality so it works for any record, not just those in same/diff arrays
+  function testRule(r, rule){
     var tv = TM[String(r[rule.exp]||'')];
     if(tv !== rule.tip) return false;
+    var linesAllSame = r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB;
+    if(rule.pool==='same' && !linesAllSame) return false;
+    if(rule.pool==='diff' &&  linesAllSame) return false;
     var ratio = oddsRatio(r, rule.oddsKey);
     if(rule.oddsDir > 0){
       if(ratio < rule.oddsThresh) return false;
@@ -153,6 +156,8 @@ function computeOddsRule(results, allRecords){
     }
     return true;
   }
+  // Keep matchRule as alias for backward compat (ruleROI20/40 scan)
+  function matchRule(r, rule){ return testRule(r, rule); }
 
   function adjM(r){ return Math.round((r.RESULTH-r.RESULTA+r.ASIALINE)*4)/4; }
   function pnlH(r){ var m=adjM(r),oh=r.ASIAH; if(!oh||oh<=0)return null; if(m>=0.5)return oh-1; if(m===0.25)return(oh-1)*0.5; if(m===0)return 0; if(m===-0.25)return-0.5; return-1; }
@@ -161,8 +166,7 @@ function computeOddsRule(results, allRecords){
 
   // Build pool lookup for each rule
   var ruleSignals = OR_RULES.map(function(rule){
-    var pool = rule.pool==='same' ? same : rule.pool==='diff' ? diff : all3;
-    var sub = pool.filter(function(r){ return matchRule(r, rule); });
+    var sub = all3.filter(function(r){ return testRule(r, rule); });
     // For train/test use index within all3
     var all3Map = {}; all3.forEach(function(r,i){ all3Map[i]=r; });
     var idxs = sub.map(function(r){ return all3.indexOf(r); }).filter(function(i){ return i>=0; });
@@ -187,39 +191,11 @@ function computeOddsRule(results, allRecords){
   var upcomingAlerts = [];
   upcoming.forEach(function(r){
     var fired = [];
-    var _linesAllSame = r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB;
     ruleSignals.forEach(function(rs){
-      var tv = TM[String(r[rs.rule.exp]||'')];
-      if(tv !== rs.rule.tip) return;
-      // Apply same/diff pool condition consistently with pastBets
-      if(rs.rule.pool==='same' && !_linesAllSame) return;
-      if(rs.rule.pool==='diff' &&  _linesAllSame) return;
-      var ratio = oddsRatio(r, rs.rule.oddsKey);
-      var ok = rs.rule.oddsDir>0
-        ? ratio >= rs.rule.oddsThresh && (!rs.rule.oddsMax || ratio <= rs.rule.oddsMax)
-        : -ratio >= rs.rule.oddsThresh && (!rs.rule.oddsMax || -ratio <= rs.rule.oddsMax);
-      if(ok) fired.push(rs);
+      if(testRule(r, rs.rule)) fired.push(rs);
     });
     if(fired.length) upcomingAlerts.push({r:r, fired:fired});
   });
-  // Cache upcoming alerts in localStorage so past bets can retrieve them after settlement
-  try {
-    var _cache = {};
-    try { _cache = JSON.parse(localStorage.getItem('or_alerts_cache')||'{}'); } catch(e){}
-    upcomingAlerts.forEach(function(alert){
-      var key = (alert.r.DATE||'')+'|'+(alert.r.TEAMH||'')+'|'+(alert.r.TEAMA||'');
-      _cache[key] = {
-        ruleKeys: alert.fired.map(function(rs){ return rs.ruleKey; }),
-        line: alert.r.ASIALINE,
-        date: alert.r.DATE
-      };
-    });
-    // Prune entries older than 30 days
-    var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
-    var cutStr = cutoff.toISOString().slice(0,10);
-    Object.keys(_cache).forEach(function(k){ if((_cache[k].date||'') < cutStr) delete _cache[k]; });
-    localStorage.setItem('or_alerts_cache', JSON.stringify(_cache));
-  } catch(e){}
 
   // Past bets (newest first, up to 100)
   var pastBets = [];
@@ -229,7 +205,7 @@ function computeOddsRule(results, allRecords){
     if(pastBets.length>=100) return;
     var fired = [];
     ruleSignals.forEach(function(rs){
-      if(matchRule(r, rs.rule)) fired.push(rs);
+      if(testRule(r, rs.rule)) fired.push(rs);
     });
     if(!fired.length) return;
     var m=adjM(r);
