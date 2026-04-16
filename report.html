@@ -321,7 +321,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===13 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===14 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -364,8 +364,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[13] = true;
-      TABS[13].render(RD);
+      drawn[14] = true;
+      TABS[14].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
