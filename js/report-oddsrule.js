@@ -124,13 +124,10 @@ function computeOddsRule(results, allRecords){
   var n = all3.length, split = Math.floor(n * 0.75);
 
   function oddsRatio(r, oddsKey){
-    // Use opening odds (LN) when available — matches what PREEVE records show at alert time
-    var h  = (r.ASIAHLN  && r.ASIAHLN>0)  ? r.ASIAHLN  : r.ASIAH;
-    var a  = (r.ASIAALN  && r.ASIAALN>0)  ? r.ASIAALN  : r.ASIAA;
-    var mh = (r.ASIAHMACLN && r.ASIAHMACLN>0) ? r.ASIAHMACLN : r.ASIAHMAC;
-    var ma = (r.ASIAAMACLN && r.ASIAAMACLN>0) ? r.ASIAAMACLN : r.ASIAAMAC;
-    var sh = (r.ASIAHSBOLN && r.ASIAHSBOLN>0) ? r.ASIAHSBOLN : r.ASIAHSBO;
-    var sa = (r.ASIAASBOLN && r.ASIAASBOLN>0) ? r.ASIAASBOLN : r.ASIAASBO;
+    // Use closing odds — consistent with what PREEVE records show in upcoming table
+    var h=r.ASIAH||0, a=r.ASIAA||0;
+    var mh=r.ASIAHMAC||0, ma=r.ASIAAMAC||0;
+    var sh=r.ASIAHSBO||0, sa=r.ASIAASBO||0;
     if(oddsKey==='H_vs_mac') return mh ? (h-mh)/mh : 0;
     if(oddsKey==='H_vs_sbo') return sh ? (h-sh)/sh : 0;
     if(oddsKey==='A_vs_mac') return ma ? (a-ma)/ma : 0;
@@ -423,7 +420,7 @@ function renderOddsRule(RD){
       alertIdx++;
     });
     h+='</tbody></table></div>';
-    h+='<div style="font-size:9px;color:#475569;margin-top:4px">⚡=COUNTER · ✓=WITH · Only matches that appeared in your Upcoming Alerts are shown. Odds diff% = (HKJC − Other) / Other × 100%</div>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:4px">⚡=COUNTER · ✓=WITH · <span style="color:#f59e0b">⚠️</span>=conflicting rules (H and A rules both fire — top rule by ROI shown, use filter buttons to review each) · Click row to expand</div>';
   }
   h+='</div>';
 
