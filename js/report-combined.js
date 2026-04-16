@@ -118,7 +118,7 @@ function computeCombined(RD){
   pastBets.sort(function(a,b){
     return (b.r.DATE||'').localeCompare(a.r.DATE||'') || (b.r.TIME||0)-(a.r.TIME||0);
   });
-  pastBets = pastBets.slice(0,100);
+  pastBets = pastBets.slice(0,200);
 
   // ── ROI chart (chronological, skip first 100) ──
   var chronoAll = pastBets.slice().reverse();
@@ -321,14 +321,23 @@ function renderCombined(RD){
 
   // ── Past Bets ──
   var pbLen=cb.pastBets.length;
-  var _pbPnl=0,_pbN=0;
-  cb.pastBets.slice().reverse().forEach(function(pb){
-    if(pb.pnl!==null&&pb.pnl!==undefined){_pbPnl=Math.round((_pbPnl+pb.pnl)*1000)/1000;_pbN++;}
-  });
-  var _pbRoi=_pbN?Math.round(_pbPnl/_pbN*1000)/10:null;
-  var _pbCol=_pbRoi!==null?(_pbRoi>=0?'#4ade80':'#f87171'):'#475569';
-  var _roiLabel=_pbRoi!==null?' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+_pbCol+'">'+(_pbRoi>=0?'+':'')+_pbRoi.toFixed(1)+'%</span>'
-    +' <span style="font-size:9px;color:#475569;font-family:var(--mono)">L'+pbLen+'</span>':'';
+  function _cbRoiOf(bets, n){
+    var sl=bets.slice(0,n); var pnl=0,cnt=0;
+    sl.slice().reverse().forEach(function(pb){
+      if(pb.pnl!==null&&pb.pnl!==undefined){pnl=Math.round((pnl+pb.pnl)*1000)/1000;cnt++;}
+    });
+    return cnt?Math.round(pnl/cnt*1000)/10:null;
+  }
+  function _cbRoiSpan(roi,label){
+    if(roi===null) return '';
+    var c=roi>=0?'#4ade80':'#f87171';
+    return ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+c+'">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>'
+      +' <span style="font-size:9px;color:#475569;font-family:var(--mono)">'+label+'</span>';
+  }
+  var _roi200=_cbRoiOf(cb.pastBets,200);
+  var _roi100=_cbRoiOf(cb.pastBets,100);
+  var _roi50 =_cbRoiOf(cb.pastBets,50);
+  var _roiLabel=_cbRoiSpan(_roi200,'L200')+_cbRoiSpan(_roi100,'L100')+_cbRoiSpan(_roi50,'L50');
 
   h+='<div style="border-top:2px solid var(--border);padding-top:14px">';
   h+='<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+pbLen+' shown'+_roiLabel+'</div>';
@@ -393,7 +402,7 @@ function renderCombined(RD){
         +'</tr>';
     });
 
-    var pbRoi=_pbRoi||0,pbC=pbRoi>=0?'#4ade80':'#f87171';
+    var pbRoi=_roi200||0,pbC=pbRoi>=0?'#4ade80':'#f87171';
     h+='<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">'
       +'<td colspan="10" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+pbLen+' combined bets</td>'
       +'<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>'
