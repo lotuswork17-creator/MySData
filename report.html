@@ -248,6 +248,11 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderOddsRule() -->
 </div>
 
+<!-- TAB 14: COMBINED RULES -->
+<div class="rpt-section" id="tab14">
+  <!-- content injected by renderCombined() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -287,6 +292,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-jcrelation.js"></script>
 <script src="js/report-moverule.js"></script>
 <script src="js/report-oddsrule.js"></script>
+<script src="js/report-combined.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -307,6 +313,7 @@ var TABS = [
   { label:'🔗 JC Relations', render: renderJCRelation },
   { label:'📡 Move Rules',   render: renderMoveRule },
   { label:'💹 Odds Rules',    render: renderOddsRule },
+  { label:'🔀 Combined',       render: renderCombined },
 ];
 
 // Build tab bar from registry
