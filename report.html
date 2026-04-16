@@ -321,7 +321,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===11 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===13 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -358,14 +358,14 @@ function loadReport(){
           + '<b>⚠️ Compute error:</b> ' + err.message
           + '<br><pre style="margin-top:8px;white-space:pre-wrap;color:#94a3b8">' + (err.stack||'') + '</pre></div>';
         document.getElementById('rptLoading').innerHTML = msg;
-        document.getElementById('tab11').innerHTML = msg;
-        document.getElementById('tab11').classList.add('active');
+        document.getElementById('tab14').innerHTML = msg;
+        document.getElementById('tab14').classList.add('active');
         return;
       }
       document.getElementById('rptLoading').style.display = 'none';
-      document.getElementById('tab11').classList.add('active');
-      drawn[11] = true;
-      TABS[11].render(RD);
+      document.getElementById('tab14').classList.add('active');
+      drawn[13] = true;
+      TABS[13].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
