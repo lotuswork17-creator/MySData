@@ -342,12 +342,41 @@ function renderCombined(RD){
   h+='<div style="border-top:2px solid var(--border);padding-top:14px">';
   h+='<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+pbLen+' shown<span id="cb-pb-roi-lbl">'+_roiLabel+'</span></div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">Combined past bets across all three reports. Consensus bet used for ROI. ⚠️=cross-report conflict.</div>';
-  // Source count filter buttons
-  h+='<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:10px">';
-  h+='<button class="cb-src-btn" data-src="all"   onclick="cbSrcFilter(\'all\')"   style="font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700">All</button>';
-  h+='<button class="cb-src-btn" data-src="3"     onclick="cbSrcFilter(\'3\')"     style="font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #4ade80;background:transparent;color:#64748b;cursor:pointer"><span style="color:#4ade80">✦✦✦</span> 3 Sources</button>';
-  h+='<button class="cb-src-btn" data-src="2"     onclick="cbSrcFilter(\'2\')"     style="font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #a78bfa;background:transparent;color:#64748b;cursor:pointer"><span style="color:#a78bfa">✦✦</span> 2 Sources</button>';
-  h+='<button class="cb-src-btn" data-src="1"     onclick="cbSrcFilter(\'1\')"     style="font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #64748b;background:transparent;color:#64748b;cursor:pointer">✦ 1 Source</button>';
+  // ── Filter panel ──
+  var _cbBtnBase='font-size:9px;font-family:var(--mono);padding:2px 9px;border-radius:4px;cursor:pointer;margin:2px';
+  var _cbBtnOn =_cbBtnBase+';border:1px solid #3b82f6;background:#3b82f6;color:#fff;font-weight:700';
+  var _cbBtnOff=_cbBtnBase+';border:1px solid #334155;background:transparent;color:#64748b';
+
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px">';
+
+  // Row 1: Source count
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">';
+  h+='<span style="font-size:9px;color:#64748b;font-weight:700;min-width:80px">SOURCE COUNT</span>';
+  h+='<button class="cb-src-btn" data-src="all" onclick="cbApplyFilter()" style="'+_cbBtnOn+'">All</button>';
+  h+='<button class="cb-src-btn" data-src="3"   onclick="cbApplyFilter()" style="'+_cbBtnOff+'"><span style="color:#4ade80">✦✦✦</span> 3 Sources</button>';
+  h+='<button class="cb-src-btn" data-src="2"   onclick="cbApplyFilter()" style="'+_cbBtnOff+'"><span style="color:#a78bfa">✦✦</span> 2 Sources</button>';
+  h+='<button class="cb-src-btn" data-src="1"   onclick="cbApplyFilter()" style="'+_cbBtnOff+'">✦ 1 Source</button>';
+  h+='</div>';
+
+  // Row 2: Report include/exclude/only — each cycles through 3 states
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">';
+  h+='<span style="font-size:9px;color:#64748b;font-weight:700;min-width:80px">REPORT</span>';
+  [['jcrelation','JCR','#60a5fa'],['moverule','MR','#a78bfa'],['oddsrule','OR','#fb923c']].forEach(function(rp){
+    h+='<button class="cb-rpt-btn" data-rpt="'+rp[0]+'" data-state="include" onclick="cbCycleRpt(this)" '
+      +'style="'+_cbBtnBase+';border:1px solid '+rp[2]+';background:'+rp[2]+'33;color:'+rp[2]+';font-weight:700">'
+      +'✓ '+rp[1]+'</button>';
+  });
+  h+='<span style="font-size:9px;color:#475569;margin-left:4px">click to cycle: ✓ include → ✗ exclude → ◉ only</span>';
+  h+='</div>';
+
+  // Row 3: Contradiction filter
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+  h+='<span style="font-size:9px;color:#64748b;font-weight:700;min-width:80px">CONFLICT</span>';
+  h+='<button class="cb-con-btn" data-con="all"      onclick="cbApplyFilter()" style="'+_cbBtnOn+'">All</button>';
+  h+='<button class="cb-con-btn" data-con="conflict"  onclick="cbApplyFilter()" style="'+_cbBtnOff+'"><span style="color:#f59e0b">⚠️</span> Conflict only</button>';
+  h+='<button class="cb-con-btn" data-con="clean"     onclick="cbApplyFilter()" style="'+_cbBtnOff+'">✓ No conflict</button>';
+  h+='</div>';
+
   h+='</div>';
 
   if(!pbLen){
@@ -425,22 +454,80 @@ function renderCombined(RD){
 
   // ── Source count filter ──
   var _cbAllPb = cb.pastBets.slice();
-  window.cbSrcFilter = function(src){
-    var filtered = src==='all' ? _cbAllPb
-      : _cbAllPb.filter(function(pb){ return pb.sources.length===parseInt(src); });
+  // Cycle report button through include → exclude → only
+  window.cbCycleRpt = function(btn){
+    var states=['include','exclude','only'];
+    var rpt=btn.getAttribute('data-rpt');
+    var cur=btn.getAttribute('data-state');
+    var next=states[(states.indexOf(cur)+1)%3];
+    btn.setAttribute('data-state',next);
+    var colors={'jcrelation':'#60a5fa','moverule':'#a78bfa','oddsrule':'#fb923c'};
+    var labels={'jcrelation':'JCR','moverule':'MR','oddsrule':'OR'};
+    var c=colors[rpt], l=labels[rpt];
+    var base='font-size:9px;font-family:var(--mono);padding:2px 9px;border-radius:4px;cursor:pointer;margin:2px;font-weight:700';
+    if(next==='include'){btn.style.cssText=base+';border:1px solid '+c+';background:'+c+'33;color:'+c;btn.innerHTML='✓ '+l;}
+    else if(next==='exclude'){btn.style.cssText=base+';border:1px solid #334155;background:#1e293b;color:#475569;text-decoration:line-through';btn.innerHTML='✗ '+l;}
+    else{btn.style.cssText=base+';border:1px solid '+c+';background:'+c+';color:#000';btn.innerHTML='◉ '+l;}
+    cbApplyFilter();
+  };
 
-    // Update button styles
+  window.cbApplyFilter = function(){
+    // Read source count
+    var srcBtn=document.querySelector('.cb-src-btn[style*="background:#3b82f6"]');
+    if(!srcBtn){ // find active by class check — use data-active workaround
+      document.querySelectorAll('.cb-src-btn').forEach(function(b){
+        if(b.style.background==='rgb(59, 130, 246)'||b.style.cssText.indexOf('background:#3b82f6')>=0) srcBtn=b;
+      });
+    }
+    var src=srcBtn?srcBtn.getAttribute('data-src'):'all';
+
+    // Read report states
+    var rptStates={};
+    document.querySelectorAll('.cb-rpt-btn').forEach(function(b){
+      rptStates[b.getAttribute('data-rpt')]=b.getAttribute('data-state');
+    });
+
+    // Read conflict state
+    var conBtn=null;
+    document.querySelectorAll('.cb-con-btn').forEach(function(b){
+      if(b.style.cssText.indexOf('background:#3b82f6')>=0) conBtn=b;
+    });
+    var con=conBtn?conBtn.getAttribute('data-con'):'all';
+
+    // Update source count button styles
     document.querySelectorAll('.cb-src-btn').forEach(function(b){
-      var active = b.getAttribute('data-src')===src;
-      b.style.cssText = active
-        ? 'font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;cursor:pointer;font-weight:700'
-        : 'font-size:9px;font-family:var(--mono);padding:2px 10px;border-radius:4px;border:1px solid #334155;background:transparent;color:#64748b;cursor:pointer';
-      // Restore source count colour hint on inactive
-      if(!active){
-        var ds=b.getAttribute('data-src');
-        var bc=ds==='3'?'#4ade80':ds==='2'?'#a78bfa':'#64748b';
-        b.style.borderColor=bc;
+      var active=b===srcBtn;
+      var bBase='font-size:9px;font-family:var(--mono);padding:2px 9px;border-radius:4px;cursor:pointer;margin:2px';
+      b.style.cssText=active?(bBase+';border:1px solid #3b82f6;background:#3b82f6;color:#fff;font-weight:700'):(bBase+';border:1px solid #334155;background:transparent;color:#64748b');
+    });
+    // Update conflict button styles
+    document.querySelectorAll('.cb-con-btn').forEach(function(b){
+      var active=b===conBtn;
+      var bBase='font-size:9px;font-family:var(--mono);padding:2px 9px;border-radius:4px;cursor:pointer;margin:2px';
+      b.style.cssText=active?(bBase+';border:1px solid #3b82f6;background:#3b82f6;color:#fff;font-weight:700'):(bBase+';border:1px solid #334155;background:transparent;color:#64748b');
+    });
+
+    // Filter
+    var filtered=_cbAllPb.filter(function(pb){
+      // Source count
+      if(src!=='all'&&pb.sources.length!==parseInt(src)) return false;
+      // Report include/exclude/only
+      var hasOnly=Object.values?Object.values(rptStates).some(function(s){return s==='only';}):false;
+      if(!hasOnly){
+        // Check 'only' manually for older JS compat
+        for(var k in rptStates){if(rptStates[k]==='only'){hasOnly=true;break;}}
       }
+      for(var rk in rptStates){
+        var st=rptStates[rk];
+        var hasSrc=pb.sources.some(function(s){return s.rpt.key===rk;});
+        if(st==='exclude'&&hasSrc) return false;
+        if(st==='only'&&!hasSrc) return false;
+        // include: no filtering
+      }
+      // Conflict
+      if(con==='conflict'&&!pb.crossConflict) return false;
+      if(con==='clean'&&pb.crossConflict) return false;
+      return true;
     });
 
     // Recompute ROI labels
