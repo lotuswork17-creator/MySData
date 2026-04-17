@@ -253,6 +253,53 @@ function renderCombined(RD){
       h+='</tr>';
 
       // ── Expand detail ──
+      // Odds panel: opening vs latest for HKJC, Macau, SBO
+      var _oddsPanel=(function(){
+        var books=[
+          {label:'HKJC', color:'#f87171', lk:'ASIALINE', lkln:'ASIALINELN', hk:'ASIAH', hkln:'ASIAHLN', ak:'ASIAA', akln:'ASIAALN'},
+          {label:'Macau',color:'#a78bfa', lk:'ASIALINEMA',lkln:null,         hk:'ASIAHMAC',hkln:'ASIAHMACLN',ak:'ASIAAMAC',akln:'ASIAAMACLN'},
+          {label:'SBO',  color:'#fb923c', lk:'ASIALINESB',lkln:null,         hk:'ASIAHSBO',hkln:'ASIAHSBOLN',ak:'ASIAASBO',akln:'ASIAASBOLN'},
+        ];
+        var html='<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Odds — Opening vs Latest</div>'
+          +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+        books.forEach(function(b){
+          var latH=r[b.hk], opnH=b.hkln?r[b.hkln]:null;
+          var latA=r[b.ak], opnA=b.akln?r[b.akln]:null;
+          var latL=r[b.lk], opnL=b.lkln?r[b.lkln]:null;
+          function oddsRow(opn,lat,label,col){
+            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b">'+label+': ';
+            if(opn!=null&&opn>0&&lat!=null&&Math.abs(lat-opn)>0.001){
+              var moved=lat<opn;
+              s+='<span style="color:#475569">'+opn+'</span>'
+                +'<span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px;margin:0 2px">'+(moved?'▼':'▲')+'</span>'
+                +'<b style="color:'+col+'">'+lat+'</b>';
+            } else {
+              s+='<b style="color:'+col+'">'+(lat!=null?lat:'—')+'</b>';
+            }
+            return s+'</div>';
+          }
+          function lineRow(opn,lat,col){
+            if(lat==null) return '';
+            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b">Line: ';
+            if(opn!=null&&opn!==lat){
+              var moved=lat<opn;
+              s+='<span style="color:#475569">'+(opn>=0?'+':'')+opn+'</span>'
+                +'<span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px;margin:0 2px">'+(moved?'▼':'▲')+'</span>'
+                +'<b style="color:'+col+'">'+(lat>=0?'+':'')+lat+'</b>';
+            } else {
+              s+='<b style="color:'+col+'">'+(lat>=0?'+':'')+lat+'</b>';
+            }
+            return s+'</div>';
+          }
+          html+='<div style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;border-top:2px solid '+b.color+'">'
+            +'<div style="font-size:9px;font-weight:700;color:'+b.color+';margin-bottom:4px">'+b.label+'</div>'
+            +lineRow(opnL,latL,b.color)
+            +oddsRow(opnH,latH,'H','#f87171')
+            +oddsRow(opnA,latA,'A','#60a5fa')
+            +'</div>';
+        });
+        return html+'</div></div>';
+      })();
       var tipFields=[{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'}];
       var tipBadges=tipFields.map(function(tf){
         var tv=r[tf.key];var c=tv&&(tv.indexOf('H')>=0||tv==='1H'||tv==='FH')?'#f87171':tv&&(tv.indexOf('A')>=0||tv==='1A'||tv==='FA')?'#60a5fa':'#475569';
@@ -309,6 +356,7 @@ function renderCombined(RD){
 
       h+='<tr id="'+detId+'" style="display:none"><td colspan="8" style="padding:0">'
         +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
+        +_oddsPanel
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
         +expertBar+pred1x2+allRuleRows+jcNarr+macNarr
         +'</div></td></tr>';
