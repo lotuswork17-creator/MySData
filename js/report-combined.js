@@ -230,7 +230,7 @@ function renderCombined(RD){
       function lineStr(r){
         var l=parseFloat(r.ASIALINE)||0,ln=r.ASIALINELN;
         var s=(l>=0?'+':'')+l.toFixed(2);
-        if(ln!=null&&ln!==l){var d=Math.round((l-ln)*100)/100,a=Math.abs(d),n=a>=1?3:a>=0.5?2:1,ar=d<0?'▼':'▲',c=d<0?'#f87171':'#60a5fa';s+='<span style="color:'+c+';font-size:10px">'+ar.repeat(n)+'</span>';}
+        if(ln&&ln!==l){var d=Math.round((l-ln)*100)/100,a=Math.abs(d),n=a>=1?3:a>=0.5?2:1,ar=d<0?'▼':'▲',c=d<0?'#f87171':'#60a5fa';s+='<span style="color:'+c+';font-size:10px">'+ar.repeat(n)+'</span>';}
         return s;
       }
       function oddsStr(v,opn){
@@ -260,39 +260,39 @@ function renderCombined(RD){
           {label:'Macau',color:'#a78bfa', lk:'ASIALINEMA',lkln:null,         hk:'ASIAHMAC',hkln:'ASIAHMACLN',ak:'ASIAAMAC',akln:'ASIAAMACLN'},
           {label:'SBO',  color:'#fb923c', lk:'ASIALINESB',lkln:null,         hk:'ASIAHSBO',hkln:'ASIAHSBOLN',ak:'ASIAASBO',akln:'ASIAASBOLN'},
         ];
-        var html='<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Odds — Opening vs Latest</div>'
+        var html='<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Odds — Opening → Latest</div>'
           +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
         books.forEach(function(b){
-          var latH=r[b.hk], opnH=b.hkln?r[b.hkln]:null;
-          var latA=r[b.ak], opnA=b.akln?r[b.akln]:null;
-          var latL=r[b.lk], opnL=b.lkln?r[b.lkln]:null;
-          function oddsRow(opn,lat,label,col){
-            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b">'+label+': ';
+          var latH=r[b.hk], opnH=b.hkln&&r[b.hkln]&&r[b.hkln]>0?r[b.hkln]:null;
+          var latA=r[b.ak], opnA=b.akln&&r[b.akln]&&r[b.akln]>0?r[b.akln]:null;
+          var latL=r[b.lk], opnL=b.lkln&&r[b.lkln]!=null?r[b.lkln]:null;
+          function oddsRow(opn,lat,label,latCol){
+            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b;margin-bottom:2px">'+label+': ';
             if(opn!=null&&opn>0&&lat!=null&&Math.abs(lat-opn)>0.001){
               var moved=lat<opn;
               s+='<span style="color:#475569">'+opn+'</span>'
-                +'<span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px;margin:0 2px">'+(moved?'▼':'▲')+'</span>'
-                +'<b style="color:'+col+'">'+lat+'</b>';
+                +' <span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px">'+(moved?'▼':'▲')+'</span>'
+                +' <b style="color:'+latCol+'">'+lat+'</b>';
             } else {
-              s+='<b style="color:'+col+'">'+(lat!=null?lat:'—')+'</b>';
+              s+='<b style="color:'+latCol+'">'+(lat!=null?lat:'—')+'</b>';
             }
             return s+'</div>';
           }
           function lineRow(opn,lat,col){
             if(lat==null) return '';
-            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b">Line: ';
-            if(opn!=null&&opn!==lat){
+            var s='<div style="font-size:9px;font-family:var(--mono);color:#64748b;margin-bottom:3px">Line: ';
+            if(opn!=null&&opn!==0&&opn!==lat){
               var moved=lat<opn;
               s+='<span style="color:#475569">'+(opn>=0?'+':'')+opn+'</span>'
-                +'<span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px;margin:0 2px">'+(moved?'▼':'▲')+'</span>'
-                +'<b style="color:'+col+'">'+(lat>=0?'+':'')+lat+'</b>';
+                +' <span style="color:'+(moved?'#f87171':'#60a5fa')+';font-size:8px">'+(moved?'▼':'▲')+'</span>'
+                +' <b style="color:'+col+'">'+(lat>=0?'+':'')+lat+'</b>';
             } else {
               s+='<b style="color:'+col+'">'+(lat>=0?'+':'')+lat+'</b>';
             }
             return s+'</div>';
           }
           html+='<div style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;border-top:2px solid '+b.color+'">'
-            +'<div style="font-size:9px;font-weight:700;color:'+b.color+';margin-bottom:4px">'+b.label+'</div>'
+            +'<div style="font-size:9px;font-weight:700;color:'+b.color+';margin-bottom:5px">'+b.label+'</div>'
             +lineRow(opnL,latL,b.color)
             +oddsRow(opnH,latH,'H','#f87171')
             +oddsRow(opnA,latA,'A','#60a5fa')
