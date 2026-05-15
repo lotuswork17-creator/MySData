@@ -13,9 +13,9 @@ function expertScore(r){
     if(u==='D'||u==='1D'||u==='AD')return'D';
     if(u==='A'||u==='1A'||u==='AA')return'A';
     return null;}
-  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
-  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
-  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(ts(r.TIPSGEM)==='H'?1:0)+(ts(r.TIPSGPT)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(ts(r.TIPSGEM)==='D'?1:0)+(ts(r.TIPSGPT)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(ts(r.TIPSGEM)==='A'?1:0)+(ts(r.TIPSGPT)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
   var tt=th+td+ta;
   if(!tt)return null;
   return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
@@ -27,7 +27,7 @@ function lowConfidence(r){
     if(u==='D'||u==='1D'||u==='AD')return'D';
     if(u==='A'||u==='1A'||u==='AA')return'A';
     return null;}
-  var tipCount=[r.JCTIPSUM,r.JCTIPSID,r.TIPSIDMAC,r.TIPSONID].filter(function(v){return ts(v)!==null;}).length;
+  var tipCount=[r.JCTIPSUM,r.JCTIPSID,r.TIPSIDMAC,r.TIPSONID,r.TIPSGEM,r.TIPSGPT].filter(function(v){return ts(v)!==null;}).length;
   var gemGptTotal=(r.GEMH||0)+(r.GEMD||0)+(r.GEMA||0)+(r.GPTH||0)+(r.GPTD||0)+(r.GPTA||0);
   return tipCount<2||gemGptTotal<3;
 }
