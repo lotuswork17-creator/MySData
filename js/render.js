@@ -68,6 +68,8 @@ function renderTable(){
         +' <span style="color:var(--muted)">SID:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)
         +' <span style="color:var(--muted)">Mac:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)
         +' <span style="color:var(--muted)">ON:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)
+        +' <span style="color:var(--muted)">Gem:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)
+        +' <span style="color:var(--muted)">GPT:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:4px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
         +'<span>Gem: '+(r.GEMH!=null?r.GEMH:'\u2014')+' / '+(r.GEMD!=null?r.GEMD:'\u2014')+' / '+(r.GEMA!=null?r.GEMA:'\u2014')+'</span>'
@@ -200,18 +202,14 @@ function renderTable(){
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
-        +'<td class="oc" style="line-height:1.3;text-align:center">'
-        +(r.GEMH!=null?'<div style="font-size:11px">'+r.GEMH+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
-        +(r.GPTH!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTH+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
-        +'</td>'
-        +'<td class="oc" style="line-height:1.3;text-align:center">'
-        +(r.GEMD!=null?'<div style="font-size:11px">'+r.GEMD+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
-        +(r.GPTD!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTD+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
-        +'</td>'
-        +'<td class="oc" style="line-height:1.3;text-align:center">'
-        +(r.GEMA!=null?'<div style="font-size:11px">'+r.GEMA+'</div>':'<div style="font-size:11px;color:#475569">\u2014</div>')
-        +(r.GPTA!=null?'<div style="font-size:10px;color:#94a3b8">'+r.GPTA+'</div>':'<div style="font-size:10px;color:#334155">\u2014</div>')
-        +'</td>'
+        +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)+'</td>'
+        +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)+'</td>'
+        +'<td class="oc">'+(r.GEMH!=null?r.GEMH:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GEMD!=null?r.GEMD:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GEMA!=null?r.GEMA:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTH!=null?r.GPTH:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTD!=null?r.GPTD:'\u2014')+'</td>'
+        +'<td class="oc">'+(r.GPTA!=null?r.GPTA:'\u2014')+'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
