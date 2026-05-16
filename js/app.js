@@ -144,10 +144,8 @@ function applyFilters(){
       var fh2=rh2/vig2*100,vigPct2=(vig2-1)*100;
       if(mf==='balanced'&&(fh2<48||fh2>52))return false;
       if(mf==='dead-even'&&(fh2<49||fh2>51))return false;
-      if(mf==='h-50to55'&&(fh2<=50||fh2>=55))return false;
       if(mf==='h-slight'&&(fh2<52||fh2>=55))return false;
       if(mf==='h-clear'&&fh2<55)return false;
-      if(mf==='a-45to50'&&(fh2<=45||fh2>=50))return false;
       if(mf==='a-slight'&&(fh2<45||fh2>=48))return false;
       if(mf==='a-clear'&&fh2>=45)return false;
       if(vf==='vig-tight'&&vigPct2>=5)return false;
@@ -265,7 +263,9 @@ var JC_EXPERTS = [
   { key:'JCTIPSUM',  label:'JC Sum',  color:'#4ade80' },
   { key:'JCTIPSID',  label:'JC SID',  color:'#60a5fa' },
   { key:'TIPSIDMAC', label:'SID Mac', color:'#f87171' },
-  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' }
+  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' },
+  { key:'TIPSGEM',   label:'Gem AI',  color:'#fbbf24' },
+  { key:'TIPSGPT',   label:'GPT AI',  color:'#e879f9' }
 ];
 var JC_TIPS = ['H','D','A'];
 
