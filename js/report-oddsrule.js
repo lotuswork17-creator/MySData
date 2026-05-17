@@ -351,7 +351,7 @@ function renderOddsRule(RD){
       h+='</tr>';
 
       // Expand detail
-      var tipFields=[{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'}];
+      var tipFields=[{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'},{key:'TIPSGEM',label:'Gem'},{key:'TIPSGPT',label:'GPT'}];
       var tipBadges=tipFields.map(function(tf){
         var tv=r[tf.key];var c=tv&&tv.indexOf('H')>=0?'#f87171':tv&&tv.indexOf('A')>=0?'#60a5fa':'#475569';
         return '<span style="font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:'+c+'15;border:1px solid '+c+'33;color:'+c+'">'+(tf.label)+': '+(tv||'—')+'</span>';

@@ -427,7 +427,7 @@ function renderMoveRule(RD){
       var homCol=homDir==='short'?'#f87171':homDir==='drift'?'#60a5fa':'#475569';
       var aomCol=aomDir==='short'?'#f87171':aomDir==='drift'?'#60a5fa':'#475569';
 
-      var tipFields=[{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'}];
+      var tipFields=[{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'},{key:'TIPSGEM',label:'Gem'},{key:'TIPSGPT',label:'GPT'}];
       var tipBadges=tipFields.map(function(tf){
         var tv=r[tf.key];var dv=tv||'—';
         var isH=tv&&String(tv).indexOf('H')>=0,isA=tv&&String(tv).indexOf('A')>=0;

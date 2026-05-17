@@ -430,7 +430,7 @@ function renderJCRelation(RD){
   }
 
   h += '<div class="rpt-title" style="margin-bottom:4px">🎯 Auto-Apply Rules to Upcoming Matches</div>';
-  h += '<div style="font-size:10px;color:#64748b;margin-bottom:10px">All verified rules automatically scanned against upcoming matches. Rules fire on first-match-wins basis (highest ROI rule listed per match). All 4 experts (MAC / JCSUM / JCSID / ONID) included.</div>';
+  h += '<div style="font-size:10px;color:#64748b;margin-bottom:10px">All verified rules automatically scanned against upcoming matches. Rules fire on first-match-wins basis (highest ROI rule listed per match). All 6 experts (MAC / JCSUM / JCSID / ONID / Gem / GPT) included.</div>';
 
   if(!jcr.upcomingAlerts.length){
     h += '<div style="padding:14px;color:#475569;font-size:12px;font-style:italic;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">No upcoming matches currently match any verified rule. Check back when new odds are available.</div>';
@@ -458,7 +458,7 @@ function renderJCRelation(RD){
       var multiMark=(alert.rules.length>1?' <span style="color:#a78bfa;font-size:8px">+'+(alert.rules.length-1)+'</span>':'')+_jcrWarn;
 
       // Tips mini-badge
-      var tipFields = [{key:'JCTIPSUM',label:'JCS'},{key:'JCTIPSID',label:'SID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONI'}];
+      var tipFields = [{key:'JCTIPSUM',label:'JCS'},{key:'JCTIPSID',label:'SID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONI'},{key:'TIPSGEM',label:'Gem'},{key:'TIPSGPT',label:'GPT'}];
       var tipStr = tipFields.map(function(tf){
         var tv = r[tf.key];
         if(!tv) return '';
@@ -518,7 +518,7 @@ function renderJCRelation(RD){
       alertIdx++;
 
       // ── Inline expand row with front-page-style detail ──
-      var tipFields2 = [{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'}];
+      var tipFields2 = [{key:'JCTIPSUM',label:'JCSUM'},{key:'JCTIPSID',label:'JCSID'},{key:'TIPSIDMAC',label:'MAC'},{key:'TIPSONID',label:'ONID'},{key:'TIPSGEM',label:'Gem'},{key:'TIPSGPT',label:'GPT'}];
       var tipBadges = tipFields2.map(function(tf){
         var tv=r[tf.key]; var dv=tv||'—';
         var isH=tv&&String(tv).indexOf('H')>=0, isA=tv&&String(tv).indexOf('A')>=0;
