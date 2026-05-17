@@ -15,16 +15,16 @@ function openDetail(idx){
       +(r.RESULTFH!=null?'<div class="hts">Half-time: '+r.RESULTFH+' – '+r.RESULTFA+'</div>':'')+'</div>';
   }
   $('panelBody').innerHTML=res
-    +'<div class="dc full"><h3>💡 Tips Summary</h3><div class="tg">'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0">'
-    +[['JC Sum','JCTIPSUM'],['JC SID','JCTIPSID'],['SID Mac','TIPSIDMAC'],['ON ID','TIPSONID'],['Gem AI','TIPSGEM'],['GPT AI','TIPSGPT']].map(function(ex){
-       var v=r[ex[1]];var c=!v?'#475569':v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';
-       return '<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:'+c+'22;border:1px solid '+c+'44">'
-         +'<span style="color:var(--muted);font-size:9px">'+ex[0]+':</span> '
-         +'<span style="color:'+c+';font-weight:700">'+(v||'—')+'</span></span>';
-     }).join('')
+    +'<div class="dc full"><h3>💡 Tips Summary</h3>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px">'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">JC Sum:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSUM)+'</span>'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">JC SID:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</span>'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">SID Mac:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</span>'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">ON ID:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</span>'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">Gem:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)+'</span>'
+    +'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:#1e293b;border:1px solid #334155;white-space:nowrap">'+'<span style="color:#64748b;font-size:9px">GPT:</span> '+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)+'</span>'
     +'</div>'
-    +'</div><div class="tg2">'
+    +'<div class="tg2">'
     +'<div class="ti"><div class="tl">GEM H/D/A</div><div class="tv" style="font-family:var(--mono);font-size:12px"><span style="color:#f87171">'+( r.GEMH!=null?r.GEMH:'—')+'</span> / <span style="color:#4ade80">'+( r.GEMD!=null?r.GEMD:'—')+'</span> / <span style="color:#60a5fa">'+( r.GEMA!=null?r.GEMA:'—')+'</span></div></div>'
     +'<div class="ti"><div class="tl">GPT H/D/A</div><div class="tv" style="font-family:var(--mono);font-size:12px"><span style="color:#f87171">'+( r.GPTH!=null?r.GPTH:'—')+'</span> / <span style="color:#4ade80">'+( r.GPTD!=null?r.GPTD:'—')+'</span> / <span style="color:#60a5fa">'+( r.GPTA!=null?r.GPTA:'—')+'</span></div></div>'
     +'</div></div>'
