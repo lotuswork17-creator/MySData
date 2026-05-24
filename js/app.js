@@ -291,7 +291,9 @@ var JC_EXPERTS = [
   { key:'JCTIPSUM',  label:'JC Sum',  color:'#4ade80' },
   { key:'JCTIPSID',  label:'JC SID',  color:'#60a5fa' },
   { key:'TIPSIDMAC', label:'SID Mac', color:'#f87171' },
-  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' }
+  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' },
+  { key:'TIPSGEM',   label:'Gem AI',  color:'#fbbf24' },
+  { key:'TIPSGPT',   label:'GPT AI',  color:'#e879f9' }
 ];
 var JC_TIPS = ['H','D','A'];
 
