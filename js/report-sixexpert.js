@@ -132,7 +132,29 @@ function computeSixExpert(results){
   });
   pockets.sort(function(a,b){return b.roi-a.roi;});
 
-  return { experts:experts, pockets:pockets, totalData:data.length,
+  // ── Consensus fade study ──
+  // Count H/A votes among all 6 experts per match; group by majority direction & margin.
+  var EXP_KEYS=SIXEXP_LIST.map(function(e){return e.key;});
+  var consensus={}; // key = maj+'|'+margin
+  data.forEach(function(r){
+    var hv=0,av=0;
+    EXP_KEYS.forEach(function(k){ var t=seTipDir(r[k]); if(t==='H')hv++; else if(t==='A')av++; });
+    if(hv===av) return; // tie or no votes
+    var maj=hv>av?'H':'A', margin=Math.max(hv,av), opp=maj==='H'?'A':'H';
+    var key=maj+'|'+margin;
+    if(!consensus[key]) consensus[key]={maj:maj,margin:margin,folTot:0,fadTot:0,n:0,folW:0,fadW:0};
+    var c=consensus[key];
+    var fp=sePnl(r,maj), fap=sePnl(r,opp);
+    c.folTot+=fp; c.fadTot+=fap; c.n++; if(fp>0)c.folW++; if(fap>0)c.fadW++;
+  });
+  var consensusRows=Object.keys(consensus).map(function(k){
+    var c=consensus[k];
+    return { maj:c.maj, margin:c.margin, n:c.n,
+             folRoi:Math.round(c.folTot/c.n*1000)/10, fadRoi:Math.round(c.fadTot/c.n*1000)/10,
+             folWin:Math.round(c.folW/c.n*100), fadWin:Math.round(c.fadW/c.n*100) };
+  }).sort(function(a,b){ return a.maj===b.maj ? a.margin-b.margin : (a.maj==='H'?-1:1); });
+
+  return { experts:experts, pockets:pockets, consensusRows:consensusRows, totalData:data.length,
            hasAI: data.some(function(r){return seTipDir(r.TIPSGEM)||seTipDir(r.TIPSGPT);}) };
 }
 
@@ -177,6 +199,40 @@ function renderSixExpert(RD){
     });
     h+='</tbody></table></div>';
     h+='<div style="font-size:9px;color:#475569;margin-top:4px">H Odds / A Odds movement: short = odds shortened (≤−3%), drift = odds drifted (≥+3%), flat = within ±3%. Line move from opening HKJC line.</div>';
+    h+='</div>';
+  }
+
+  // ── Consensus Fade table ──
+  if(se.consensusRows && se.consensusRows.length){
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">';
+    h+='<div style="font-size:11px;font-weight:700;color:#60a5fa;margin-bottom:4px">🔄 Consensus Fade Study — bet AGAINST the majority</div>';
+    h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">For each match, count how many of the 6 experts pick H vs A. When a majority agrees, compare betting WITH them (Follow) vs AGAINST them (Fade). Higher agreement = stronger contrarian signal.</div>';
+    h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
+      +'<th>Majority</th><th class="num"># Agree</th><th class="num">Matches</th>'
+      +'<th class="num" style="color:#4ade80">Follow ROI</th>'
+      +'<th class="num" style="color:#fbbf24">Fade ROI</th>'
+      +'<th class="num">Fade Win%</th><th>Verdict</th></tr></thead><tbody>';
+    se.consensusRows.forEach(function(c){
+      if(c.n<20) return; // hide tiny samples
+      var majCol=c.maj==='H'?'#f87171':'#60a5fa';
+      var folCol=c.folRoi>=0?'#4ade80':'#f87171';
+      var fadCol=c.fadRoi>=0?'#4ade80':'#f87171';
+      var betDir=c.maj==='H'?'A':'H';
+      var verdict=c.fadRoi>=5?'<span style="color:#4ade80;font-weight:700">✓ FADE bet '+betDir+'</span>'
+                 :c.fadRoi>=0?'<span style="color:#94a3b8">~ marginal</span>'
+                 :'<span style="color:#64748b">✗ no edge</span>';
+      h+='<tr>'
+        +'<td><b style="color:'+majCol+'">'+c.maj+' majority</b></td>'
+        +'<td class="num" style="font-family:var(--mono);font-weight:700">'+c.margin+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+c.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+folCol+'">'+(c.folRoi>=0?'+':'')+c.folRoi.toFixed(1)+'%</td>'
+        +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+fadCol+'">'+(c.fadRoi>=0?'+':'')+c.fadRoi.toFixed(1)+'%</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+c.fadWin+'%</td>'
+        +'<td>'+verdict+'</td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:4px">"# Agree" = number of experts (out of 6) on the majority side. Draw/no-tip experts are ignored. Rows with fewer than 20 matches hidden. Fade = bet the opposite side of the majority.</div>';
     h+='</div>';
   }
 
