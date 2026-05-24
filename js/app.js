@@ -202,7 +202,7 @@ function applyFilters(){
       else if(smf==='sm5'){if(sld===null||sld<=0||!se||se.a<83)return false;}
       else if(smf==='sm6'){if(sld===null||sld>=0||!se||se.a<50||sv===null||sv>=6)return false;}
       else if(smf==='sm7'){if(sld===null||sld!==0||!se||se.h<83)return false;}
-      else if(smf[0]==='s'&&smf.length>3&&parseInt(smf.slice(2))>=8){
+      else if(smf==='sm8'||smf==='sm9'||smf==='sm10'||smf==='sm11'||smf==='sm12'){
         // 6-expert consensus fade signals
         var _votes=function(rec){
           var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
