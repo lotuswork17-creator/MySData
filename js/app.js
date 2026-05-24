@@ -202,6 +202,34 @@ function applyFilters(){
       else if(smf==='sm5'){if(sld===null||sld<=0||!se||se.a<83)return false;}
       else if(smf==='sm6'){if(sld===null||sld>=0||!se||se.a<50||sv===null||sv>=6)return false;}
       else if(smf==='sm7'){if(sld===null||sld!==0||!se||se.h<83)return false;}
+      else if(smf[0]==='s'&&smf.length>3&&parseInt(smf.slice(2))>=8){
+        // 6-expert consensus fade signals
+        var _votes=function(rec){
+          var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+          var hc=0,ac=0;
+          keys.forEach(function(k){
+            var v=String(rec[k]||'').trim();
+            if(v==='H'||v==='1H'||v==='FH')hc++;
+            else if(v==='A'||v==='1A'||v==='FA')ac++;
+          });
+          return {h:hc,a:ac};
+        };
+        var vc=_votes(r);
+        // H odds move ratio and A odds move ratio
+        var hRatio=(r.ASIAHLN&&r.ASIAHLN>0)?r.ASIAH/r.ASIAHLN:1;
+        var aRatio=(r.ASIAALN&&r.ASIAALN>0)?r.ASIAA/r.ASIAALN:1;
+        if(smf==='sm8'){  // 3+ experts H + H odds drift → bet A
+          if(!(vc.h>vc.a&&vc.h>=3)||hRatio<1.03)return false;
+        } else if(smf==='sm9'){  // 3+ experts H + A odds short → bet A
+          if(!(vc.h>vc.a&&vc.h>=3)||aRatio>0.97)return false;
+        } else if(smf==='sm10'){  // 3+ experts H + line dropped → bet A
+          if(!(vc.h>vc.a&&vc.h>=3)||sld===null||sld>=0)return false;
+        } else if(smf==='sm11'){  // 4+ experts A consensus → bet H
+          if(!(vc.a>vc.h&&vc.a>=4))return false;
+        } else if(smf==='sm12'){  // 4+ experts H consensus → bet A
+          if(!(vc.h>vc.a&&vc.h>=4))return false;
+        }
+      }
     }
     return true;
   });
@@ -263,9 +291,7 @@ var JC_EXPERTS = [
   { key:'JCTIPSUM',  label:'JC Sum',  color:'#4ade80' },
   { key:'JCTIPSID',  label:'JC SID',  color:'#60a5fa' },
   { key:'TIPSIDMAC', label:'SID Mac', color:'#f87171' },
-  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' },
-  { key:'TIPSGEM',   label:'Gem AI',  color:'#fbbf24' },
-  { key:'TIPSGPT',   label:'GPT AI',  color:'#e879f9' }
+  { key:'TIPSONID',  label:'ON ID',   color:'#a78bfa' }
 ];
 var JC_TIPS = ['H','D','A'];
 
