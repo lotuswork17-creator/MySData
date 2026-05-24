@@ -43,6 +43,14 @@ function seOddsMove(r,hk,lk){
   var ratio=r[hk]/opn;
   return ratio<=0.97?'short':ratio>=1.03?'drift':'flat';
 }
+function seLean(r){
+  var h=r.ASIAH,a=r.ASIAA;
+  if(!h||!a) return 'even';
+  var vh=(1/h)/((1/h)+(1/a));
+  if(vh>=0.58) return 'H fav';
+  if(vh<=0.42) return 'A fav';
+  return 'even';
+}
 function seLineBucket(r){
   var l=parseFloat(r.ASIALINE);
   if(l<=-1)   return 'H -1+';
@@ -154,7 +162,52 @@ function computeSixExpert(results){
              folWin:Math.round(c.folW/c.n*100), fadWin:Math.round(c.fadW/c.n*100) };
   }).sort(function(a,b){ return a.maj===b.maj ? a.margin-b.margin : (a.maj==='H'?-1:1); });
 
-  return { experts:experts, pockets:pockets, consensusRows:consensusRows, totalData:data.length,
+  // ── Consensus (margin>=3) fade × each condition dimension ──
+  var DIMS=[
+    {name:'Asia Line', fn:seLineBucket, order:['H -1+','H -0.75','H -0.25','Level','A +0.25','A +0.75','A +1+']},
+    {name:'Market Lean', fn:seLean, order:['H fav','even','A fav']},
+    {name:'Line Move', fn:seLineMove, order:['up','flat','down']},
+    {name:'H Odds Move', fn:function(r){return seOddsMove(r,'ASIAH','ASIAHLN');}, order:['short','flat','drift']},
+    {name:'A Odds Move', fn:function(r){return seOddsMove(r,'ASIAA','ASIAALN');}, order:['short','flat','drift']}
+  ];
+  var comboDims=DIMS.map(function(dim){
+    var cells={};
+    data.forEach(function(r){
+      var hv=0,av=0;
+      EXP_KEYS.forEach(function(k){ var t=seTipDir(r[k]); if(t==='H')hv++; else if(t==='A')av++; });
+      if(hv===av||Math.max(hv,av)<3) return; // strong consensus only
+      var maj=hv>av?'H':'A', opp=maj==='H'?'A':'H';
+      var dv=dim.fn(r);
+      var key=maj+'|'+dv;
+      if(!cells[key]) cells[key]={maj:maj,dv:dv,fadTot:0,folTot:0,n:0,fadW:0};
+      cells[key].fadTot+=sePnl(r,opp); cells[key].folTot+=sePnl(r,maj); cells[key].n++;
+      if(sePnl(r,opp)>0) cells[key].fadW++;
+    });
+    var rows=[];
+    ['H','A'].forEach(function(maj){
+      dim.order.forEach(function(dv){
+        var c=cells[maj+'|'+dv];
+        if(c&&c.n>=30){
+          rows.push({maj:maj,dv:dv,n:c.n,
+            fadRoi:Math.round(c.fadTot/c.n*1000)/10,
+            folRoi:Math.round(c.folTot/c.n*1000)/10,
+            fadWin:Math.round(c.fadW/c.n*100)});
+        }
+      });
+    });
+    return {name:dim.name, rows:rows};
+  });
+
+  // Top combined fade pockets across all dims
+  var comboPockets=[];
+  comboDims.forEach(function(dim){
+    dim.rows.forEach(function(row){
+      if(row.fadRoi>=5) comboPockets.push({dim:dim.name,maj:row.maj,dv:row.dv,roi:row.fadRoi,n:row.n,win:row.fadWin});
+    });
+  });
+  comboPockets.sort(function(a,b){return b.roi-a.roi;});
+
+  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, totalData:data.length,
            hasAI: data.some(function(r){return seTipDir(r.TIPSGEM)||seTipDir(r.TIPSGPT);}) };
 }
 
@@ -233,6 +286,54 @@ function renderSixExpert(RD){
     });
     h+='</tbody></table></div>';
     h+='<div style="font-size:9px;color:#475569;margin-top:4px">"# Agree" = number of experts (out of 6) on the majority side. Draw/no-tip experts are ignored. Rows with fewer than 20 matches hidden. Fade = bet the opposite side of the majority.</div>';
+    h+='</div>';
+  }
+
+  // ── Consensus + Conditions combined fade ──
+  if(se.comboPockets && se.comboPockets.length){
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">';
+    h+='<div style="font-size:11px;font-weight:700;color:#fb923c;margin-bottom:4px">🎯 Strong Consensus (3+ agree) Fade × Conditions</div>';
+    h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">When 3+ experts agree, fade ROI broken down by Asia line, market lean, line move, and H/A odds move. Top fade edges (ROI ≥ +5%, n ≥ 30):</div>';
+    h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px;margin-bottom:10px"><thead><tr>'
+      +'<th>Condition</th><th>Majority</th><th class="num">Fade ROI</th><th class="num">Win%</th><th class="num">N</th></tr></thead><tbody>';
+    se.comboPockets.slice(0,15).forEach(function(p){
+      var majCol=p.maj==='H'?'#f87171':'#60a5fa';var betDir=p.maj==='H'?'A':'H';
+      h+='<tr>'
+        +'<td style="font-size:10px"><span style="color:#94a3b8">'+p.dim+':</span> <b style="color:#e2e8f0">'+p.dv+'</b></td>'
+        +'<td><b style="color:'+majCol+'">'+p.maj+' maj</b> <span style="font-size:9px;color:#94a3b8">→bet '+betDir+'</span></td>'
+        +'<td class="num" style="color:#4ade80;font-weight:700;font-family:var(--mono)">+'+p.roi.toFixed(1)+'%</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+p.win+'%</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+p.n+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+
+    // Full breakdown per dimension
+    h+='<details style="margin-top:6px"><summary style="cursor:pointer;font-size:10px;color:#60a5fa;font-weight:700">▸ Full breakdown by each condition</summary>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:8px">';
+    se.comboDims.forEach(function(dim){
+      h+='<div><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">'+dim.name+'</div>';
+      h+='<table class="rpt-table" style="font-size:10px;width:100%"><thead><tr>'
+        +'<th style="font-size:9px">Maj</th><th style="font-size:9px">Cond</th>'
+        +'<th class="num" style="font-size:9px;color:#fbbf24">Fade</th>'
+        +'<th class="num" style="font-size:9px;color:#4ade80">Follow</th>'
+        +'<th class="num" style="font-size:9px">N</th></tr></thead><tbody>';
+      if(!dim.rows.length){
+        h+='<tr><td colspan="5" style="color:#475569;font-size:9px;font-style:italic">No cells with n≥30</td></tr>';
+      }
+      dim.rows.forEach(function(row){
+        var majCol=row.maj==='H'?'#f87171':'#60a5fa';
+        var fadCol=row.fadRoi>=0?'#4ade80':'#f87171';
+        var folCol=row.folRoi>=0?'#4ade80':'#f87171';
+        h+='<tr><td><b style="color:'+majCol+'">'+row.maj+'</b></td>'
+          +'<td style="font-size:9px;color:#e2e8f0">'+row.dv+'</td>'
+          +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+fadCol+'">'+(row.fadRoi>=0?'+':'')+row.fadRoi.toFixed(1)+'%</td>'
+          +'<td class="num" style="font-family:var(--mono);color:'+folCol+'">'+(row.folRoi>=0?'+':'')+row.folRoi.toFixed(1)+'%</td>'
+          +'<td class="num" style="font-family:var(--mono);color:#64748b">'+row.n+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+    });
+    h+='</div></details>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:6px">Strong consensus = 3+ of the 6 experts agree on a side. Fade = bet the opposite. Cells need n≥30 to show.</div>';
     h+='</div>';
   }
 
