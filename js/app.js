@@ -31,6 +31,7 @@ function loadData(){
 
       var t;
       initJCPickFilter();
+      updateSmartOptions();
       $('searchInput').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){pg=1;applyFilters();},300);});
       // Populate asialine dropdown
       var lines=Array.from(new Set(ALL.map(function(r){return r.ASIALINE;}).filter(function(v){return v!=null;}))).sort(function(a,b){return a-b;});
@@ -60,6 +61,62 @@ function loadData(){
       $('errorState').style.display='flex';
       $('errorMsg').textContent=e.name==='AbortError'?'Request timed out after 10s — check your internet connection and that data.json exists on GitHub.':e.message;
     });
+}
+
+// Standalone smart-money condition tester (shared by filter + option greying)
+function smartPass(r, smf){
+  if(!smf) return true;
+  var sgl=r.ASIALINE, sln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
+  var sld=sgl!=null&&sln!=null?Math.round((sgl-sln)*100)/100:null;
+  var se=expertScore(r);
+  var sv=sh&&sa&&sh>0&&sa>0?(1/sh+1/sa-1)*100:null;
+  if(smf==='sm1') return !(sld===null||sld<=0||!se||se.h<67);
+  if(smf==='sm2') return !(sld===null||sld<=0||!se||se.h<83||sv===null||sv>=6);
+  if(smf==='sm3') return !(sld===null||sld<=0||!se||se.h<67||sv===null||sv>=6);
+  if(smf==='sm4') return !(sld===null||sld!==0||!se||se.a<83);
+  if(smf==='sm5') return !(sld===null||sld<=0||!se||se.a<83);
+  if(smf==='sm6') return !(sld===null||sld>=0||!se||se.a<50||sv===null||sv>=6);
+  if(smf==='sm7') return !(sld===null||sld!==0||!se||se.h<83);
+  if(smf==='sm8'||smf==='sm9'||smf==='sm10'||smf==='sm11'||smf==='sm12'){
+    var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+    var hc=0,ac=0;
+    keys.forEach(function(k){ var v=String(r[k]||'').trim(); if(v==='H'||v==='1H'||v==='FH')hc++; else if(v==='A'||v==='1A'||v==='FA')ac++; });
+    var hRatio=(r.ASIAHLN&&r.ASIAHLN>0)?r.ASIAH/r.ASIAHLN:1;
+    var aRatio=(r.ASIAALN&&r.ASIAALN>0)?r.ASIAA/r.ASIAALN:1;
+    if(smf==='sm8')  return (hc>ac&&hc>=3)&&hRatio>=1.03;
+    if(smf==='sm9')  return (hc>ac&&hc>=3)&&aRatio<=0.97;
+    if(smf==='sm10') return (hc>ac&&hc>=3)&&sld!==null&&sld<0;
+    if(smf==='sm11') return (ac>hc&&ac>=4);
+    if(smf==='sm12') return (hc>ac&&hc>=4);
+  }
+  return true;
+}
+
+// Grey out smart-money options with no matching UPCOMING (PREEVE) matches
+function updateSmartOptions(){
+  var sel=document.getElementById('smartSelect'); if(!sel) return;
+  var upcoming=(typeof ALL!=='undefined'?ALL:[]).filter(function(r){ return r.STATUS==='PREEVE'; });
+  Array.prototype.forEach.call(sel.options, function(opt){
+    var v=opt.value;
+    if(!v || opt.disabled && !v) return; // skip placeholder/section headers
+    if(!v) return;
+    var cnt=0;
+    for(var i=0;i<upcoming.length;i++){ if(smartPass(upcoming[i], v)){ cnt++; if(cnt>=1) break; } }
+    // store full count for label
+    var full=0;
+    for(var j=0;j<upcoming.length;j++){ if(smartPass(upcoming[j], v)) full++; }
+    var base=opt.getAttribute('data-base')|| opt.textContent.replace(/\s*\(\d+\)\s*$/,'');
+    opt.setAttribute('data-base', base);
+    if(full===0){
+      opt.disabled=true;
+      opt.style.color='#475569';
+      opt.textContent=base+' (0)';
+    } else {
+      opt.disabled=false;
+      opt.style.color='';
+      opt.textContent=base+' ('+full+')';
+    }
+  });
 }
 
 function applyFilters(){
@@ -192,44 +249,7 @@ function applyFilters(){
     // Smart Money filter
     if(smf){
       var sgl=r.ASIALINE,sln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
-      var sld=sgl!=null&&sln!=null?Math.round((sgl-sln)*100)/100:null;
-      var se=expertScore(r);
-      var sv=sh&&sa&&sh>0&&sa>0?(1/sh+1/sa-1)*100:null;
-      if(smf==='sm1'){if(sld===null||sld<=0||!se||se.h<67)return false;}
-      else if(smf==='sm2'){if(sld===null||sld<=0||!se||se.h<83||sv===null||sv>=6)return false;}
-      else if(smf==='sm3'){if(sld===null||sld<=0||!se||se.h<67||sv===null||sv>=6)return false;}
-      else if(smf==='sm4'){if(sld===null||sld!==0||!se||se.a<83)return false;}
-      else if(smf==='sm5'){if(sld===null||sld<=0||!se||se.a<83)return false;}
-      else if(smf==='sm6'){if(sld===null||sld>=0||!se||se.a<50||sv===null||sv>=6)return false;}
-      else if(smf==='sm7'){if(sld===null||sld!==0||!se||se.h<83)return false;}
-      else if(smf==='sm8'||smf==='sm9'||smf==='sm10'||smf==='sm11'||smf==='sm12'){
-        // 6-expert consensus fade signals
-        var _votes=function(rec){
-          var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
-          var hc=0,ac=0;
-          keys.forEach(function(k){
-            var v=String(rec[k]||'').trim();
-            if(v==='H'||v==='1H'||v==='FH')hc++;
-            else if(v==='A'||v==='1A'||v==='FA')ac++;
-          });
-          return {h:hc,a:ac};
-        };
-        var vc=_votes(r);
-        // H odds move ratio and A odds move ratio
-        var hRatio=(r.ASIAHLN&&r.ASIAHLN>0)?r.ASIAH/r.ASIAHLN:1;
-        var aRatio=(r.ASIAALN&&r.ASIAALN>0)?r.ASIAA/r.ASIAALN:1;
-        if(smf==='sm8'){  // 3+ experts H + H odds drift → bet A
-          if(!(vc.h>vc.a&&vc.h>=3)||hRatio<1.03)return false;
-        } else if(smf==='sm9'){  // 3+ experts H + A odds short → bet A
-          if(!(vc.h>vc.a&&vc.h>=3)||aRatio>0.97)return false;
-        } else if(smf==='sm10'){  // 3+ experts H + line dropped → bet A
-          if(!(vc.h>vc.a&&vc.h>=3)||sld===null||sld>=0)return false;
-        } else if(smf==='sm11'){  // 4+ experts A consensus → bet H
-          if(!(vc.a>vc.h&&vc.a>=4))return false;
-        } else if(smf==='sm12'){  // 4+ experts H consensus → bet A
-          if(!(vc.h>vc.a&&vc.h>=4))return false;
-        }
-      }
+      if(!smartPass(r, smf)) return false;
     }
     return true;
   });
