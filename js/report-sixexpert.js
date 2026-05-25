@@ -109,6 +109,35 @@ function computeSixExpert(allRecords){
     return (a.r.DATE||'').localeCompare(b.r.DATE||'') || (a.r.TIME||0)-(b.r.TIME||0);
   });
 
+  // ── Past bets: settled matches that fired any consensus-fade rule ──
+  var pastBets=[];
+  data.slice().sort(function(a,b){
+    var dc=(b.DATE||'').localeCompare(a.DATE||''); return dc!==0?dc:(b.TIME||0)-(a.TIME||0);
+  }).forEach(function(r){
+    if(pastBets.length>=200) return;
+    var fired=SIXEXP_RULES.filter(function(rule){ return seRuleFires(r,rule); });
+    if(!fired.length) return;
+    fired.sort(function(a,b){return b.roi-a.roi;});
+    var bet=fired[0].bet;
+    var m=seAdjM(r);
+    var outcome=m>0.25?'HW':m===0.25?'HH':m===0?'P':m===-0.25?'AH':'AW';
+    pastBets.push({r:r, fired:fired, bet:bet, pnl:sePnl(r,bet), outcome:outcome, votes:seVotes(r)});
+  });
+
+  // ROI history chart (chronological, skip first 50)
+  var chrono=pastBets.slice().reverse();
+  var chartPts=[],chartMa50=[],chartMa100=[],cum=0,allP=[];
+  chrono.forEach(function(pb){ allP.push(pb.pnl); });
+  var skip=50;
+  allP.forEach(function(v,i){
+    cum=Math.round((cum+v)*1000)/1000;
+    var n=i+1,rr=Math.round(cum/n*10000)/100;
+    var m50=n>=50?Math.round(allP.slice(n-50,n).reduce(function(s,x){return s+x;},0)/50*10000)/100:null;
+    var m100=n>=100?Math.round(allP.slice(n-100,n).reduce(function(s,x){return s+x;},0)/100*10000)/100:null;
+    if(i>=skip){chartPts.push(rr);chartMa50.push(m50);chartMa100.push(m100);}
+  });
+  var seChart={roiPts:chartPts,ma50Pts:chartMa50,ma100Pts:chartMa100,total:allP.length,skip:skip};
+
   function roiCell(rows, bet){
     var tot=0,n=0,w=0;
     rows.forEach(function(r){ var p=sePnl(r,bet); tot+=p; n++; if(p>0)w++; });
@@ -249,7 +278,7 @@ function computeSixExpert(allRecords){
   });
   comboPockets.sort(function(a,b){return b.roi-a.roi;});
 
-  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, upcomingAlerts:upcomingAlerts, totalData:data.length,
+  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, upcomingAlerts:upcomingAlerts, pastBets:pastBets, seChart:seChart, totalData:data.length,
            hasAI: data.some(function(r){return seTipDir(r.TIPSGEM)||seTipDir(r.TIPSGPT);}) };
 }
 
@@ -305,7 +334,8 @@ function renderSixExpert(RD){
       var dd=(r.DATE||'').slice(5),t=r.TIME,ts2=t?String(t).padStart(4,'0'):'',tm=ts2?ts2.slice(0,2)+':'+ts2.slice(2):'';
       h+='<tr style="cursor:pointer" onclick="var e=document.getElementById(\''+detId+'\');e.style.display=e.style.display===\'none\'?\'table-row\':\'none\'">';
       h+='<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(dd+(tm?' '+tm:''))+'</td>';
-      h+='<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:#e2e8f0">'+r.TEAMH+' <span style="color:#475569;font-weight:400">vs</span> '+r.TEAMA+'</div>'
+      var _hCol=al.bet==='H'?'#f87171':'#e2e8f0', _aCol=al.bet==='A'?'#60a5fa':'#e2e8f0';
+      h+='<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600"><span style="color:'+_hCol+'">'+r.TEAMH+'</span> <span style="color:#475569;font-weight:400">vs</span> <span style="color:'+_aCol+'">'+r.TEAMA+'</span></div>'
         +'<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+lineStr(r)+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+oddsStr(r.ASIAH,r.ASIAHLN)+'</td>';
@@ -332,6 +362,90 @@ function renderSixExpert(RD){
     h+='<div style="font-size:9px;color:#475569;margin-top:4px">Rules fire on opening→latest odds movement. CF1/CF2 (consensus contradicted by odds movement) are the strongest. Click a row for the six expert tips.</div>';
   }
   h+='</div>';
+
+  // ── Historic Performance: ROI chart + past bets ──
+  if(se.pastBets && se.pastBets.length){
+    var pb=se.pastBets;
+    function roiOf(bets,n){
+      var sl=bets.slice(0,n),p=0,c=0;
+      sl.slice().reverse().forEach(function(x){ p=Math.round((p+x.pnl)*1000)/1000; c++; });
+      return c?Math.round(p/c*1000)/10:null;
+    }
+    function roiSpan(roi,label){
+      if(roi===null) return '';
+      var col=roi>=0?'#4ade80':'#f87171';
+      return ' <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+col+'">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>'
+        +' <span style="font-size:9px;color:#475569;font-family:var(--mono)">'+label+'</span>';
+    }
+    var r200=roiOf(pb,200),r100=roiOf(pb,100),r50=roiOf(pb,50);
+
+    // ROI chart
+    if(se.seChart && se.seChart.roiPts.length){
+      var cd=se.seChart;
+      function fillN(arr){var f=null;for(var i=0;i<arr.length;i++){if(arr[i]!==null){f=arr[i];break;}}if(f===null)return arr;return arr.map(function(v){return v===null?f:v;});}
+      var lastRoi=cd.roiPts[cd.roiPts.length-1];
+      var f50=fillN(cd.ma50Pts),f100=fillN(cd.ma100Pts);
+      var l50=cd.ma50Pts[cd.ma50Pts.length-1],l100=cd.ma100Pts[cd.ma100Pts.length-1];
+      function fl(v){return v!==null?' <b style="font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</b>':'';}
+      var series=[{label:'Running ROI%'+fl(lastRoi),color:'#fb923c',pts:cd.roiPts}];
+      if(f50.some(function(v){return v!==null;})) series.push({label:'MA 50'+fl(l50),color:'#fbbf24',pts:f50});
+      if(f100.some(function(v){return v!==null;})) series.push({label:'MA 100'+fl(l100),color:'#4ade80',pts:f100});
+      h+='<div class="chart-box" style="margin-bottom:14px">'
+        +'<div class="chart-box-label">Consensus Fade ROI% History (first '+cd.skip+' bets hidden · '+cd.total+' total)</div>'
+        +'<div class="chart-legend" id="lgdSeRoi"></div><canvas id="cSeRoi"></canvas></div>';
+      setTimeout(function(){ makeLegend('lgdSeRoi',series); drawChart('cSeRoi',series,null,150); },30);
+    }
+
+    h+='<div class="rpt-title" style="margin-bottom:4px;display:flex;align-items:center;gap:2px">📋 Past Bets — Last '+pb.length+' shown'+roiSpan(r200,'L200')+roiSpan(r100,'L100')+roiSpan(r50,'L50')+'</div>';
+    h+='<div class="rpt-sub" style="margin-bottom:10px">Settled matches that fired any consensus-fade rule. Bet = fade direction from highest-ROI rule. Running ROI shown right.</div>';
+
+    var runROI=[],rp=0,rn=0;
+    pb.slice().reverse().forEach(function(x){ rp=Math.round((rp+x.pnl)*1000)/1000; rn++; runROI.push(Math.round(rp/rn*1000)/10); });
+    runROI.reverse();
+
+    h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
+      +'<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">Score</th>'
+      +'<th class="num">Votes</th><th class="num">Bet</th><th>Rules</th>'
+      +'<th>Outcome</th><th class="num">Hit</th><th class="num">Run ROI</th></tr></thead><tbody>';
+    pb.forEach(function(x,i){
+      var r=x.r, bet=x.bet, bCol=bet==='H'?'#f87171':'#60a5fa';
+      var hCol=bet==='H'?'#f87171':'#e2e8f0', aCol=bet==='A'?'#60a5fa':'#e2e8f0';
+      var oL,pW;
+      if(x.outcome==='HW'){oL='H WIN';pW=(bet==='H');}
+      else if(x.outcome==='HH'){oL='H ½';pW=(bet==='H');}
+      else if(x.outcome==='P'){oL='PUSH';pW=null;}
+      else if(x.outcome==='AH'){oL='A ½';pW=(bet==='A');}
+      else{oL='A WIN';pW=(bet==='A');}
+      var oBg=pW===null?'rgba(148,163,184,0.15)':pW?'rgba(74,222,128,0.18)':'rgba(248,113,113,0.18)';
+      var oCl=pW===null?'#94a3b8':pW?'#4ade80':'#f87171';
+      var pfw=(bet==='H'&&x.outcome==='HW')||(bet==='A'&&x.outcome==='AW');
+      var phw=(bet==='H'&&x.outcome==='HH')||(bet==='A'&&x.outcome==='AH');
+      var phl=(bet==='H'&&x.outcome==='AH')||(bet==='A'&&x.outcome==='HH');
+      var hit=pfw?'✅✅':phw?'✅':x.outcome==='P'?'⬜':phl?'❌':'❌❌';
+      var rr=runROI[i]||0,rrc=rr>=0?'#4ade80':'#f87171';
+      var sc=(r.RESULTH!=null&&r.RESULTA!=null)?r.RESULTH+'–'+r.RESULTA:'—';
+      var ruleIds=x.fired.map(function(ru){return ru.id;}).join(',');
+      h+='<tr>'
+        +'<td style="font-family:var(--mono);font-size:10px;color:#94a3b8;white-space:nowrap">'+(r.DATE||'').slice(5)+'</td>'
+        +'<td style="max-width:130px;overflow:hidden;font-size:10px"><span style="color:'+hCol+'">'+r.TEAMH+'</span> <span style="color:#475569">vs</span> <span style="color:'+aCol+'">'+r.TEAMA+'</span></td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>=0?'+':'')+r.ASIALINE+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+sc+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:9px"><span style="color:#f87171">'+x.votes.h+'</span>/<span style="color:#60a5fa">'+x.votes.a+'</span></td>'
+        +'<td class="num"><b style="color:'+bCol+'">'+bet+'</b></td>'
+        +'<td style="font-size:9px;color:#fb923c;font-family:var(--mono)">'+ruleIds+'</td>'
+        +'<td><span style="background:'+oBg+';color:'+oCl+';font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono)">'+oL+'</span></td>'
+        +'<td class="num" style="font-size:13px">'+hit+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:10px;color:'+rrc+'">'+(rr>=0?'+':'')+rr.toFixed(1)+'%</td>'
+        +'</tr>';
+    });
+    var totRoi=r200||0,tc=totRoi>=0?'#4ade80':'#f87171';
+    h+='<tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">'
+      +'<td colspan="8" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">'+pb.length+' bets</td>'
+      +'<td class="num" style="font-size:10px;color:#94a3b8;font-family:var(--mono)">ROI</td>'
+      +'<td class="num" style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+tc+'">'+(totRoi>=0?'+':'')+totRoi.toFixed(1)+'%</td></tr>';
+    h+='</tbody></table></div>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:4px;margin-bottom:18px">Bet team highlighted in colour (red=H, blue=A). Hit: ✅✅ win · ✅ half-win · ⬜ push · ❌ half-loss · ❌❌ loss.</div>';
+  }
 
   // ── Best pockets highlight ──
   if(se.pockets.length){
