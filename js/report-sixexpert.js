@@ -16,6 +16,33 @@ var SIXEXP_LIST = [
   { key:'TIPSGPT',   label:'GPT AI',  color:'#e879f9' },
 ];
 
+// Consensus-fade rules (discovered via the study below). Each scans for an edge.
+var SIXEXP_RULES = [
+  { id:'CF1', label:'3+ Experts H + H odds drift',  majDir:'H', minAgree:3, cond:'hdrift', bet:'A', roi:14.5 },
+  { id:'CF2', label:'3+ Experts H + A odds short',  majDir:'H', minAgree:3, cond:'ashort', bet:'A', roi:13.0 },
+  { id:'CF3', label:'3+ Experts H + Line dropped',  majDir:'H', minAgree:3, cond:'linedown', bet:'A', roi:6.5 },
+  { id:'CF4', label:'4+ Experts A consensus',       majDir:'A', minAgree:4, cond:null, bet:'H', roi:5.6 },
+  { id:'CF5', label:'4+ Experts H consensus',       majDir:'H', minAgree:4, cond:null, bet:'A', roi:3.2 },
+];
+
+function seVotes(r){
+  var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+  var h=0,a=0;
+  keys.forEach(function(k){ var t=seTipDir(r[k]); if(t==='H')h++; else if(t==='A')a++; });
+  return {h:h,a:a};
+}
+function seRuleFires(r, rule){
+  var v=seVotes(r);
+  var maj = v.h>v.a ? 'H' : v.a>v.h ? 'A' : null;
+  if(maj!==rule.majDir) return false;
+  var agree = Math.max(v.h,v.a);
+  if(agree < rule.minAgree) return false;
+  if(rule.cond==='hdrift'){ var hr=(r.ASIAHLN&&r.ASIAHLN>0)?r.ASIAH/r.ASIAHLN:1; if(hr<1.03) return false; }
+  else if(rule.cond==='ashort'){ var ar=(r.ASIAALN&&r.ASIAALN>0)?r.ASIAA/r.ASIAALN:1; if(ar>0.97) return false; }
+  else if(rule.cond==='linedown'){ var ln=r.ASIALINELN; if(ln==null) return false; var d=Math.round((parseFloat(r.ASIALINE)-ln)*100)/100; if(d>=0) return false; }
+  return true;
+}
+
 function seTipDir(v){
   var s=String(v||'').trim();
   if(s==='H'||s==='1H'||s==='FH') return 'H';
@@ -62,9 +89,24 @@ function seLineBucket(r){
   return 'A +1+';
 }
 
-function computeSixExpert(results){
-  var data=results.filter(function(r){
+function computeSixExpert(allRecords){
+  var data=allRecords.filter(function(r){
     return r.STATUS==='Result' && r.ASIALINE!=null && r.ASIAH && r.ASIAA && r.RESULTH!=null;
+  });
+  // Upcoming matches (PREEVE) that fire any consensus-fade rule
+  var upcoming=allRecords.filter(function(r){ return r.STATUS==='PREEVE' && r.ASIALINE!=null && r.ASIAH && r.ASIAA; });
+  var upcomingAlerts=[];
+  upcoming.forEach(function(r){
+    var fired=SIXEXP_RULES.filter(function(rule){ return seRuleFires(r,rule); });
+    if(fired.length){
+      var v=seVotes(r);
+      // consensus bet = the bet from highest-ROI fired rule
+      fired.sort(function(a,b){return b.roi-a.roi;});
+      upcomingAlerts.push({r:r, fired:fired, votes:v, bet:fired[0].bet});
+    }
+  });
+  upcomingAlerts.sort(function(a,b){
+    return (a.r.DATE||'').localeCompare(b.r.DATE||'') || (a.r.TIME||0)-(b.r.TIME||0);
   });
 
   function roiCell(rows, bet){
@@ -207,13 +249,13 @@ function computeSixExpert(results){
   });
   comboPockets.sort(function(a,b){return b.roi-a.roi;});
 
-  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, totalData:data.length,
+  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, upcomingAlerts:upcomingAlerts, totalData:data.length,
            hasAI: data.some(function(r){return seTipDir(r.TIPSGEM)||seTipDir(r.TIPSGPT);}) };
 }
 
 function renderSixExpert(RD){
   var el=document.getElementById('tab8'); if(!el) return;
-  var se=RD.sixexpert||(RD.sixexpert=computeSixExpert(RD.results||RD.records||[]));
+  var se=RD.sixexpert||(RD.sixexpert=computeSixExpert(RD.records||RD.results||[]));
   var h='';
 
   h+='<div class="rpt-title">🎓 Six Expert Strategy Study</div>';
@@ -227,6 +269,69 @@ function renderSixExpert(RD){
     return '<span style="color:'+col+';font-weight:700;font-family:var(--mono)">'+(c.roi>=0?'+':'')+c.roi.toFixed(1)+'%</span>'
       +' <span style="color:#475569;font-size:9px;font-family:var(--mono)">n'+c.n+'</span>';
   }
+
+  // ── Upcoming Matches firing consensus-fade rules ──
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:14px">🎯 Upcoming Matches — Consensus Fade Alerts</div>';
+  if(!se.upcomingAlerts || !se.upcomingAlerts.length){
+    h+='<div style="padding:12px;color:#475569;font-size:12px;font-style:italic;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">No upcoming matches currently fire any consensus-fade rule.</div>';
+  } else {
+    var aIdx=0;
+    h+='<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>'
+      +'<th>Date/Time</th><th>Match</th><th class="num">Line</th>'
+      +'<th class="num">AH</th><th class="num">AA</th>'
+      +'<th class="num">Votes</th><th class="num">Bet</th><th>Rules Fired</th>'
+      +'</tr></thead><tbody>';
+    se.upcomingAlerts.forEach(function(al){
+      var r=al.r, detId='se_up_'+aIdx;
+      var bCol=al.bet==='H'?'#f87171':'#60a5fa';
+      // movement arrows
+      function lineStr(r){
+        var l=parseFloat(r.ASIALINE)||0,ln=r.ASIALINELN;
+        var s=(l>=0?'+':'')+l.toFixed(2);
+        if(ln&&ln!==l){var d=Math.round((l-ln)*100)/100,a=Math.abs(d),n=a>=1?3:a>=0.5?2:1,ar=d<0?'▼':'▲',c=d<0?'#f87171':'#60a5fa';s+='<span style="color:'+c+';font-size:10px">'+ar.repeat(n)+'</span>';}
+        return s;
+      }
+      function oddsStr(v,opn){
+        var s=String(v||'—');
+        if(opn&&opn>0&&v&&Math.abs(v-opn)/opn>0.001){var r2=v/opn,n=r2<0.9?3:r2<0.97?2:1,ar=r2<1?'▼':'▲',c=r2<1?'#f87171':'#60a5fa';s=String(v)+'<span style="color:'+c+';font-size:10px">'+ar.repeat(n)+'</span>';}
+        return s;
+      }
+      var ruleLines=al.fired.map(function(rule){
+        return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#fb923c22;border:1px solid #fb923c55;color:#fb923c;white-space:nowrap">'+rule.id+'</span> '
+          +'<span style="font-size:9px;color:#94a3b8">'+rule.label+'</span> '
+          +'<span style="font-size:9px;font-family:var(--mono);color:#4ade80">+'+rule.roi.toFixed(1)+'%</span>';
+      }).join('<br>');
+      var dd=(r.DATE||'').slice(5),t=r.TIME,ts2=t?String(t).padStart(4,'0'):'',tm=ts2?ts2.slice(0,2)+':'+ts2.slice(2):'';
+      h+='<tr style="cursor:pointer" onclick="var e=document.getElementById(\''+detId+'\');e.style.display=e.style.display===\'none\'?\'table-row\':\'none\'">';
+      h+='<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(dd+(tm?' '+tm:''))+'</td>';
+      h+='<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:#e2e8f0">'+r.TEAMH+' <span style="color:#475569;font-weight:400">vs</span> '+r.TEAMA+'</div>'
+        +'<div style="font-size:9px;color:#475569;font-family:var(--mono)">'+(r.CATEGORY||r.LEAGUE||'')+'</div></td>';
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+lineStr(r)+'</td>';
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+oddsStr(r.ASIAH,r.ASIAHLN)+'</td>';
+      h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+oddsStr(r.ASIAA,r.ASIAALN)+'</td>';
+      h+='<td class="num" style="font-family:var(--mono);font-size:10px"><span style="color:#f87171">'+al.votes.h+'H</span>/<span style="color:#60a5fa">'+al.votes.a+'A</span></td>';
+      h+='<td class="num"><b style="color:'+bCol+';font-size:13px">'+al.bet+'</b></td>';
+      h+='<td style="font-size:10px;max-width:260px">'+ruleLines+'</td>';
+      h+='</tr>';
+      // Expand: show all six expert tips
+      var tipFields=[['JC Sum','JCTIPSUM'],['JC SID','JCTIPSID'],['SID Mac','TIPSIDMAC'],['ON ID','TIPSONID'],['Gem','TIPSGEM'],['GPT','TIPSGPT']];
+      var tipBadges=tipFields.map(function(tf){
+        var v=r[tf[1]];var c=!v?'#475569':(String(v).indexOf('H')>=0?'#f87171':String(v).indexOf('A')>=0?'#60a5fa':'#4ade80');
+        return '<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:'+c+'22;border:1px solid '+c+'44"><span style="color:#64748b;font-size:9px">'+tf[0]+':</span> <span style="color:'+c+';font-weight:700">'+(v||'—')+'</span></span>';
+      }).join(' ');
+      h+='<tr id="'+detId+'" style="display:none"><td colspan="8" style="padding:0">'
+        +'<div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:6px">Six Expert Tips</div>'
+        +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">'+tipBadges+'</div>'
+        +'<div style="font-size:10px;color:#94a3b8">Consensus: <b style="color:#f87171">'+al.votes.h+' H</b> vs <b style="color:#60a5fa">'+al.votes.a+' A</b> → fade the majority, <b style="color:'+bCol+'">bet '+al.bet+'</b></div>'
+        +'</div></td></tr>';
+      aIdx++;
+    });
+    h+='</tbody></table></div>';
+    h+='<div style="font-size:9px;color:#475569;margin-top:4px">Rules fire on opening→latest odds movement. CF1/CF2 (consensus contradicted by odds movement) are the strongest. Click a row for the six expert tips.</div>';
+  }
+  h+='</div>';
 
   // ── Best pockets highlight ──
   if(se.pockets.length){
