@@ -162,16 +162,19 @@ function renderOddsTrend(RD){
   // A) Proportionality
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">';
   h+='<div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:2px">① Is it proportional? — bet TOWARD the trend, by movement size</div>';
-  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">If proportional, ROI should rise as the move gets bigger. It does not — ROI stays flat/noisy regardless of size, so the magnitude of the move is <b>not</b> the driver.</div>';
+  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">If proportional, bet-toward ROI should rise as the move gets bigger. It does not. Showing both <b style="color:#4ade80">bet-toward</b> and <b style="color:#fbbf24">bet-against</b> side by side: if one side is consistently larger across sizes, that asymmetry is itself a directional bias even when neither is proportional to size.</div>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
   function propTbl(title, obj, order){
     var t='<div><div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px">'+title+'</div>';
-    t+='<table class="rpt-table" style="font-size:10px;width:100%"><thead><tr><th>Size</th><th class="num">N</th><th class="num">Bet-toward ROI</th></tr></thead><tbody>';
+    t+='<table class="rpt-table" style="font-size:10px;width:100%"><thead><tr><th>Size</th><th class="num">N</th>'
+      +'<th class="num" style="color:#4ade80">Bet-toward</th><th class="num" style="color:#fbbf24">Bet-against</th></tr></thead><tbody>';
     order.forEach(function(k){
       var o=obj[k]; if(!o||!o.c||o.c.n<30) return;
-      var roi=o.betDir==='H'?o.c.betH:o.c.betA;
+      var toward=o.betDir==='H'?o.c.betH:o.c.betA;
+      var against=o.betDir==='H'?o.c.betA:o.c.betH;
       t+='<tr><td style="color:#e2e8f0">'+k+'</td><td class="num" style="font-family:var(--mono);color:#64748b">'+o.c.n+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:'+roiC(roi)+'">'+fmtR(roi)+'</td></tr>';
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(toward)+'">'+fmtR(toward)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(against)+'">'+fmtR(against)+'</td></tr>';
     });
     return t+'</tbody></table></div>';
   }
