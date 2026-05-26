@@ -174,25 +174,6 @@ body{display:block;padding-bottom:40px}
 </div>
 
 <!-- TAB 5: LINE × EXPERT -->
-<div class="rpt-section" id="tab5">
-  <div class="rpt-title">Line Movement × Expert</div>
-  <div class="rpt-sub">Key line move + expert combinations vs baseline. Which combos produce edge over time?</div>
-  <div class="chart-box">
-    <div class="chart-box-label">H Bet — Line Rose × Expert (vs Baseline)</div>
-    <div class="chart-legend" id="lgdLmH"></div>
-    <canvas id="cLmH"></canvas>
-  </div>
-  <div class="chart-box">
-    <div class="chart-box-label">A Bet — Line Dropped/Flat × Expert (vs Baseline)</div>
-    <div class="chart-legend" id="lgdLmA"></div>
-    <canvas id="cLmA"></canvas>
-  </div>
-  <div class="rpt-table-wrap"><table class="rpt-table">
-    <thead><tr><th>Line Move</th><th>Expert</th><th class="num">N</th><th class="num">ROI%</th><th>Bet</th><th>Signal</th></tr></thead>
-    <tbody id="tbLm"></tbody>
-  </table></div>
-</div>
-
 <!-- TAB 6: ODDS ANALYSIS -->
 <div class="rpt-section" id="tab6">
   <div class="rpt-title">AsiaLine × Expert Signal Analysis</div>
@@ -254,6 +235,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderCombined() -->
 </div>
 
+<div class="rpt-section" id="tab15">
+  <!-- content injected by renderOddsTrend() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -284,7 +269,6 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-line.js"></script>
 <script src="js/report-expert.js"></script>
 <script src="js/report-smart.js"></script>
-<script src="js/report-lm.js"></script>
 <script src="js/report-odds.js"></script>
 <script src="js/report-jcexpert.js"></script>
 <script src="js/report-sixexpert.js"></script>
@@ -294,6 +278,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-moverule.js"></script>
 <script src="js/report-oddsrule.js"></script>
 <script src="js/report-combined.js"></script>
+<script src="js/report-oddstrend.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -305,7 +290,6 @@ var TABS = [
   { label:'📐 Line Accuracy', render: renderLine   },
   { label:'🧠 Expert',        render: renderExpert },
   { label:'⚡ Smart Money',   render: renderSmart  },
-  { label:'↕️ Line × Expert', render: renderLM     },
   { label:'📈 Odds Analysis', render: renderOdds   },
   { label:'🔬 JC Expert',    render: renderJCExpert },
   { label:'🎓 Six Expert',    render: renderSixExpert },
@@ -315,6 +299,7 @@ var TABS = [
   { label:'📡 Move Rules',   render: renderMoveRule },
   { label:'💹 Odds Rules',    render: renderOddsRule },
   { label:'🔀 Combined',       render: renderCombined },
+  { label:'⏱️ Odds Trend',     render: renderOddsTrend },
 ];
 
 // Build tab bar from registry
@@ -322,7 +307,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===14 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===13 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -365,8 +350,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[14] = true;
-      TABS[14].render(RD);
+      drawn[13] = true;
+      TABS[13].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
