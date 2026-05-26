@@ -59,47 +59,43 @@ function computeOddsTrend(allRecords){
     return { n:n, betH:Math.round(bh/n*1000)/10, betA:Math.round(ba/n*1000)/10, hcover:Math.round(hc/n*100) };
   }
 
-  function buildDim(fn, order, withLineSub){
+  function buildDim(fn, order, subFn, subOrder){
     return order.map(function(mv){
-      var byGap={}, lineSub={};
+      var byGap={}, sub={};
       OT_BUCKETS.forEach(function(b){
         var rows=data.filter(function(r){ return r._otb===b && fn(r)===mv; });
         byGap[b]=cell(rows);
-        if(withLineSub){
-          // sub-breakdown by line change within this (movement, gap) cell
-          lineSub[b]=['Up','Same','Down'].map(function(lm){
-            var lr=rows.filter(function(r){ return otLMove(r)===lm; });
-            return { lm:lm, c:cell(lr) };
+        if(subFn){
+          sub[b]=subOrder.map(function(sv){
+            var sr=rows.filter(function(r){ return subFn(r)===sv; });
+            return { sv:sv, c:cell(sr) };
           });
         }
       });
       var allRows=data.filter(function(r){ return r._otb && fn(r)===mv; });
-      return { mv:mv, byGap:byGap, lineSub:lineSub, all:cell(allRows) };
+      return { mv:mv, byGap:byGap, lineSub:sub, all:cell(allRows) };
     });
   }
 
-  var dimHMove=buildDim(otHMove, ['Down','Same','Up'], true);
-  var dimAMove=buildDim(otAMove, ['Down','Same','Up'], true);
-  var dimLMove=buildDim(otLMove, ['Up','Same','Down'], false);
+  // Asia line move = parent; odds change = expandable sub-breakdown
+  var dimLineH=buildDim(otLMove, ['Up','Same','Down'], otHMove, ['Down','Same','Up']);  // line → H odds change
+  var dimLineA=buildDim(otLMove, ['Up','Same','Down'], otAMove, ['Down','Same','Up']);  // line → A odds change
 
   // Key relationships: strongest |best-bet ROI| cells with n>=25
   var key=[];
-  [['H odds',dimHMove],['A odds',dimAMove],['Line',dimLMove]].forEach(function(pair){
-    var dname=pair[0];
-    pair[1].forEach(function(row){
-      OT_BUCKETS.forEach(function(b){
-        var c=row.byGap[b];
-        if(c && c.n>=25){
-          var bestBet=c.betH>=c.betA?'H':'A', bestRoi=Math.max(c.betH,c.betA);
-          if(bestRoi>=4) key.push({dim:dname, mv:row.mv, gap:b, bet:bestBet, roi:bestRoi, n:c.n, hcover:c.hcover});
-        }
-      });
+  dimLineH.forEach(function(row){
+    OT_BUCKETS.forEach(function(b){
+      var c=row.byGap[b];
+      if(c && c.n>=25){
+        var bestBet=c.betH>=c.betA?'H':'A', bestRoi=Math.max(c.betH,c.betA);
+        if(bestRoi>=4) key.push({dim:'Line', mv:row.mv, gap:b, bet:bestBet, roi:bestRoi, n:c.n, hcover:c.hcover});
+      }
     });
   });
   key.sort(function(a,b){ return b.roi-a.roi; });
 
   return { data:data.length, gapDist:gapDist, noGap:noGap,
-           dimHMove:dimHMove, dimAMove:dimAMove, dimLMove:dimLMove, key:key };
+           dimLineH:dimLineH, dimLineA:dimLineA, key:key };
 }
 
 function renderOddsTrend(RD){
@@ -142,7 +138,7 @@ function renderOddsTrend(RD){
 
   // ── Dimension matrices (rows expandable to show line-change sub-breakdown) ──
   var _otRowId=0;
-  function dimTable(title, subtitle, rows, hasLineSub){
+  function dimTable(title, subtitle, rows, hasLineSub, subLabel){
     var t='<div style="margin-bottom:18px">';
     t+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">'+title+'</div>';
     t+='<div class="rpt-sub" style="margin-bottom:8px">'+subtitle+(hasLineSub?' <span style="color:#60a5fa">Click a row ▸ to break it down by line change.</span>':'')+'</div>';
@@ -179,7 +175,7 @@ function renderOddsTrend(RD){
             var sedge=sbr>=4?'<b style="color:'+(sbest==='H'?'#f87171':'#60a5fa')+'">bet '+sbest+' '+(sbr>=0?'+':'')+sbr.toFixed(1)+'%</b>':'<span style="color:#475569">—</span>';
             t+='<tr class="'+rid+'" style="display:none;background:rgba(96,165,250,0.05)">'
               +'<td></td>'
-              +'<td style="color:#64748b;font-size:9px;padding-left:14px">Line '+s.lm+'</td>'
+              +'<td style="color:#64748b;font-size:9px;padding-left:14px">'+subLabel+' '+s.sv+'</td>'
               +'<td style="font-family:var(--mono);color:#fbbf24;font-size:9px">'+b+'</td>'
               +'<td class="num" style="font-family:var(--mono);color:#64748b">'+sc.n+'</td>'
               +'<td class="num" style="font-family:var(--mono);color:'+roiC(sc.betH)+'">'+fmtRoi(sc.betH)+'</td>'
@@ -194,9 +190,8 @@ function renderOddsTrend(RD){
     return t;
   }
 
-  h+=dimTable('📈 HKJC H Odds Movement', 'How H odds compare latest vs opening. Down = latest H odds lower than opening (money on home), Up = latest higher (money off home), Same = unchanged.', ot.dimHMove, true);
-  h+=dimTable('📉 HKJC A Odds Movement', 'How A odds compare latest vs opening. Down = latest A odds lower than opening (money on away), Up = latest higher, Same = unchanged.', ot.dimAMove, true);
-  h+=dimTable('↕️ Asia Line Movement', 'How the HKJC handicap line compares latest vs opening. Up = latest line higher than opening, Down = latest lower, Same = unchanged.', ot.dimLMove, false);
+  h+=dimTable('↕️ Asia Line Movement → H Odds Change', 'Primary: how the HKJC line moved (latest vs opening). Up = line rose, Down = line dropped, Same = unchanged. Expand a row ▸ to break it down by H odds change (Down = H shortened / money on home, Up = H drifted).', ot.dimLineH, true, 'H odds');
+  h+=dimTable('↕️ Asia Line Movement → A Odds Change', 'Primary: how the HKJC line moved (latest vs opening). Expand a row ▸ to break it down by A odds change (Down = A shortened / money on away, Up = A drifted).', ot.dimLineA, true, 'A odds');
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Capture gap = hours between latest-odds capture (UPDATE+UPTIME) and kickoff (DATE+TIME). Movement = simple latest-vs-opening comparison (Up / Down / Same). Cells need n≥25 to show. H-Cover% = share of matches where the home side covered the handicap (½ credit on push).</div>';
 
