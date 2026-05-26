@@ -34,9 +34,10 @@ function otPnl(r,bet){
 }
 function otHCover(r){ var m=otAdjM(r); return m>0?1:m===0?0.5:0; }
 
-function otHMove(r){ var o=r.ASIAHLN; if(!o||o<=0) return 'flat'; var rr=r.ASIAH/o; return rr<=0.97?'short':rr>=1.03?'drift':'flat'; }
-function otAMove(r){ var o=r.ASIAALN; if(!o||o<=0) return 'flat'; var rr=r.ASIAA/o; return rr<=0.97?'short':rr>=1.03?'drift':'flat'; }
-function otLMove(r){ var ln=r.ASIALINELN; if(ln==null) return 'flat'; var dd=parseFloat(r.ASIALINE)-ln; return dd>0.01?'up':dd<-0.01?'down':'flat'; }
+// Movement = simple comparison of latest vs opening odds
+function otHMove(r){ var o=r.ASIAHLN; if(!o||o<=0) return 'Same'; return r.ASIAH>o?'Up':r.ASIAH<o?'Down':'Same'; }
+function otAMove(r){ var o=r.ASIAALN; if(!o||o<=0) return 'Same'; return r.ASIAA>o?'Up':r.ASIAA<o?'Down':'Same'; }
+function otLMove(r){ var ln=r.ASIALINELN; if(ln==null) return 'Same'; var l=parseFloat(r.ASIALINE); return l>ln?'Up':l<ln?'Down':'Same'; }
 
 function computeOddsTrend(allRecords){
   var data=allRecords.filter(function(r){
@@ -69,9 +70,9 @@ function computeOddsTrend(allRecords){
     });
   }
 
-  var dimHMove=buildDim(otHMove, ['short','flat','drift']);
-  var dimAMove=buildDim(otAMove, ['short','flat','drift']);
-  var dimLMove=buildDim(otLMove, ['up','flat','down']);
+  var dimHMove=buildDim(otHMove, ['Down','Same','Up']);
+  var dimAMove=buildDim(otAMove, ['Down','Same','Up']);
+  var dimLMove=buildDim(otLMove, ['Up','Same','Down']);
 
   // Key relationships: strongest |best-bet ROI| cells with n>=25
   var key=[];
@@ -161,11 +162,11 @@ function renderOddsTrend(RD){
     return t;
   }
 
-  h+=dimTable('📈 HKJC H Odds Movement', 'How H odds moved from opening to the captured latest price. short = H shortened (money on home), drift = H drifted (money off home).', ot.dimHMove);
-  h+=dimTable('📉 HKJC A Odds Movement', 'How A odds moved from opening to latest. short = A shortened (money on away), drift = A drifted.', ot.dimAMove);
-  h+=dimTable('↕️ Asia Line Movement', 'How the HKJC handicap line moved from opening to latest. up = line rose (home handicap eased), down = line dropped (home handicap strengthened).', ot.dimLMove);
+  h+=dimTable('📈 HKJC H Odds Movement', 'How H odds compare latest vs opening. Down = latest H odds lower than opening (money on home), Up = latest higher (money off home), Same = unchanged.', ot.dimHMove);
+  h+=dimTable('📉 HKJC A Odds Movement', 'How A odds compare latest vs opening. Down = latest A odds lower than opening (money on away), Up = latest higher, Same = unchanged.', ot.dimAMove);
+  h+=dimTable('↕️ Asia Line Movement', 'How the HKJC handicap line compares latest vs opening. Up = latest line higher than opening, Down = latest lower, Same = unchanged.', ot.dimLMove);
 
-  h+='<div style="font-size:9px;color:#475569;margin-top:4px">Capture gap = hours between latest-odds capture (UPDATE+UPTIME) and kickoff (DATE+TIME). short/drift threshold ±3%. Cells need n≥25 to show. H-Cover% = share of matches where the home side covered the handicap (½ credit on push).</div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:4px">Capture gap = hours between latest-odds capture (UPDATE+UPTIME) and kickoff (DATE+TIME). Movement = simple latest-vs-opening comparison (Up / Down / Same). Cells need n≥25 to show. H-Cover% = share of matches where the home side covered the handicap (½ credit on push).</div>';
 
   el.innerHTML=h;
 }
