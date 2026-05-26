@@ -194,7 +194,6 @@ function computeReport(records){
     line        : computeLine(results),
     expert      : computeExpert(results),
     smart       : computeSmart(results, allHpts, allApts),
-    lm          : computeLM(results, allHpts, allApts),
     odds        : computeOdds(results),
     jcexpert    : computeJCExpert(results),
     ml          : computeML(results, records),
