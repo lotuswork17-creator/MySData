@@ -36,17 +36,18 @@ function computeBookCompare(allRecords){
   // consensus mode: subject = HKJC, benchmark = avg(Macau, SBO)
   // macau mode:     subject = Macau, benchmark = avg(HKJC, SBO)  ← Macau vs the rest of the field
   function subjectLean(r, F, mode){
-    return mode==='macau' ? bcLean(r[F.mh],r[F.ma]) : bcLean(r[F.oh],r[F.oa]);
+    if(mode==='macau') return bcLean(r[F.mh],r[F.ma]);
+    if(mode==='sbo')   return bcLean(r[F.sh],r[F.sa]);
+    return bcLean(r[F.oh],r[F.oa]); // consensus mode: subject = HKJC
   }
   function benchLean(r, F, mode){
-    if(mode==='macau'){
-      var lh=bcLean(r[F.oh],r[F.oa]), ls=bcLean(r[F.sh],r[F.sa]);
-      if(lh==null||ls==null) return null;
-      return (lh+ls)/2;
-    }
-    var lm=bcLean(r[F.mh],r[F.ma]), ls2=bcLean(r[F.sh],r[F.sa]);
-    if(lm==null||ls2==null) return null;
-    return (lm+ls2)/2;
+    var lh=bcLean(r[F.oh],r[F.oa]), lm=bcLean(r[F.mh],r[F.ma]), ls=bcLean(r[F.sh],r[F.sa]);
+    var a,b;
+    if(mode==='macau'){ a=lh; b=ls; }       // Macau vs (HKJC+SBO)
+    else if(mode==='sbo'){ a=lh; b=lm; }     // SBO vs (HKJC+Macau)
+    else { a=lm; b=ls; }                     // HKJC vs (Macau+SBO)
+    if(a==null||b==null) return null;
+    return (a+b)/2;
   }
 
   // diff bucket: HKJC home lean − consensus(Mac,SBO) home lean, in pp
@@ -64,7 +65,7 @@ function computeBookCompare(allRecords){
   }
 
   function leanStudy(F, mode){
-    var SUBJ=mode==='macau'?'Macau':'HKJC';
+    var SUBJ=mode==='macau'?'Macau':mode==='sbo'?'SBO':'HKJC';
     var LABELS=diffLabels(SUBJ);
     var rows=LABELS.map(function(){ return {betH:0,betA:0,hc:0,n:0}; });
     var elig=0;
@@ -100,6 +101,9 @@ function computeBookCompare(allRecords){
       if(mode==='macau'){
         hb=r[F.oh]>=r[F.mh]; ab=r[F.oa]>=r[F.ma];
         hs=r[F.oh]>r[F.mh];  as2=r[F.oa]>r[F.ma];
+      } else if(mode==='sbo'){
+        hb=r[F.oh]>=r[F.sh]; ab=r[F.oa]>=r[F.sa];
+        hs=r[F.oh]>r[F.sh];  as2=r[F.oa]>r[F.sa];
       } else {
         hb=r[F.oh]>=r[F.mh]&&r[F.oh]>=r[F.sh]; ab=r[F.oa]>=r[F.ma]&&r[F.oa]>=r[F.sa];
         hs=r[F.oh]>r[F.mh]&&r[F.oh]>r[F.sh];   as2=r[F.oa]>r[F.ma]&&r[F.oa]>r[F.sa];
@@ -122,7 +126,9 @@ function computeBookCompare(allRecords){
     latestLeanM: leanStudy(BC_PHASES.latest,'macau'),
     openingLeanM: leanStudy(BC_PHASES.opening,'macau'),
     latestPriceM: priceStudy(BC_PHASES.latest,'macau'),
-    openingPriceM: priceStudy(BC_PHASES.opening,'macau')
+    openingPriceM: priceStudy(BC_PHASES.opening,'macau'),
+    latestLeanS: leanStudy(BC_PHASES.latest,'sbo'),
+    latestPriceS: priceStudy(BC_PHASES.latest,'sbo')
   };
 }
 
@@ -234,6 +240,43 @@ function renderBookCompare(RD){
   h+=priceRowsM('Latest', bc.latestPriceM);
   h+='</tbody></table></div>';
   h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than Macau. Strict = HKJC price strictly higher than Macau on that side.</div></div>';
+
+  // ═══ SBO-ONLY COMPARISON ═══
+  h+='<div style="border-top:2px solid var(--border);margin:22px 0 14px"></div>';
+  h+='<div class="rpt-title" style="font-size:15px;color:#34d399">📊 SBO as the Main Comparison</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:14px">Here <b>SBO</b> is the subject: each bucket measures how SBO prices home relative to the field consensus (HKJC + Macau). Treats SBO as the lead/sharp book and tests whether its deviation from the field predicts the result. You still bet at HKJC (ROI at HKJC odds). Condition: all three books non-null and lines equal. Latest odds only.</div>';
+
+  h+=leanTable('⑤ SBO lean vs field consensus (latest odds)',
+    'Buckets by SBO\'s <b>market lean</b> on home minus the field\'s (HKJC+Macau average). "SBO lean below field" = SBO gives home a lower win chance than the others (so SBO\'s home odds are longer). You still bet at HKJC, ROI at HKJC odds.',
+    bc.latestLeanS, 'SBO home lean vs field (HKJC+Macau)');
+
+  // SBO price preference
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑥ Actual Odds Preference vs SBO (latest odds)</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers a better price than SBO on a side, does betting that side at HKJC pay off? Both sides shown; bold = the side HKJC prices better.</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
+    +'<th>Condition</th><th class="num">N</th>'
+    +'<th class="num" style="color:#f87171">Bet H ROI</th>'
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th></tr></thead><tbody>';
+  function priceRowsS(st){
+    function row(lab2, o, fav){
+      if(!o||o.n<30) return '';
+      var hStyle=fav==='H'?'font-weight:700':'', aStyle=fav==='A'?'font-weight:700':'';
+      return '<tr><td style="color:#e2e8f0">'+lab2+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);'+hStyle+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);'+aStyle+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td></tr>';
+    }
+    var t='';
+    t+=row('HKJC home ≥ SBO', st.hBest, 'H');
+    t+=row('HKJC home > SBO (strict)', st.hOnly, 'H');
+    t+=row('HKJC away ≥ SBO', st.aBest, 'A');
+    t+=row('HKJC away > SBO (strict)', st.aOnly, 'A');
+    return t;
+  }
+  h+=priceRowsS(bc.latestPriceS);
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than SBO. Strict = HKJC price strictly higher than SBO on that side.</div></div>';
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Market lean = (1/oddsH)/((1/oddsH)+(1/oddsA)), margin-neutral. Consensus = average of Macau &amp; SBO lean; the Macau section benchmarks against Macau alone. All ROI at HKJC odds, settling on the HKJC handicap line. Rows need n≥30.</div>';
 
