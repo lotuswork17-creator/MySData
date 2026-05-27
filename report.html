@@ -239,6 +239,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderOddsTrend() -->
 </div>
 
+<div class="rpt-section" id="tab16">
+  <!-- content injected by renderBookCompare() -->
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -279,6 +283,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-oddsrule.js"></script>
 <script src="js/report-combined.js"></script>
 <script src="js/report-oddstrend.js"></script>
+<script src="js/report-bookcompare.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -300,6 +305,7 @@ var TABS = [
   { label:'💹 Odds Rules',    render: renderOddsRule },
   { label:'🔀 Combined',       render: renderCombined },
   { label:'⏱️ Odds Trend',     render: renderOddsTrend },
+  { label:'🏦 Book Compare',   render: renderBookCompare },
 ];
 
 // Build tab bar from registry
