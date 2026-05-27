@@ -119,6 +119,26 @@ function openDetail(idx){
         +ahRow('SBO','#fb923c',r.ASIALINES2,r.ASIAHSBOLN,r.ASIAASBOLN,r.ASIALINESB,r.ASIAHSBO,r.ASIAASBO);
     })()
     +'</div>'
+    +(function(){
+      // 💀 best-price indicator key + live status for this match
+      function bestSide(side){
+        var hk=side==='H'?r.ASIAH:r.ASIAA, mac=side==='H'?r.ASIAHMAC:r.ASIAAMAC, sbo=side==='H'?r.ASIAHSBO:r.ASIAASBO;
+        if(hk==null||!mac||!sbo) return false;
+        if(!(r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB)) return false;
+        return hk>=mac && hk>=sbo && (hk>mac||hk>sbo);
+      }
+      var sh=bestSide('H'), sa=bestSide('A');
+      var live='';
+      if(sh) live+='<div style="font-size:10px;color:#f87171;margin-top:4px">💀 HKJC has the best <b>home</b> price here → study suggests the <b>away</b> side (fade home).</div>';
+      if(sa) live+='<div style="font-size:10px;color:#60a5fa;margin-top:4px">💀 HKJC has the best <b>away</b> price here → study suggests the <b>home</b> side (fade away).</div>';
+      return '<div class="dc full"><h3>💀 Best-Price Indicator</h3>'
+        +'<div style="font-size:11px;color:#94a3b8;line-height:1.6">'
+        +'A <b>💀</b> next to an HKJC odds on the front page means HKJC is offering the <b>best (highest) price</b> on that side versus both Macau and SBO (same handicap line). '
+        +'Per the Book Compare study, the best-priced side tends to <b>underperform</b> — so the skull is a caution to consider the <b>opposite</b> side, not a recommendation to back it.'
+        +'</div>'
+        +(live||'<div style="font-size:10px;color:#475569;margin-top:4px">No best-price flag for this match (lines differ, a book is missing, or HKJC isn\'t the best price).</div>')
+        +'</div>'
+    })()
     +'<div class="dc"><h3>ℹ️ Info</h3>'
     
     +'<div class="dr"><span class="dk">Match ID</span><span class="dv" style="font-size:10px">'+(r.MATCHID||'—')+'</span></div>'
