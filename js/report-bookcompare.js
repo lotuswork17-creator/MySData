@@ -68,19 +68,22 @@ function computeBookCompare(allRecords){
 
   // Actual odds preference: HKJC offers the (strictly) best price on a side → bet that side
   function priceStudy(F){
-    var hOnly={p:0,n:0}, aOnly={p:0,n:0}, hBest={p:0,n:0}, aBest={p:0,n:0};
+    // each condition now tracks BOTH bet-H and bet-A pnl so we can show both sides
+    var hBest={h:0,a:0,n:0}, aBest={h:0,a:0,n:0}, hOnly={h:0,a:0,n:0}, aOnly={h:0,a:0,n:0};
     data.forEach(function(r){
       if(!eligible(r,F)) return;
+      var ph=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]);
+      var pa=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]);
       var hb=r[F.oh]>=r[F.mh]&&r[F.oh]>=r[F.sh];
       var ab=r[F.oa]>=r[F.ma]&&r[F.oa]>=r[F.sa];
       var hs=r[F.oh]>r[F.mh]&&r[F.oh]>r[F.sh];
       var as=r[F.oa]>r[F.ma]&&r[F.oa]>r[F.sa];
-      if(hb){ hBest.p+=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]); hBest.n++; }
-      if(ab){ aBest.p+=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]); aBest.n++; }
-      if(hs&&!as){ hOnly.p+=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]); hOnly.n++; }
-      if(as&&!hs){ aOnly.p+=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]); aOnly.n++; }
+      if(hb){ hBest.h+=ph; hBest.a+=pa; hBest.n++; }
+      if(ab){ aBest.h+=ph; aBest.a+=pa; aBest.n++; }
+      if(hs&&!as){ hOnly.h+=ph; hOnly.a+=pa; hOnly.n++; }
+      if(as&&!hs){ aOnly.h+=ph; aOnly.a+=pa; aOnly.n++; }
     });
-    function fin(o){ return {n:o.n, roi:o.n?Math.round(o.p/o.n*1000)/10:null}; }
+    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null}; }
     return { hBest:fin(hBest), aBest:fin(aBest), hOnly:fin(hOnly), aOnly:fin(aOnly) };
   }
 
@@ -143,13 +146,15 @@ function renderBookCompare(RD){
   h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">③ Actual Odds Preference — does HKJC\'s best price predict?</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers the best price on a side vs both Macau &amp; SBO, does betting that side at HKJC pay off?</div>';
   function priceRows(label, st){
-    function row(lab2, o, bet){
+    function row(lab2, o, fav){
       if(!o||o.n<30) return '';
-      var bc2=bet==='H'?'#f87171':'#60a5fa';
+      // highlight the side that the condition favours (price-best side)
+      var hStyle=fav==='H'?'font-weight:700':'';
+      var aStyle=fav==='A'?'font-weight:700':'';
       return '<tr><td style="color:#e2e8f0">'+lab2+'</td>'
-        +'<td class="num"><b style="color:'+bc2+'">bet '+bet+'</b></td>'
         +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roi)+'">'+fmtR(o.roi)+'</td></tr>';
+        +'<td class="num" style="font-family:var(--mono);'+hStyle+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);'+aStyle+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td></tr>';
     }
     var t='';
     t+=row(label+': HKJC home ≥ both', st.hBest, 'H');
@@ -159,10 +164,13 @@ function renderBookCompare(RD){
     return t;
   }
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
-    +'<th>Condition</th><th class="num">Action</th><th class="num">N</th><th class="num">ROI</th></tr></thead><tbody>';
+    +'<th>Condition</th><th class="num">N</th>'
+    +'<th class="num" style="color:#f87171">Bet H ROI</th>'
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th></tr></thead><tbody>';
   h+=priceRows('Opening', bc.openingPrice);
   h+=priceRows('Latest', bc.latestPrice);
-  h+='</tbody></table></div></div>';
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px;margin-bottom:8px">Bold = the side HKJC prices best (the condition\'s side). Showing both sides lets you check whether the price-best side actually outperforms the other.</div></div>';
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Market lean = (1/oddsH)/((1/oddsH)+(1/oddsA)), margin-neutral. Consensus = average of Macau &amp; SBO lean. All ROI at HKJC odds, settling on the HKJC handicap line. Rows need n≥30.</div>';
 
