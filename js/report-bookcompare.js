@@ -117,6 +117,25 @@ function computeBookCompare(allRecords){
     return { hBest:fin(hBest), aBest:fin(aBest), hOnly:fin(hOnly), aOnly:fin(aOnly) };
   }
 
+  // SBO price-position study: is SBO offering the highest odds on a side, or not?
+  // "Not highest" = SBO prices that side shorter than at least one other book → SBO favors it.
+  function sboPosition(F){
+    function mk(){ return {h:0,a:0,n:0,hc:0}; }
+    var homeNotHi=mk(), awayNotHi=mk(), homeHi=mk(), awayHi=mk();
+    data.forEach(function(r){
+      if(!eligible(r,F,'sbo')) return;
+      var ph=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]);
+      var pa=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]);
+      var hc=bcHCover(r,r.ASIALINE);
+      var hHighest = r[F.sh]>=Math.max(r[F.oh],r[F.mh]);
+      var aHighest = r[F.sa]>=Math.max(r[F.oa],r[F.ma]);
+      var t = hHighest?homeHi:homeNotHi; t.h+=ph; t.a+=pa; t.hc+=hc; t.n++;
+      var t2 = aHighest?awayHi:awayNotHi; t2.h+=ph; t2.a+=pa; t2.hc+=hc; t2.n++;
+    });
+    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null, hcover:o.n?Math.round(o.hc/o.n*100):null}; }
+    return { homeNotHi:fin(homeNotHi), awayNotHi:fin(awayNotHi), homeHi:fin(homeHi), awayHi:fin(awayHi) };
+  }
+
   return {
     total:data.length,
     latestLean: leanStudy(BC_PHASES.latest,'consensus'),
@@ -128,7 +147,8 @@ function computeBookCompare(allRecords){
     latestPriceM: priceStudy(BC_PHASES.latest,'macau'),
     openingPriceM: priceStudy(BC_PHASES.opening,'macau'),
     latestLeanS: leanStudy(BC_PHASES.latest,'sbo'),
-    latestPriceS: priceStudy(BC_PHASES.latest,'sbo')
+    latestPriceS: priceStudy(BC_PHASES.latest,'sbo'),
+    sboPos: sboPosition(BC_PHASES.latest)
   };
 }
 
@@ -277,6 +297,32 @@ function renderBookCompare(RD){
   h+=priceRowsS(bc.latestPriceS);
   h+='</tbody></table></div>';
   h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than SBO. Strict = HKJC price strictly higher than SBO on that side.</div></div>';
+
+  // ⑦ SBO price-position table
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑦ SBO Price Position — when SBO is NOT the highest odds</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:6px">"SBO home not highest" = SBO prices home shorter than at least one other book (HKJC/Macau), i.e. SBO favours home on that side. Does the side SBO favours then cover? Both bet sides shown (ROI at HKJC odds); bold = the side SBO favours.</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
+    +'<th>Condition</th><th class="num">N</th>'
+    +'<th class="num" style="color:#f87171">Bet H ROI</th>'
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th class="num">H-Cover%</th></tr></thead><tbody>';
+  function posRow(lab, o, fav){
+    if(!o||o.n<30) return '';
+    var hS=fav==='H'?'font-weight:700':'', aS=fav==='A'?'font-weight:700':'';
+    return '<tr><td style="color:#e2e8f0">'+lab+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
+      +'<td class="num" style="font-family:var(--mono);'+hS+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+      +'<td class="num" style="font-family:var(--mono);'+aS+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(o.hcover==null?'—':o.hcover+'%')+'</td></tr>';
+  }
+  h+=posRow('SBO home NOT highest (SBO favours home)', bc.sboPos.homeNotHi, 'H');
+  h+=posRow('SBO away NOT highest (SBO favours away)', bc.sboPos.awayNotHi, 'A');
+  h+='<tr><td colspan="5" style="border-top:1px solid var(--border);padding-top:4px;color:#475569;font-size:9px">— for contrast: when SBO IS the highest —</td></tr>';
+  h+=posRow('SBO home IS highest (SBO bearish home)', bc.sboPos.homeHi, 'A');
+  h+=posRow('SBO away IS highest (SBO bearish away)', bc.sboPos.awayHi, 'H');
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px">"Highest" compares SBO\'s odds for a side against HKJC and Macau for the same side. Bold = the side SBO favours (when not highest) / the contrarian side (when highest). Rows need n≥30.</div></div>';
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Market lean = (1/oddsH)/((1/oddsH)+(1/oddsA)), margin-neutral. Consensus = average of Macau &amp; SBO lean; the Macau section benchmarks against Macau alone. All ROI at HKJC odds, settling on the HKJC handicap line. Rows need n≥30.</div>';
 
