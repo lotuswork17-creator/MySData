@@ -1,19 +1,3 @@
-// 💀 indicator: HKJC offers the best (highest) price on a side vs both Macau & SBO.
-// Per the Book Compare study, the best-priced side tends to UNDERperform — i.e. fade it.
-// Requires Macau & SBO present and all three lines equal (valid comparison).
-function hkjcBestPriceSkull(r, side){
-  var hk  = side==='H' ? r.ASIAH    : r.ASIAA;
-  var mac = side==='H' ? r.ASIAHMAC : r.ASIAAMAC;
-  var sbo = side==='H' ? r.ASIAHSBO : r.ASIAASBO;
-  if(hk==null||!mac||!sbo) return '';
-  if(!(r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB)) return '';
-  // best-or-tied AND strictly beats at least one (exclude pure three-way ties)
-  if(hk>=mac && hk>=sbo && (hk>mac || hk>sbo)){
-    return '<span title="HKJC offers the best price here vs Macau & SBO — per the study this side tends to underperform (consider the opposite)" style="cursor:help">💀</span>';
-  }
-  return '';
-}
-
 // render.js
 function renderTable(){
   var body=$('tableBody'),start=(pg-1)*PG,rows=filtered.slice(start,start+PG),s=$('searchInput').value;
@@ -63,8 +47,8 @@ function renderTable(){
         +(r.ASIALINE!=null||r.ASIAH!=null||r.ASIAA!=null?
           '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
           +'<span style="color:var(--muted)"><span style="font-size:9px">G </span>'+asiaLineArrows(r.ASIALINE,r.ASIALINELN,r.ASIAHLN===0)+'</span>'
-          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+hkjcBestPriceSkull(r,'H')+'</span>'
-          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+hkjcBestPriceSkull(r,'A')+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</span>'
+          +'<span style="color:#94a3b8">'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</span>'
           +'</div>':'') 
         +(r.ASIALINEMA!=null||r.ASIAHMAC!=null||r.ASIAAMAC!=null?
           '<div style="display:grid;grid-template-columns:70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:2px">'
@@ -84,6 +68,8 @@ function renderTable(){
         +' <span style="color:var(--muted)">SID:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)
         +' <span style="color:var(--muted)">Mac:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)
         +' <span style="color:var(--muted)">ON:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)
+        +' <span style="color:var(--muted)">Gem:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)
+        +' <span style="color:var(--muted)">GPT:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)
         +'</div>'
         +'<div style="display:flex;gap:10px;margin-top:4px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
         +'<span>Gem: '+(r.GEMH!=null?r.GEMH:'\u2014')+' / '+(r.GEMD!=null?r.GEMD:'\u2014')+' / '+(r.GEMA!=null?r.GEMA:'\u2014')+'</span>'
@@ -203,12 +189,12 @@ function renderTable(){
         +(r.ASIALINESB!=null?'<div><span style="color:#fb923c;font-size:9px">S </span>'+asiaLineArrows(r.ASIALINESB,r.ASIALINES2,r.ASIAHSBOLN===0)+'</div>':'')
         +'</td>'
         +'<td class="oc" style="line-height:1.7">'
-        +(r.ASIAH!=null?'<div>'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+hkjcBestPriceSkull(r,'H')+'</div>':'')
+        +(r.ASIAH!=null?'<div>'+asiaOddsArrows(r.ASIAH,r.ASIAHLN)+'</div>':'')
         +(r.ASIAHMAC!=null?'<div>'+asiaOddsArrows(r.ASIAHMAC,r.ASIAHMACLN)+'</div>':'')
         +(r.ASIAHSBO!=null?'<div>'+asiaOddsArrows(r.ASIAHSBO,r.ASIAHSBOLN)+'</div>':'')
         +'</td>'
         +'<td class="oc" style="line-height:1.7">'
-        +(r.ASIAA!=null?'<div>'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+hkjcBestPriceSkull(r,'A')+'</div>':'')
+        +(r.ASIAA!=null?'<div>'+asiaOddsArrows(r.ASIAA,r.ASIAALN)+'</div>':'')
         +(r.ASIAAMAC!=null?'<div>'+asiaOddsArrows(r.ASIAAMAC,r.ASIAAMACLN)+'</div>':'')
         +(r.ASIAASBO!=null?'<div>'+asiaOddsArrows(r.ASIAASBO,r.ASIAASBOLN)+'</div>':'')
         +'</td>'
@@ -216,12 +202,11 @@ function renderTable(){
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.JCTIPSID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSIDMAC)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
-        +'<td class="oc">'+(r.GEMH!=null?r.GEMH:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GEMD!=null?r.GEMD:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GEMA!=null?r.GEMA:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTH!=null?r.GPTH:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTD!=null?r.GPTD:'\u2014')+'</td>'
-        +'<td class="oc">'+(r.GPTA!=null?r.GPTA:'\u2014')+'</td>'
+        +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)+'</td>'
+        +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)+'</td>'
+        +'<td class="oc" style="font-family:var(--mono);font-size:10px">'+(r.GEMH!=null?'<span style="color:#4ade80">'+r.GEMH+'</span>':'\u2014')+'<span style="color:var(--muted)"> / </span>'+(r.GPTH!=null?'<span style="color:#a78bfa">'+r.GPTH+'</span>':'\u2014')+'</td>'
+        +'<td class="oc" style="font-family:var(--mono);font-size:10px">'+(r.GEMD!=null?'<span style="color:#4ade80">'+r.GEMD+'</span>':'\u2014')+'<span style="color:var(--muted)"> / </span>'+(r.GPTD!=null?'<span style="color:#a78bfa">'+r.GPTD+'</span>':'\u2014')+'</td>'
+        +'<td class="oc" style="font-family:var(--mono);font-size:10px">'+(r.GEMA!=null?'<span style="color:#4ade80">'+r.GEMA+'</span>':'\u2014')+'<span style="color:var(--muted)"> / </span>'+(r.GPTA!=null?'<span style="color:#a78bfa">'+r.GPTA+'</span>':'\u2014')+'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
