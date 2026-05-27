@@ -138,7 +138,21 @@ function computeOddsTrend(allRecords){
   });
   key.sort(function(a,b){ return b.roi-a.roi; });
 
-  return { data:data.length, gapDist:gapDist, propLine:propLine, propLean:propLean,
+  // ── Signed lean-shift → result (proportionality of cover rate) ──
+  var LEAN_EDGES=[-100,-3,-2,-1,-0.3,0.3,1,2,3,100];
+  var LEAN_LABELS=['≤ −3pp','−3 to −2pp','−2 to −1pp','−1 to −0.3pp','flat (±0.3pp)','+0.3 to +1pp','+1 to +2pp','+2 to +3pp','≥ +3pp'];
+  function leanFineBucket(s){
+    if(s==null) return null;
+    var pp=s*100;
+    for(var i=0;i<LEAN_EDGES.length-1;i++){ if(LEAN_EDGES[i]<pp && pp<=LEAN_EDGES[i+1]) return i; }
+    return null;
+  }
+  var leanProp=LEAN_LABELS.map(function(lab,i){
+    var rows=data.filter(function(r){ return leanFineBucket(r._shift)===i; });
+    return { label:lab, idx:i, c:cell(rows) };
+  });
+
+  return { data:data.length, gapDist:gapDist, propLine:propLine, propLean:propLean, leanProp:leanProp,
            timeLineUp:timeLineUp, timeLineDown:timeLineDown, timeLeanHome:timeLeanHome,
            timeLeanAway:timeLeanAway, timeBothHome:timeBothHome, matrix:matrix, key:key };
 }
@@ -181,6 +195,34 @@ function renderOddsTrend(RD){
   h+=propTbl('Asia line move size', ot.propLine, ['Up 0.25','Up 0.5','Up 0.75+','Down 0.25','Down 0.5','Down 0.75+']);
   h+=propTbl('Lean shift size', ot.propLean, ['toHome 0.5-2pp','toHome 2-4pp','toHome 4pp+','toAway 0.5-2pp','toAway 2-4pp','toAway 4pp+']);
   h+='</div></div>';
+
+  // ①b) Lean-shift → cover rate (the clean proportional relationship)
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">';
+  h+='<div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:2px">①b The proportional one: market lean shift → home cover rate</div>';
+  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">Signed lean shift (+ = market moved toward home). The <b>home cover rate</b> rises monotonically with the shift — a genuinely proportional relationship between how far the market leaned and how often that side covered. The per-side ROI follows the same direction (noisier, since it also depends on the price).</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
+    +'<th>Lean shift</th><th class="num">N</th><th class="num">H-Cover%</th>'
+    +'<th class="num" style="color:#f87171">Bet H ROI</th><th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th>Cover bar</th></tr></thead><tbody>';
+  ot.leanProp.forEach(function(lp){
+    if(!lp.c||lp.c.n<30) return;
+    var cv=lp.c.hcover;
+    // bar centered at 50%
+    var dev=cv-50, barW=Math.min(Math.abs(dev)*4,40);
+    var bar = dev>=0
+      ? '<span style="display:inline-block;width:40px"></span><span style="display:inline-block;height:8px;width:'+barW+'px;background:#f87171;vertical-align:middle"></span>'
+      : '<span style="display:inline-block;width:'+(40-barW)+'px"></span><span style="display:inline-block;height:8px;width:'+barW+'px;background:#60a5fa;vertical-align:middle"></span>';
+    var cvCol=cv>50?'#f87171':cv<50?'#60a5fa':'#94a3b8';
+    h+='<tr><td style="color:#e2e8f0;font-family:var(--mono)">'+lp.label+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#64748b">'+lp.c.n+'</td>'
+      +'<td class="num" style="font-family:var(--mono);font-weight:700;color:'+cvCol+'">'+cv.toFixed(1)+'%</td>'
+      +'<td class="num" style="font-family:var(--mono);color:'+roiC(lp.c.betH)+'">'+fmtR(lp.c.betH)+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:'+roiC(lp.c.betA)+'">'+fmtR(lp.c.betA)+'</td>'
+      +'<td>'+bar+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:4px">H-Cover% = share of matches where home covered the handicap. Bar shows deviation from 50% (red = home-favoring, blue = away-favoring). Cells need n≥30.</div>';
+  h+='</div>';
 
   // B) Time-specificity
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">';
