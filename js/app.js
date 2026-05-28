@@ -218,8 +218,8 @@ function applyFilters(){
     }
     // Line / H / A movement filters
     if(lmf){
-      if(r.ASIALINE==null||r.ASIALINELN==null){return false;}
-      var ld=r.ASIALINE-r.ASIALINELN,la=Math.abs(ld);
+      if(r.ASIALINE==null||!(r.ASIAHLN>0&&r.ASIAALN>0)){return false;} // need a valid opening snapshot
+      var ld=r.ASIALINE-(r.ASIALINELN||0),la=Math.abs(ld);
       if(lmf==='up'&&ld<=0)return false;
       if(lmf==='up2'&&ld<0.5)return false;
       if(lmf==='up3'&&ld<1.0)return false;
@@ -229,7 +229,7 @@ function applyFilters(){
       if(lmf==='flat'&&ld!==0)return false;
     }
     if(hmf){
-      if(r.ASIAH==null||r.ASIAHLN==null){return false;}
+      if(r.ASIAH==null||!(r.ASIAHLN>0)){return false;} // opening H odds missing (stored as 0)
       var hd=r.ASIAH-r.ASIAHLN;
       if(hmf==='short'&&hd>=0)return false;
       if(hmf==='short2'&&(hd>=0||r.ASIAH>r.ASIAHLN*0.95))return false;
@@ -240,7 +240,7 @@ function applyFilters(){
       if(hmf==='flat'&&hd!==0)return false;
     }
     if(amf){
-      if(r.ASIAA==null||r.ASIAALN==null){return false;}
+      if(r.ASIAA==null||!(r.ASIAALN>0)){return false;} // opening A odds missing (stored as 0)
       var ad=r.ASIAA-r.ASIAALN;
       if(amf==='short'&&ad>=0)return false;
       if(amf==='short2'&&(ad>=0||r.ASIAA>r.ASIAALN*0.95))return false;
