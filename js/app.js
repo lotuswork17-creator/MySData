@@ -112,24 +112,15 @@ function updateSmartOptions(){
   var upcoming=(typeof ALL!=='undefined'?ALL:[]).filter(function(r){ return r.STATUS==='PREEVE'; });
   Array.prototype.forEach.call(sel.options, function(opt){
     var v=opt.value;
-    if(!v || opt.disabled && !v) return; // skip placeholder/section headers
-    if(!v) return;
-    var cnt=0;
-    for(var i=0;i<upcoming.length;i++){ if(smartPass(upcoming[i], v)){ cnt++; if(cnt>=1) break; } }
-    // store full count for label
+    if(!v) return; // skip section headers (no value) — leave them disabled as-is
     var full=0;
     for(var j=0;j<upcoming.length;j++){ if(smartPass(upcoming[j], v)) full++; }
     var base=opt.getAttribute('data-base')|| opt.textContent.replace(/\s*\(\d+\)\s*$/,'');
     opt.setAttribute('data-base', base);
-    if(full===0){
-      opt.disabled=true;
-      opt.style.color='#475569';
-      opt.textContent=base+' (0)';
-    } else {
-      opt.disabled=false;
-      opt.style.color='';
-      opt.textContent=base+' ('+full+')';
-    }
+    // Always selectable; grey only indicates 0 upcoming matches (history still selectable).
+    opt.disabled=false;
+    opt.style.color = full===0 ? '#475569' : '';
+    opt.textContent = base+' ('+full+')';
   });
 }
 
