@@ -89,6 +89,20 @@ function smartPass(r, smf){
     if(smf==='sm11') return (ac>hc&&ac>=4);
     if(smf==='sm12') return (hc>ac&&hc>=4);
   }
+  if(smf==='sm13'||smf==='sm14'){
+    // 💀 best-price indicator: HKJC offers the best price on a side vs both Macau & SBO
+    // (same handicap line, both books present, strictly beats at least one).
+    if(!(r.ASIALINE===r.ASIALINEMA && r.ASIALINE===r.ASIALINESB)) return false;
+    var mh=r.ASIAHMAC, sh2=r.ASIAHSBO, ma2=r.ASIAAMAC, sa2=r.ASIAASBO;
+    if(smf==='sm13'){ // skull on HOME (HKJC home best price) → study suggests Away
+      if(!mh||!sh2||r.ASIAH==null) return false;
+      return r.ASIAH>=mh && r.ASIAH>=sh2 && (r.ASIAH>mh || r.ASIAH>sh2);
+    }
+    if(smf==='sm14'){ // skull on AWAY (HKJC away best price) → study suggests Home
+      if(!ma2||!sa2||r.ASIAA==null) return false;
+      return r.ASIAA>=ma2 && r.ASIAA>=sa2 && (r.ASIAA>ma2 || r.ASIAA>sa2);
+    }
+  }
   return true;
 }
 
