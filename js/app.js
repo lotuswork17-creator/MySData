@@ -67,7 +67,8 @@ function loadData(){
 function smartPass(r, smf){
   if(!smf) return true;
   var sgl=r.ASIALINE, sln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
-  var sld=sgl!=null&&sln!=null?Math.round((sgl-sln)*100)/100:null;
+  var hasOpen=r.ASIAHLN>0&&r.ASIAALN>0; // opening odds present = valid opening snapshot (ASIALINELN=0 alone can mean 'missing')
+  var sld=(sgl!=null&&hasOpen)?Math.round((sgl-sln)*100)/100:null;
   var se=expertScore(r);
   var sv=sh&&sa&&sh>0&&sa>0?(1/sh+1/sa-1)*100:null;
   if(smf==='sm1') return !(sld===null||sld<=0||!se||se.h<67);

@@ -20,7 +20,7 @@ var SIXEXP_LIST = [
 var SIXEXP_RULES = [
   { id:'CF1', label:'3+ Experts H + H odds drift',  majDir:'H', minAgree:3, cond:'hdrift', bet:'A', roi:14.5 },
   { id:'CF2', label:'3+ Experts H + A odds short',  majDir:'H', minAgree:3, cond:'ashort', bet:'A', roi:13.0 },
-  { id:'CF3', label:'3+ Experts H + Line dropped',  majDir:'H', minAgree:3, cond:'linedown', bet:'A', roi:6.5 },
+  { id:'CF3', label:'3+ Experts H + Line dropped',  majDir:'H', minAgree:3, cond:'linedown', bet:'A', roi:9.5 },
   { id:'CF4', label:'4+ Experts A consensus',       majDir:'A', minAgree:4, cond:null, bet:'H', roi:5.6 },
   { id:'CF5', label:'4+ Experts H consensus',       majDir:'H', minAgree:4, cond:null, bet:'A', roi:3.2 },
 ];
@@ -39,7 +39,7 @@ function seRuleFires(r, rule){
   if(agree < rule.minAgree) return false;
   if(rule.cond==='hdrift'){ var hr=(r.ASIAHLN&&r.ASIAHLN>0)?r.ASIAH/r.ASIAHLN:1; if(hr<1.03) return false; }
   else if(rule.cond==='ashort'){ var ar=(r.ASIAALN&&r.ASIAALN>0)?r.ASIAA/r.ASIAALN:1; if(ar>0.97) return false; }
-  else if(rule.cond==='linedown'){ var ln=r.ASIALINELN; if(ln==null) return false; var d=Math.round((parseFloat(r.ASIALINE)-ln)*100)/100; if(d>=0) return false; }
+  else if(rule.cond==='linedown'){ if(!(r.ASIAHLN>0&&r.ASIAALN>0)) return false; var ln=r.ASIALINELN||0; var d=Math.round((parseFloat(r.ASIALINE)-ln)*100)/100; if(d>=0) return false; }
   return true;
 }
 
