@@ -136,6 +136,28 @@ function computeBookCompare(allRecords){
     return { homeNotHi:fin(homeNotHi), awayNotHi:fin(awayNotHi), homeHi:fin(homeHi), awayHi:fin(awayHi) };
   }
 
+  // "Book offers the lowest odds on a side" = shortest price = that book most confident in the side.
+  // book: 'macau' (compare vs HKJC & SBO) or 'sbo' (compare vs HKJC & Macau). ROI at HKJC odds.
+  function lowestStudy(book){
+    function mk(){ return {h:0,a:0,n:0,hc:0}; }
+    var homeLow=mk(), awayLow=mk();
+    data.forEach(function(r){
+      if(!eligible(r, BC_PHASES.latest, book)) return;
+      var bh = book==='macau'? r.ASIAHMAC : r.ASIAHSBO;
+      var ba = book==='macau'? r.ASIAAMAC : r.ASIAASBO;
+      var o1h = r.ASIAH, o2h = book==='macau'? r.ASIAHSBO : r.ASIAHMAC; // the other two books' home
+      var o1a = r.ASIAA, o2a = book==='macau'? r.ASIAASBO : r.ASIAAMAC; // the other two books' away
+      var ph=bcPnl(r,'H',r.ASIALINE,r.ASIAH,r.ASIAA);
+      var pa=bcPnl(r,'A',r.ASIALINE,r.ASIAH,r.ASIAA);
+      var hc=bcHCover(r,r.ASIALINE);
+      // home lowest: book home <= both others & strictly < at least one
+      if(bh<=o1h && bh<=o2h && (bh<o1h || bh<o2h)){ homeLow.h+=ph; homeLow.a+=pa; homeLow.hc+=hc; homeLow.n++; }
+      if(ba<=o1a && ba<=o2a && (ba<o1a || ba<o2a)){ awayLow.h+=ph; awayLow.a+=pa; awayLow.hc+=hc; awayLow.n++; }
+    });
+    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null, hcover:o.n?Math.round(o.hc/o.n*100):null}; }
+    return { homeLow:fin(homeLow), awayLow:fin(awayLow) };
+  }
+
   return {
     total:data.length,
     latestLean: leanStudy(BC_PHASES.latest,'consensus'),
@@ -148,7 +170,9 @@ function computeBookCompare(allRecords){
     openingPriceM: priceStudy(BC_PHASES.opening,'macau'),
     latestLeanS: leanStudy(BC_PHASES.latest,'sbo'),
     latestPriceS: priceStudy(BC_PHASES.latest,'sbo'),
-    sboPos: sboPosition(BC_PHASES.latest)
+    sboPos: sboPosition(BC_PHASES.latest),
+    macauLowest: lowestStudy('macau'),
+    sboLowest: lowestStudy('sbo')
   };
 }
 
@@ -187,6 +211,30 @@ function renderBookCompare(RD){
         +'<td style="font-size:10px">'+read+'</td></tr>';
     });
     t+='</tbody></table></div></div>';
+    return t;
+  }
+
+  function lowestTable(title, sub, study, book){
+    var t='<div style="margin-bottom:18px">';
+    t+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">'+title+'</div>';
+    t+='<div class="rpt-sub" style="margin-bottom:6px">'+sub+'</div>';
+    t+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
+      +'<th>Condition</th><th class="num">N</th>'
+      +'<th class="num" style="color:#f87171">Bet H ROI</th>'
+      +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+      +'<th class="num">H-Cover%</th></tr></thead><tbody>';
+    function row(lab,o){
+      if(!o||o.n<30) return '';
+      return '<tr><td style="color:#e2e8f0">'+lab+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(o.hcover==null?'—':o.hcover+'%')+'</td></tr>';
+    }
+    t+=row(book+' home lowest (most confident home)', study.homeLow);
+    t+=row(book+' away lowest (most confident away)', study.awayLow);
+    t+='</tbody></table></div>';
+    t+='<div style="font-size:9px;color:#475569;margin-top:3px">"'+book+' home lowest" = '+book+' offers the shortest home price of the three books (so '+book+' is most confident home). Both bet sides shown; ROI at HKJC odds. Rows need n≥30.</div></div>';
     return t;
   }
 
@@ -261,18 +309,22 @@ function renderBookCompare(RD){
   h+='</tbody></table></div>';
   h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than Macau. Strict = HKJC price strictly higher than Macau on that side.</div></div>';
 
+  h+=lowestTable('⑤ Macau Lowest Odds — when Macau is most confident',
+    'When Macau offers the shortest price on a side (lowest odds of the three), does that side cover? Tests whether following Macau\'s confidence pays.',
+    bc.macauLowest, 'Macau');
+
   // ═══ SBO-ONLY COMPARISON ═══
   h+='<div style="border-top:2px solid var(--border);margin:22px 0 14px"></div>';
   h+='<div class="rpt-title" style="font-size:15px;color:#34d399">📊 SBO as the Main Comparison</div>';
   h+='<div class="rpt-sub" style="margin-bottom:14px">Here <b>SBO</b> is the subject: each bucket measures how SBO prices home relative to the field consensus (HKJC + Macau). Treats SBO as the lead/sharp book and tests whether its deviation from the field predicts the result. You still bet at HKJC (ROI at HKJC odds). Condition: all three books non-null and lines equal. Latest odds only.</div>';
 
-  h+=leanTable('⑤ SBO lean vs field consensus (latest odds)',
+  h+=leanTable('⑥ SBO lean vs field consensus (latest odds)',
     'Buckets by SBO\'s <b>market lean</b> on home minus the field\'s (HKJC+Macau average). "SBO lean below field" = SBO gives home a lower win chance than the others (so SBO\'s home odds are longer). You still bet at HKJC, ROI at HKJC odds.',
     bc.latestLeanS, 'SBO home lean vs field (HKJC+Macau)');
 
   // SBO price preference
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑥ Actual Odds Preference vs SBO (latest odds)</div>';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑦ Actual Odds Preference vs SBO (latest odds)</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers a better price than SBO on a side, does betting that side at HKJC pay off? Both sides shown; bold = the side HKJC prices better.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
     +'<th>Condition</th><th class="num">N</th>'
@@ -300,7 +352,7 @@ function renderBookCompare(RD){
 
   // ⑦ SBO price-position table
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑦ SBO Price Position — when SBO is NOT the highest odds</div>';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑧ SBO Price Position — when SBO is NOT the highest odds</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">"SBO home not highest" = SBO prices home shorter than at least one other book (HKJC/Macau), i.e. SBO favours home on that side. Does the side SBO favours then cover? Both bet sides shown (ROI at HKJC odds); bold = the side SBO favours.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
     +'<th>Condition</th><th class="num">N</th>'
@@ -323,6 +375,10 @@ function renderBookCompare(RD){
   h+=posRow('SBO away IS highest (SBO bearish away)', bc.sboPos.awayHi, 'H');
   h+='</tbody></table></div>';
   h+='<div style="font-size:9px;color:#475569;margin-top:3px">"Highest" compares SBO\'s odds for a side against HKJC and Macau for the same side. Bold = the side SBO favours (when not highest) / the contrarian side (when highest). Rows need n≥30.</div></div>';
+
+  h+=lowestTable('⑨ SBO Lowest Odds — when SBO is most confident',
+    'When SBO offers the shortest price on a side (lowest odds of the three), does that side cover? Tests whether following SBO\'s confidence pays.',
+    bc.sboLowest, 'SBO');
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Market lean = (1/oddsH)/((1/oddsH)+(1/oddsA)), margin-neutral. Consensus = average of Macau &amp; SBO lean; the Macau section benchmarks against Macau alone. All ROI at HKJC odds, settling on the HKJC handicap line. Rows need n≥30.</div>';
 
