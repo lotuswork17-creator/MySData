@@ -334,5 +334,7 @@ function renderBookRules(RD){
 window.brToggle = function(id){
   var row=document.getElementById(id);
   if(!row) return;
-  row.style.display = (row.style.display==='none' || !row.style.display) ? '' : 'none';
+  // Use the computed/inline display — empty string means expanded (default flow), 'none' means hidden.
+  if(row.style.display==='none'){ row.style.display=''; }
+  else { row.style.display='none'; }
 };
