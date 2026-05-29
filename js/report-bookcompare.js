@@ -1,3 +1,12 @@
+// Toggle helper for the mutex-row lean sub-rows in Book Compare
+window.pmxToggle = function(id){
+  var row = document.getElementById(id);
+  if(!row) return;
+  var ind = document.getElementById(id+'_ind');
+  if(row.style.display==='none'){ row.style.display=''; if(ind) ind.textContent='▼'; }
+  else { row.style.display='none'; if(ind) ind.textContent='▶'; }
+};
+
 // ── report-bookcompare.js — HKJC vs Macau vs SBO odds comparison ──
 // HKJC is the default betting company. Studies whether comparing HKJC's prices against
 // Macau (MAC) and SBO reveals an edge — at OPENING odds and at LATEST odds separately.
@@ -91,30 +100,50 @@ function computeBookCompare(allRecords){
 
   // Actual odds preference: HKJC offers the (strictly) best price on a side → bet that side
   function priceStudy(F, mode){
-    // each condition tracks BOTH bet-H and bet-A pnl. In 'macau' mode compare HKJC vs Macau only.
-    var hBest={h:0,a:0,n:0}, aBest={h:0,a:0,n:0}, hOnly={h:0,a:0,n:0}, aOnly={h:0,a:0,n:0};
+    // Mutually exclusive categories based on HKJC's actual odds vs the comparison book(s) on BOTH sides:
+    //   tiltH: HKJC strictly better on home, strictly worse on away (HKJC tilts to home value)
+    //   tiltA: HKJC strictly worse on home, strictly better on away (HKJC tilts to away value)
+    //   bothBetter: HKJC strictly better on both (HKJC has lower margin → cheaper across the board)
+    //   bothWorse:  HKJC strictly worse on both (higher margin)
+    //   mixed: any tie on either side, or partial mix
+    var tiltH={h:0,a:0,n:0}, tiltA={h:0,a:0,n:0}, bothBetter={h:0,a:0,n:0}, bothWorse={h:0,a:0,n:0}, mixed={h:0,a:0,n:0};
     data.forEach(function(r){
       if(!eligible(r,F,mode)) return;
       var ph=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]);
       var pa=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]);
-      var hb,ab,hs,as2;
+      var hBetter, hWorse, aBetter, aWorse;
       if(mode==='macau'){
-        hb=r[F.oh]>=r[F.mh]; ab=r[F.oa]>=r[F.ma];
-        hs=r[F.oh]>r[F.mh];  as2=r[F.oa]>r[F.ma];
+        hBetter=r[F.oh]>r[F.mh]; hWorse=r[F.oh]<r[F.mh];
+        aBetter=r[F.oa]>r[F.ma]; aWorse=r[F.oa]<r[F.ma];
       } else if(mode==='sbo'){
-        hb=r[F.oh]>=r[F.sh]; ab=r[F.oa]>=r[F.sa];
-        hs=r[F.oh]>r[F.sh];  as2=r[F.oa]>r[F.sa];
+        hBetter=r[F.oh]>r[F.sh]; hWorse=r[F.oh]<r[F.sh];
+        aBetter=r[F.oa]>r[F.sa]; aWorse=r[F.oa]<r[F.sa];
       } else {
-        hb=r[F.oh]>=r[F.mh]&&r[F.oh]>=r[F.sh]; ab=r[F.oa]>=r[F.ma]&&r[F.oa]>=r[F.sa];
-        hs=r[F.oh]>r[F.mh]&&r[F.oh]>r[F.sh];   as2=r[F.oa]>r[F.ma]&&r[F.oa]>r[F.sa];
+        // consensus: 'better' means strictly higher than BOTH other books
+        hBetter=r[F.oh]>r[F.mh]&&r[F.oh]>r[F.sh]; hWorse=r[F.oh]<r[F.mh]&&r[F.oh]<r[F.sh];
+        aBetter=r[F.oa]>r[F.ma]&&r[F.oa]>r[F.sa]; aWorse=r[F.oa]<r[F.ma]&&r[F.oa]<r[F.sa];
       }
-      if(hb){ hBest.h+=ph; hBest.a+=pa; hBest.n++; }
-      if(ab){ aBest.h+=ph; aBest.a+=pa; aBest.n++; }
-      if(hs&&!as2){ hOnly.h+=ph; hOnly.a+=pa; hOnly.n++; }
-      if(as2&&!hs){ aOnly.h+=ph; aOnly.a+=pa; aOnly.n++; }
+      var bin;
+      if     (hBetter && aWorse)  bin=tiltH;
+      else if(hWorse  && aBetter) bin=tiltA;
+      else if(hBetter && aBetter) bin=bothBetter;
+      else if(hWorse  && aWorse)  bin=bothWorse;
+      else                        bin=mixed;
+      bin.h+=ph; bin.a+=pa; bin.n++;
+      // also bucket by HKJC market lean for the expandable sub-rows
+      var lean=bcLean(r[F.oh],r[F.oa]);
+      if(lean!=null){
+        var li = lean<0.45?0 : lean<0.48?1 : lean<0.52?2 : lean<0.55?3 : 4;
+        if(!bin.lean) bin.lean=[{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0}];
+        bin.lean[li].h+=ph; bin.lean[li].a+=pa; bin.lean[li].n++;
+      }
     });
-    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null}; }
-    return { hBest:fin(hBest), aBest:fin(aBest), hOnly:fin(hOnly), aOnly:fin(aOnly) };
+    function finL(arr){
+      if(!arr) return null;
+      return arr.map(function(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null}; });
+    }
+    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null, lean:finL(o.lean)}; }
+    return { tiltH:fin(tiltH), tiltA:fin(tiltA), bothBetter:fin(bothBetter), bothWorse:fin(bothWorse), mixed:fin(mixed) };
   }
 
   // SBO price-position study: is SBO offering the highest odds on a side, or not?
@@ -214,7 +243,50 @@ function renderBookCompare(RD){
     return t;
   }
 
-  function lowestTable(title, sub, study, book){
+  var LEAN_LABELS_BC=['HKJC lean <45% (away fav.)','45–48%','48–52% (close to even)','52–55%','HKJC lean ≥55% (home fav.)'];
+  var pmxRowCounter=0;
+  function priceMutexRows(st, vsLabel){
+    // Five mutually exclusive parent rows, each expandable to show HKJC-lean breakdown.
+    function leanSubRows(arr){
+      if(!arr) return '';
+      var s='';
+      for(var i=0;i<arr.length;i++){
+        var o=arr[i];
+        if(!o||o.n<10) continue;
+        s+='<tr style="background:rgba(15,23,42,0.4)">'
+          +'<td style="padding-left:24px;color:#94a3b8;font-size:9px">↳ '+LEAN_LABELS_BC[i]+'</td>'
+          +'<td class="num" style="font-family:var(--mono);color:#64748b;font-size:9px">'+o.n+'</td>'
+          +'<td class="num" style="font-family:var(--mono);font-size:9px;color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+          +'<td class="num" style="font-family:var(--mono);font-size:9px;color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+          +'<td style="color:#475569;font-size:9px"></td></tr>';
+      }
+      if(!s) s='<tr style="background:rgba(15,23,42,0.4)"><td colspan="5" style="padding-left:24px;color:#64748b;font-size:9px">(no lean sub-bucket has n≥10)</td></tr>';
+      return s;
+    }
+    function row(lab, o, hint){
+      if(!o||o.n<30) return '';
+      pmxRowCounter++;
+      var rid='pmxr_'+pmxRowCounter;
+      return '<tr style="cursor:pointer" onclick="pmxToggle(\''+rid+'\')">'
+        +'<td style="color:#e2e8f0"><span id="'+rid+'_ind" style="display:inline-block;width:10px;color:#64748b">▶</span> '+lab+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+        +'<td style="color:#475569;font-size:9px">'+hint+'</td></tr>'
+        +'<tr id="'+rid+'" style="display:none"><td colspan="5" style="padding:0">'
+        +'<table style="width:100%;border-collapse:collapse"><tbody>'+leanSubRows(o.lean)+'</tbody></table>'
+        +'</td></tr>';
+    }
+    var t='';
+    t+=row('HKJC home > '+vsLabel+' AND HKJC away < '+vsLabel, st.tiltH, 'HKJC tilts to home (relative home value)');
+    t+=row('HKJC home < '+vsLabel+' AND HKJC away > '+vsLabel, st.tiltA, 'HKJC tilts to away (relative away value)');
+    t+=row('HKJC home > '+vsLabel+' AND HKJC away > '+vsLabel, st.bothBetter, 'HKJC better both (lower margin)');
+    t+=row('HKJC home < '+vsLabel+' AND HKJC away < '+vsLabel, st.bothWorse, 'HKJC worse both (higher margin)');
+    t+=row('Mixed / ties', st.mixed, 'any side equal, or partial mix');
+    return t;
+  }
+
+    function lowestTable(title, sub, study, book){
     var t='<div style="margin-bottom:18px">';
     t+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">'+title+'</div>';
     t+='<div class="rpt-sub" style="margin-bottom:6px">'+sub+'</div>';
@@ -246,31 +318,15 @@ function renderBookCompare(RD){
   h+='<div style="margin-bottom:18px">';
   h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">② Actual Odds Preference — does HKJC\'s best price predict? (latest odds)</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers the best price on a side vs both Macau &amp; SBO, does betting that side at HKJC pay off?</div>';
-  function priceRows(label, st){
-    function row(lab2, o, fav){
-      if(!o||o.n<30) return '';
-      // highlight the side that the condition favours (price-best side)
-      var hStyle=fav==='H'?'font-weight:700':'';
-      var aStyle=fav==='A'?'font-weight:700':'';
-      return '<tr><td style="color:#e2e8f0">'+lab2+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+hStyle+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+aStyle+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td></tr>';
-    }
-    var t='';
-    t+=row('HKJC home ≥ both', st.hBest, 'H');
-    t+=row('HKJC home strictly best', st.hOnly, 'H');
-    t+=row('HKJC away ≥ both', st.aBest, 'A');
-    t+=row('HKJC away strictly best', st.aOnly, 'A');
-    return t;
-  }
+
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
-    +'<th>Condition</th><th class="num">N</th>'
+    +'<th>Condition (mutually exclusive)</th><th class="num">N</th>'
     +'<th class="num" style="color:#f87171">Bet H ROI</th>'
-    +'<th class="num" style="color:#60a5fa">Bet A ROI</th></tr></thead><tbody>';
-  h+=priceRows('Latest', bc.latestPrice);
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th>Interpretation</th></tr></thead><tbody>';
+  h+=priceMutexRows(bc.latestPrice, 'both');
   h+='</tbody></table></div>';
-  h+='<div style="font-size:9px;color:#475569;margin-top:3px;margin-bottom:8px">Bold = the side HKJC prices best (the condition\'s side). Showing both sides lets you check whether the price-best side actually outperforms the other.</div></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px;margin-bottom:8px">Rows partition the data — every match falls into exactly one bucket. "HKJC home > both" means HKJC home odds strictly higher than BOTH Macau and SBO. "Mixed / ties" captures any case with a tie or partial agreement.</div></div>';
 
   // ═══ MACAU-ONLY COMPARISON ═══
   h+='<div style="border-top:2px solid var(--border);margin:22px 0 14px"></div>';
@@ -286,28 +342,13 @@ function renderBookCompare(RD){
   h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">④ Actual Odds Preference vs Macau (latest odds)</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers a better price than Macau on a side, does betting that side at HKJC pay off? Both sides shown; bold = the side HKJC prices better.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
-    +'<th>Condition</th><th class="num">N</th>'
+    +'<th>Condition (mutually exclusive)</th><th class="num">N</th>'
     +'<th class="num" style="color:#f87171">Bet H ROI</th>'
-    +'<th class="num" style="color:#60a5fa">Bet A ROI</th></tr></thead><tbody>';
-  function priceRowsM(label, st){
-    function row(lab2, o, fav){
-      if(!o||o.n<30) return '';
-      var hStyle=fav==='H'?'font-weight:700':'', aStyle=fav==='A'?'font-weight:700':'';
-      return '<tr><td style="color:#e2e8f0">'+lab2+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+hStyle+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+aStyle+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td></tr>';
-    }
-    var t='';
-    t+=row('HKJC home ≥ Macau', st.hBest, 'H');
-    t+=row('HKJC home > Macau (strict)', st.hOnly, 'H');
-    t+=row('HKJC away ≥ Macau', st.aBest, 'A');
-    t+=row('HKJC away > Macau (strict)', st.aOnly, 'A');
-    return t;
-  }
-  h+=priceRowsM('Latest', bc.latestPriceM);
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th>Interpretation</th></tr></thead><tbody>';
+  h+=priceMutexRows(bc.latestPriceM, 'Macau');
   h+='</tbody></table></div>';
-  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than Macau. Strict = HKJC price strictly higher than Macau on that side.</div></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Rows partition the data — every match falls into exactly one bucket. "Mixed / ties" captures any record with a tie on either side or a partial mix.</div></div>';
 
   h+=lowestTable('⑤ Macau Lowest Odds — when Macau is most confident',
     'When Macau offers the shortest price on a side (lowest odds of the three), does that side cover? Tests whether following Macau\'s confidence pays.',
@@ -327,28 +368,13 @@ function renderBookCompare(RD){
   h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑦ Actual Odds Preference vs SBO (latest odds)</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">When HKJC offers a better price than SBO on a side, does betting that side at HKJC pay off? Both sides shown; bold = the side HKJC prices better.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
-    +'<th>Condition</th><th class="num">N</th>'
+    +'<th>Condition (mutually exclusive)</th><th class="num">N</th>'
     +'<th class="num" style="color:#f87171">Bet H ROI</th>'
-    +'<th class="num" style="color:#60a5fa">Bet A ROI</th></tr></thead><tbody>';
-  function priceRowsS(st){
-    function row(lab2, o, fav){
-      if(!o||o.n<30) return '';
-      var hStyle=fav==='H'?'font-weight:700':'', aStyle=fav==='A'?'font-weight:700':'';
-      return '<tr><td style="color:#e2e8f0">'+lab2+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+hStyle+';color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);'+aStyle+';color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td></tr>';
-    }
-    var t='';
-    t+=row('HKJC home ≥ SBO', st.hBest, 'H');
-    t+=row('HKJC home > SBO (strict)', st.hOnly, 'H');
-    t+=row('HKJC away ≥ SBO', st.aBest, 'A');
-    t+=row('HKJC away > SBO (strict)', st.aOnly, 'A');
-    return t;
-  }
-  h+=priceRowsS(bc.latestPriceS);
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th>Interpretation</th></tr></thead><tbody>';
+  h+=priceMutexRows(bc.latestPriceS, 'SBO');
   h+='</tbody></table></div>';
-  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Bold = the side HKJC prices better than SBO. Strict = HKJC price strictly higher than SBO on that side.</div></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Rows partition the data — every match falls into exactly one bucket. "Mixed / ties" captures any record with a tie on either side or a partial mix.</div></div>';
 
   // ⑦ SBO price-position table
   h+='<div style="margin-bottom:18px">';
