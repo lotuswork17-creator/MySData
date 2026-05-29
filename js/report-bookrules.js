@@ -65,11 +65,26 @@ function computeBookRules(allRecords){
   // Per-rule performance on settled
   var perRule = BCR_RULES.map(function(rule){
     var rows=settled.filter(rule.cond);
+    // chronological order for L50
+    rows.sort(function(a,b){
+      var ta=(a.DATE||'')+(a.TIME||''), tb=(b.DATE||'')+(b.TIME||'');
+      return ta<tb?-1:ta>tb?1:0;
+    });
     var pH=0,pA=0,hc=0,n=rows.length;
     rows.forEach(function(r){ pH+=bcrPnl(r,'H'); pA+=bcrPnl(r,'A'); hc+=bcrHCover(r); });
     var roiBet = n? (rule.bet==='H'?pH:pA)/n*100 : null;
     var roiOther = n? (rule.bet==='H'?pA:pH)/n*100 : null;
-    return { rule:rule, n:n, roiBet:roiBet, roiOther:roiOther,
+    // L50: last 50 chronologically, bet-side ROI
+    var L50=null;
+    if(n>=50){
+      var last50=rows.slice(n-50);
+      var s=0; last50.forEach(function(r){ s+=bcrPnl(r, rule.bet); });
+      L50 = (s/50)*100;
+    } else if(n>0){
+      var s2=0; rows.forEach(function(r){ s2+=bcrPnl(r, rule.bet); });
+      L50 = (s2/n)*100; // fallback: all available if <50
+    }
+    return { rule:rule, n:n, roiBet:roiBet, roiOther:roiOther, L50:L50,
              hcover: n?Math.round(hc/n*100):null,
              matches: rows };
   });
@@ -157,16 +172,17 @@ function renderBookRules(RD){
   function roiBadge(roi, n){
     if(roi==null) return '<span style="color:#475569">—</span>';
     var col = roi>=0?'#4ade80':roi>=-2?'#fbbf24':'#f87171';
-    return '<span style="color:'+col+';font-weight:700;font-family:var(--mono)">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>'
-      + ' <span style="color:#475569;font-size:9px;font-family:var(--mono)">n'+n+'</span>';
+    return '<span style="color:'+col+';font-weight:700;font-family:var(--mono);font-size:13px">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>'
+      + ' <span style="color:#475569;font-size:11px;font-family:var(--mono)">n'+n+'</span>';
   }
 
   // ── Rule reference table ──
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:14px">📋 Rule Reference</div>';
-  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📋 Rule Reference</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:13px"><thead><tr>'
     +'<th>Rule</th><th>Book Scope</th><th>Condition</th><th class="num">Bet</th>'
-    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
+    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
+    +'<th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
     +'</tr></thead><tbody>';
   br.perRule.forEach(function(pr){
     var rule=pr.rule;
@@ -177,23 +193,33 @@ function renderBookRules(RD){
     else if(pr.roiBet>=-1) verdict = '<span style="color:#fbbf24">~ NEAR EVEN</span>';
     else verdict = '<span style="color:#f87171">~ tilt only</span>';
     var bCol = rule.bet==='H'?'#f87171':'#60a5fa';
+    // L50 cell coloured by sign
+    var L50cell;
+    if(pr.L50==null) L50cell = '<span style="color:#475569">—</span>';
+    else {
+      var l50col = pr.L50>=0?'#4ade80':pr.L50>=-2?'#fbbf24':'#f87171';
+      var l50N = pr.n>=50?'50':pr.n;
+      L50cell = '<span style="color:'+l50col+';font-weight:700;font-family:var(--mono)">'+(pr.L50>=0?'+':'')+pr.L50.toFixed(1)+'%</span>'
+        + ' <span style="color:#475569;font-size:10px;font-family:var(--mono)">n'+l50N+'</span>';
+    }
     h+='<tr><td><b>'+rule.id+'</b></td>'
       +'<td style="color:#94a3b8">'+rule.book+'</td>'
-      +'<td style="color:#e2e8f0;font-size:10px">'+rule.desc+'</td>'
-      +'<td class="num"><b style="color:'+bCol+'">'+rule.bet+'</b></td>'
+      +'<td style="color:#e2e8f0;font-size:12px">'+rule.desc+'</td>'
+      +'<td class="num"><b style="color:'+bCol+';font-size:15px">'+rule.bet+'</b></td>'
       +'<td class="num" style="font-family:var(--mono);color:#64748b">'+pr.n+'</td>'
       +'<td class="num">'+roiBadge(pr.roiBet, pr.n)+'</td>'
-      +'<td class="num" style="font-family:var(--mono);color:#64748b;font-size:10px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
+      +'<td class="num">'+L50cell+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#64748b;font-size:12px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
       +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(edge==null?'—':'+'+edge.toFixed(1)+'pp')+'</td>'
       +'<td class="num">'+verdict+'</td></tr>';
   });
   h+='</tbody></table></div>';
-  h+='<div style="font-size:9px;color:#475569;margin-top:4px">Edge = Bet ROI − Other-side ROI. ✓ PROFITABLE = ≥+2%. ~ NEAR EVEN = −1% to +2%. Lower = directional tilt only.</div>';
+  h+='<div style="font-size:11px;color:#475569;margin-top:4px">Edge = Bet ROI − Other-side ROI. ✓ PROFITABLE = ≥+2%. ~ NEAR EVEN = −1% to +2%. Lower = directional tilt only.</div>';
   h+='</div>';
 
   // ── Upcoming alerts ──
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:14px">🎯 Upcoming Matches — Rule Alerts</div>';
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">🎯 Upcoming Matches — Rule Alerts</div>';
   if(!br.upcomingAlerts.length){
     h+='<div style="padding:12px;color:#475569;font-size:12px;font-style:italic;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">No upcoming matches currently fire any rule.</div>';
   } else {
@@ -213,18 +239,18 @@ function renderBookRules(RD){
       var ruleBadges=al.rules.map(function(f){
         var bgc = f.rule.bet==='H'?'rgba(248,113,113,0.15)':'rgba(96,165,250,0.15)';
         var fgc = f.rule.bet==='H'?'#f87171':'#60a5fa';
-        return '<span style="display:inline-block;padding:1px 6px;margin:1px 2px;border-radius:3px;font-size:9px;background:'+bgc+';color:'+fgc+';font-weight:700">'+f.rule.id+'</span>';
+        return '<span style="display:inline-block;padding:2px 7px;margin:1px 2px;border-radius:3px;font-size:11px;background:'+bgc+';color:'+fgc+';font-weight:700">'+f.rule.id+'</span>';
       }).join('');
       h+='<tr style="cursor:pointer" onclick="brToggle(\''+detId+'\')">'
-        +'<td style="color:#94a3b8;font-size:10px">'+(r.DATE||'—')+' '+(r.TIME||'')+'</td>'
-        +'<td style="font-size:11px">'+teamH+' vs '+teamA+'</td>'
-        +'<td class="num" style="font-family:var(--mono)">'+lineStr+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-size:10px">'+r.ASIAH.toFixed(2)+' / '+r.ASIAA.toFixed(2)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(lean==null?'—':(lean*100).toFixed(1)+'%')+'</td>'
-        +'<td class="num"><b style="color:'+bCol+';font-size:14px">'+al.bet+'</b></td>'
+        +'<td style="color:#94a3b8;font-size:12px">'+(r.DATE||'—')+' '+(r.TIME||'')+'</td>'
+        +'<td style="font-size:13px">'+teamH+' vs '+teamA+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:13px">'+lineStr+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:12px">'+r.ASIAH.toFixed(2)+' / '+r.ASIAA.toFixed(2)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8;font-size:12px">'+(lean==null?'—':(lean*100).toFixed(1)+'%')+'</td>'
+        +'<td class="num"><b style="color:'+bCol+';font-size:17px">'+al.bet+'</b></td>'
         +'<td>'+ruleBadges+'</td></tr>';
       // Expanded details: show book comparison
-      var det='<div style="font-size:10px;color:#94a3b8;padding:6px 12px">';
+      var det='<div style="font-size:12px;color:#94a3b8;padding:8px 14px">';
       det+='<div><b>HKJC:</b> H '+r.ASIAH.toFixed(2)+' / A '+r.ASIAA.toFixed(2)+'</div>';
       if(bcrNz(r,'ASIAHMAC')) det+='<div><b>Macau:</b> H '+r.ASIAHMAC.toFixed(2)+' / A '+r.ASIAAMAC.toFixed(2)+'</div>';
       if(bcrNz(r,'ASIAHSBO')) det+='<div><b>SBO:</b> H '+r.ASIAHSBO.toFixed(2)+' / A '+r.ASIAASBO.toFixed(2)+'</div>';
@@ -239,19 +265,19 @@ function renderBookRules(RD){
 
   // ── Historic Performance: ROI chart ──
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:14px">📈 Historic Performance — Combined (any rule fires)</div>';
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📈 Historic Performance — Combined (any rule fires)</div>';
   if(br.combined.length<20){
     h+='<div style="padding:12px;color:#475569;font-size:12px;font-style:italic">Not enough settled history to chart.</div>';
   } else {
     function fl(v){ if(v==null) return ''; return ' <span style="color:'+(v>=0?'#4ade80':'#f87171')+';font-weight:700">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>'; }
-    h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:10px">'
+    h+='<div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:13px">'
       +'<span style="color:#94a3b8">L200:'+fl(br.L200)+'</span>'
       +'<span style="color:#94a3b8">L100:'+fl(br.L100)+'</span>'
       +'<span style="color:#94a3b8">L50:'+fl(br.L50)+'</span>'
       +'<span style="color:#94a3b8">All-time:'+fl(br.lastRoi)+'</span>'
       +'<span style="color:#475569">| Total bets: '+br.combined.length+'</span>'
       +'</div>';
-    h+='<div id="lgdBrRoi" style="font-size:10px;margin-bottom:4px"></div>';
+    h+='<div id="lgdBrRoi" style="font-size:12px;margin-bottom:6px"></div>';
     h+='<canvas id="cBrRoi" style="width:100%;height:150px"></canvas>';
     setTimeout(function(){
       var series=[
@@ -268,9 +294,9 @@ function renderBookRules(RD){
   // ── Past bets table (last 200) ──
   if(br.combined.length){
     h+='<div style="margin-bottom:18px">';
-    h+='<div class="rpt-title" style="margin-bottom:4px;font-size:14px">📜 Past Bets (most recent 200)</div>';
+    h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📜 Past Bets (most recent 200)</div>';
     h+='<div class="rpt-sub" style="margin-bottom:6px">Settled matches that fired any rule. Bet = direction from highest-ROI rule for that match.</div>';
-    h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:10px"><thead><tr>'
+    h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:12px"><thead><tr>'
       +'<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">Result</th>'
       +'<th class="num">Bet</th><th>Rules</th><th class="num">PnL</th><th class="num">Hit</th>'
       +'</tr></thead><tbody>';
@@ -287,17 +313,17 @@ function renderBookRules(RD){
       var rids = b.rules.map(function(f){ return f.rule.id; }).join(',');
       var l=parseFloat(r.ASIALINE)||0;
       h+='<tr>'
-        +'<td style="color:#94a3b8;font-size:9px">'+(r.DATE||'')+'</td>'
-        +'<td style="font-size:10px">'+teamH+' vs '+teamA+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-size:9px">'+(l>=0?'+':'')+l.toFixed(2)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-size:9px;color:#94a3b8">'+r.RESULTH+'-'+r.RESULTA+'</td>'
-        +'<td class="num"><b style="color:'+bCol+'">'+b.bet+'</b></td>'
-        +'<td style="font-size:9px;color:#94a3b8">'+rids+'</td>'
-        +'<td class="num" style="font-family:var(--mono);font-size:9px;color:'+(b.pnl>=0?'#4ade80':'#f87171')+'">'+(b.pnl>=0?'+':'')+b.pnl.toFixed(2)+'</td>'
-        +'<td class="num">'+hit+'</td></tr>';
+        +'<td style="color:#94a3b8;font-size:11px">'+(r.DATE||'')+'</td>'
+        +'<td style="font-size:12px">'+teamH+' vs '+teamA+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:11px">'+(l>=0?'+':'')+l.toFixed(2)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:11px;color:#94a3b8">'+r.RESULTH+'-'+r.RESULTA+'</td>'
+        +'<td class="num"><b style="color:'+bCol+';font-size:14px">'+b.bet+'</b></td>'
+        +'<td style="font-size:11px;color:#94a3b8">'+rids+'</td>'
+        +'<td class="num" style="font-family:var(--mono);font-size:12px;color:'+(b.pnl>=0?'#4ade80':'#f87171')+'">'+(b.pnl>=0?'+':'')+b.pnl.toFixed(2)+'</td>'
+        +'<td class="num" style="font-size:14px">'+hit+'</td></tr>';
     });
     h+='</tbody></table></div>';
-    h+='<div style="font-size:9px;color:#475569;margin-top:4px">Hit: ✅✅ win · ✅ half-win · ⬜ push · ❌ half-loss · ❌❌ loss.</div>';
+    h+='<div style="font-size:11px;color:#475569;margin-top:4px">Hit: ✅✅ win · ✅ half-win · ⬜ push · ❌ half-loss · ❌❌ loss.</div>';
     h+='</div>';
   }
 
