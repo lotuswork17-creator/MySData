@@ -249,13 +249,38 @@ function renderBookRules(RD){
         +'<td class="num" style="font-family:var(--mono);color:#94a3b8;font-size:12px">'+(lean==null?'—':(lean*100).toFixed(1)+'%')+'</td>'
         +'<td class="num"><b style="color:'+bCol+';font-size:17px">'+al.bet+'</b></td>'
         +'<td>'+ruleBadges+'</td></tr>';
-      // Expanded details: show book comparison
-      var det='<div style="font-size:12px;color:#94a3b8;padding:8px 14px">';
-      det+='<div><b>HKJC:</b> H '+r.ASIAH.toFixed(2)+' / A '+r.ASIAA.toFixed(2)+'</div>';
-      if(bcrNz(r,'ASIAHMAC')) det+='<div><b>Macau:</b> H '+r.ASIAHMAC.toFixed(2)+' / A '+r.ASIAAMAC.toFixed(2)+'</div>';
-      if(bcrNz(r,'ASIAHSBO')) det+='<div><b>SBO:</b> H '+r.ASIAHSBO.toFixed(2)+' / A '+r.ASIAASBO.toFixed(2)+'</div>';
-      det+='<div style="margin-top:4px"><b>Rules fired:</b></div>';
-      al.rules.forEach(function(f){ det+='<div style="margin-left:8px">• <b>'+f.rule.id+'</b>: '+f.rule.desc+' → bet <b>'+f.rule.bet+'</b> (historic '+f.roi.toFixed(1)+'%)</div>'; });
+      // Expanded details: 6 expert picks + signal bar + book odds + rules fired
+      var tipFields=[['JC Sum','JCTIPSUM'],['JC SID','JCTIPSID'],['SID Mac','TIPSIDMAC'],['ON ID','TIPSONID'],['Gem','TIPSGEM'],['GPT','TIPSGPT']];
+      var tipBadges=tipFields.map(function(tf){
+        var v=r[tf[1]];
+        var c=!v?'#475569':(String(v).indexOf('H')>=0?'#f87171':String(v).indexOf('A')>=0?'#60a5fa':'#4ade80');
+        return '<span style="font-size:11px;font-family:var(--mono);padding:3px 9px;border-radius:4px;background:'+c+'22;border:1px solid '+c+'44"><span style="color:#64748b;font-size:10px">'+tf[0]+':</span> <span style="color:'+c+';font-weight:700">'+(v||'—')+'</span></span>';
+      }).join(' ');
+      // Signal bar from expertScore — H% / D% / A% stacked
+      var es = (typeof expertScore==='function') ? expertScore(r) : null;
+      var signalBar='';
+      if(es){
+        signalBar = '<div style="margin-top:8px;margin-bottom:4px">'
+          +'<div style="font-size:10px;color:#94a3b8;margin-bottom:3px">Expert Signal: '
+          +'<span style="color:#f87171;font-weight:700">H '+es.h+'%</span> · '
+          +'<span style="color:#4ade80;font-weight:700">D '+es.d+'%</span> · '
+          +'<span style="color:#60a5fa;font-weight:700">A '+es.a+'%</span></div>'
+          +'<div style="display:flex;height:10px;width:100%;border-radius:3px;overflow:hidden;background:#1e293b">'
+          +(es.h>0?'<div style="width:'+es.h+'%;background:#f87171"></div>':'')
+          +(es.d>0?'<div style="width:'+es.d+'%;background:#4ade80"></div>':'')
+          +(es.a>0?'<div style="width:'+es.a+'%;background:#60a5fa"></div>':'')
+          +'</div></div>';
+      }
+      var det='<div style="font-size:12px;color:#94a3b8;padding:10px 14px">';
+      det+='<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:6px">Six Expert Picks</div>';
+      det+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">'+tipBadges+'</div>';
+      det+=signalBar;
+      det+='<div style="margin-top:10px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">Book Odds</div>';
+      det+='<div style="font-size:12px"><b>HKJC:</b> H '+r.ASIAH.toFixed(2)+' / A '+r.ASIAA.toFixed(2)+'</div>';
+      if(bcrNz(r,'ASIAHMAC')) det+='<div style="font-size:12px"><b>Macau:</b> H '+r.ASIAHMAC.toFixed(2)+' / A '+r.ASIAAMAC.toFixed(2)+'</div>';
+      if(bcrNz(r,'ASIAHSBO')) det+='<div style="font-size:12px"><b>SBO:</b> H '+r.ASIAHSBO.toFixed(2)+' / A '+r.ASIAASBO.toFixed(2)+'</div>';
+      det+='<div style="margin-top:10px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">Rules Fired</div>';
+      al.rules.forEach(function(f){ det+='<div style="margin-left:8px;font-size:12px">• <b>'+f.rule.id+'</b>: '+f.rule.desc+' → bet <b>'+f.rule.bet+'</b> (historic '+f.roi.toFixed(1)+'%)</div>'; });
       det+='</div>';
       h+='<tr id="'+detId+'" style="display:none"><td colspan="7" style="background:rgba(15,23,42,0.5);padding:0">'+det+'</td></tr>';
     });
@@ -294,7 +319,14 @@ function renderBookRules(RD){
   // ── Past bets table (last 200) ──
   if(br.combined.length){
     h+='<div style="margin-bottom:18px">';
-    h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📜 Past Bets (most recent 200)</div>';
+    function rb(v){ if(v==null) return '<span style="color:#475569">—</span>'; var c=v>=0?'#4ade80':'#f87171'; return '<span style="color:'+c+';font-weight:700;font-family:var(--mono)">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>'; }
+    h+='<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:14px;margin-bottom:4px">'
+      +'<div class="rpt-title" style="font-size:16px;margin:0">📜 Past Bets (most recent 200)</div>'
+      +'<span style="font-size:13px;color:#94a3b8">All-time: '+rb(br.lastRoi)+'</span>'
+      +'<span style="font-size:13px;color:#94a3b8">L200: '+rb(br.L200)+'</span>'
+      +'<span style="font-size:13px;color:#94a3b8">L100: '+rb(br.L100)+'</span>'
+      +'<span style="font-size:13px;color:#94a3b8">L50: '+rb(br.L50)+'</span>'
+      +'</div>';
     h+='<div class="rpt-sub" style="margin-bottom:6px">Settled matches that fired any rule. Bet = direction from highest-ROI rule for that match.</div>';
     h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:12px"><thead><tr>'
       +'<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">Result</th>'
