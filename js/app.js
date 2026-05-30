@@ -54,6 +54,7 @@ function loadData(){
       $('hMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('aMoveSelect').addEventListener('change',function(){pg=1;applyFilters();});
       $('smartSelect').addEventListener('change',function(){pg=1;applyFilters();});
+      $('smartSelect2').addEventListener('change',function(){pg=1;applyFilters();});
       document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
     })
     .catch(function(e){
@@ -109,27 +110,54 @@ function smartPass(r, smf){
 
 // Grey out smart-money options with no matching UPCOMING (PREEVE) matches
 function updateSmartOptions(){
-  var sel=document.getElementById('smartSelect'); if(!sel) return;
   var upcoming=(typeof ALL!=='undefined'?ALL:[]).filter(function(r){ return r.STATUS==='PREEVE'; });
-  Array.prototype.forEach.call(sel.options, function(opt){
-    var v=opt.value;
-    if(!v) return; // skip section headers (no value) — leave them disabled as-is
-    var full=0;
-    for(var j=0;j<upcoming.length;j++){ if(smartPass(upcoming[j], v)) full++; }
-    var base=opt.getAttribute('data-base')|| opt.textContent.replace(/\s*\(\d+\)\s*$/,'');
-    opt.setAttribute('data-base', base);
-    // Always selectable; grey only indicates 0 upcoming matches (history still selectable).
-    opt.disabled=false;
-    opt.style.color = full===0 ? '#475569' : '';
-    opt.textContent = base+' ('+full+')';
-  });
+  function update(selId, passFn){
+    var sel=document.getElementById(selId); if(!sel) return;
+    Array.prototype.forEach.call(sel.options, function(opt){
+      var v=opt.value;
+      if(!v) return;
+      var full=0;
+      for(var j=0;j<upcoming.length;j++){ if(passFn(upcoming[j], v)) full++; }
+      var base=opt.getAttribute('data-base')|| opt.textContent.replace(/\s*\(\d+\)\s*$/,'');
+      opt.setAttribute('data-base', base);
+      opt.disabled=false;
+      opt.style.color = full===0 ? '#475569' : '';
+      opt.textContent = base+' ('+full+')';
+    });
+  }
+  update('smartSelect',  smartPass);
+  update('smartSelect2', brPass);
+}
+
+function brPass(r, br){
+  if(!br) return true;
+  if(r.ASIAH==null||r.ASIAA==null) return false;
+  var L=(1/r.ASIAH)/((1/r.ASIAH)+(1/r.ASIAA));
+  var nz=function(v){return v!=null&&v!==0;};
+  var mh=r.ASIAHMAC, ma=r.ASIAAMAC, sh=r.ASIAHSBO, sa=r.ASIAASBO;
+  // Per-rule eligibility (matches report-bookrules.js exactly)
+  var macOk  = nz(mh)&&nz(ma)&&r.ASIALINE===r.ASIALINEMA;
+  var sboOk  = nz(sh)&&nz(sa)&&r.ASIALINE===r.ASIALINESB;
+  var bothOk = macOk&&sboOk;
+  switch(br){
+    case 'br1': return macOk  && r.ASIAH>mh && r.ASIAA<ma && L<0.52;
+    case 'br2': return macOk  && r.ASIAH<mh && r.ASIAA>ma && L>0.52;
+    case 'br3': return macOk  && r.ASIAH>mh && r.ASIAA>ma && L<0.48;
+    case 'br4': return macOk  && r.ASIAH>mh && r.ASIAA>ma && L>0.52;
+    case 'br5': return sboOk  && r.ASIAH>sh && r.ASIAA<sa && L<0.52;
+    case 'br6': return sboOk  && r.ASIAH<sh && r.ASIAA>sa && L>0.52;
+    case 'br7': return bothOk && r.ASIAH>mh && r.ASIAH>sh && r.ASIAA<ma && r.ASIAA<sa;
+    case 'br8': return bothOk && r.ASIAH<mh && r.ASIAH<sh && r.ASIAA>ma && r.ASIAA>sa && L>0.52;
+    case 'br9': return bothOk && mh<sh && ma>sa && L>0.52;
+  }
+  return true;
 }
 
 function applyFilters(){
   var s=$('searchInput').value.toLowerCase(),cat=$('catSelect').value,st=$('statusSelect').value;
   var al=$('asialineSelect').value,dr=$('dateRangeSelect').value;
   var pf=$('predictSelect').value,ef=$('expertSelect').value,mf=$('marketSelect').value,vf=$('vigSelect').value;
-  var lmf=$('lineMoveSelect').value,hmf=$('hMoveSelect').value,amf=$('aMoveSelect').value,smf=$('smartSelect').value;
+  var lmf=$('lineMoveSelect').value,hmf=$('hMoveSelect').value,amf=$('aMoveSelect').value,smf=$('smartSelect').value,brf=$('smartSelect2').value;
   // Date range cutoff
   var cutoff=null;
   if(dr){
@@ -258,6 +286,7 @@ function applyFilters(){
     if(smf){
       var sgl=r.ASIALINE,sln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
       if(!smartPass(r, smf)) return false;
+      if(!brPass(r, brf)) return false;
     }
     return true;
   });
