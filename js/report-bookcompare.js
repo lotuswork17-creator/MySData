@@ -187,6 +187,35 @@ function computeBookCompare(allRecords){
     return { homeLow:fin(homeLow), awayLow:fin(awayLow) };
   }
 
+  // ⑩ Macau vs SBO opposite-direction comparison (bet at HKJC).
+  // C1: Macau h > SBO h AND Macau a < SBO a (Macau leans Away, SBO leans Home)
+  // C2: Macau h < SBO h AND Macau a > SBO a (Macau leans Home, SBO leans Away)
+  // Eligibility: same as other tables (all 3 books non-null, all 3 lines equal).
+  function macauVsSbo(){
+    function mk(){ return {h:0,a:0,n:0,hc:0,lean:[{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0}]}; }
+    var c1=mk(), c2=mk();
+    data.forEach(function(r){
+      if(!eligible(r, BC_PHASES.latest, 'consensus')) return;
+      var ph=bcPnl(r,'H',r.ASIALINE,r.ASIAH,r.ASIAA);
+      var pa=bcPnl(r,'A',r.ASIALINE,r.ASIAH,r.ASIAA);
+      var hc=bcHCover(r,r.ASIALINE);
+      var mh=r.ASIAHMAC, ma=r.ASIAAMAC, sh=r.ASIAHSBO, sa=r.ASIAASBO;
+      var bin=null;
+      if(mh>sh && ma<sa) bin=c1;
+      else if(mh<sh && ma>sa) bin=c2;
+      if(!bin) return;
+      bin.h+=ph; bin.a+=pa; bin.hc+=hc; bin.n++;
+      var lean=bcLean(r.ASIAH,r.ASIAA);
+      if(lean!=null){
+        var li = lean<0.45?0 : lean<0.48?1 : lean<0.52?2 : lean<0.55?3 : 4;
+        bin.lean[li].h+=ph; bin.lean[li].a+=pa; bin.lean[li].n++;
+      }
+    });
+    function finL(arr){ return arr.map(function(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null}; }); }
+    function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null, hcover:o.n?Math.round(o.hc/o.n*100):null, lean:finL(o.lean)}; }
+    return { c1:fin(c1), c2:fin(c2) };
+  }
+
   return {
     total:data.length,
     latestLean: leanStudy(BC_PHASES.latest,'consensus'),
@@ -201,7 +230,8 @@ function computeBookCompare(allRecords){
     latestPriceS: priceStudy(BC_PHASES.latest,'sbo'),
     sboPos: sboPosition(BC_PHASES.latest),
     macauLowest: lowestStudy('macau'),
-    sboLowest: lowestStudy('sbo')
+    sboLowest: lowestStudy('sbo'),
+    macSbo: macauVsSbo()
   };
 }
 
@@ -405,6 +435,58 @@ function renderBookCompare(RD){
   h+=lowestTable('⑨ SBO Lowest Odds — when SBO is most confident',
     'When SBO offers the shortest price on a side (lowest odds of the three), does that side cover? Tests whether following SBO\'s confidence pays.',
     bc.sboLowest, 'SBO');
+
+  // ⑩ Macau vs SBO disagreement (HKJC not used in the criterion; bet still at HKJC)
+  h+='<div style="border-top:2px solid var(--border);margin:22px 0 14px"></div>';
+  h+='<div class="rpt-title" style="font-size:15px;color:#f97316">🆚 Macau vs SBO Comparison (bet at HKJC)</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:14px">When <b>Macau and SBO disagree in opposite directions</b> on a match (one prices home shorter while the other prices home longer), what happens? HKJC is not used in the criterion here — the comparison is purely between Macau and SBO — but the bet is still placed at HKJC odds. Same handicap line required across all three books.</div>';
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑩ Macau vs SBO Opposite Lean (latest odds)</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:6px">Click a row to expand the HKJC-lean breakdown.</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
+    +'<th>Condition</th><th class="num">N</th>'
+    +'<th class="num" style="color:#f87171">Bet H ROI</th>'
+    +'<th class="num" style="color:#60a5fa">Bet A ROI</th>'
+    +'<th class="num">H-Cover%</th><th>Interpretation</th></tr></thead><tbody>';
+
+  (function(){
+    function leanSubRows(arr){
+      if(!arr) return '';
+      var s='';
+      for(var i=0;i<arr.length;i++){
+        var o=arr[i];
+        if(!o||o.n<10) continue;
+        s+='<tr style="background:rgba(15,23,42,0.4)">'
+          +'<td style="padding-left:24px;color:#94a3b8;font-size:9px">↳ '+LEAN_LABELS_BC[i]+'</td>'
+          +'<td class="num" style="font-family:var(--mono);color:#64748b;font-size:9px">'+o.n+'</td>'
+          +'<td class="num" style="font-family:var(--mono);font-size:9px;color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+          +'<td class="num" style="font-family:var(--mono);font-size:9px;color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+          +'<td colspan="2"></td></tr>';
+      }
+      if(!s) s='<tr style="background:rgba(15,23,42,0.4)"><td colspan="6" style="padding-left:24px;color:#64748b;font-size:9px">(no lean sub-bucket has n≥10)</td></tr>';
+      return s;
+    }
+    function row(lab, o, hint){
+      if(!o||o.n<30) return '';
+      pmxRowCounter++;
+      var rid='pmxr_'+pmxRowCounter;
+      return '<tr style="cursor:pointer" onclick="pmxToggle(\''+rid+'\')">'
+        +'<td style="color:#e2e8f0"><span id="'+rid+'_ind" style="display:inline-block;width:10px;color:#64748b">▶</span> '+lab+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+o.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiH)+'">'+fmtR(o.roiH)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:'+roiC(o.roiA)+'">'+fmtR(o.roiA)+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(o.hcover==null?'—':o.hcover+'%')+'</td>'
+        +'<td style="color:#475569;font-size:9px">'+hint+'</td></tr>'
+        +'<tr id="'+rid+'" style="display:none"><td colspan="6" style="padding:0">'
+        +'<table style="width:100%;border-collapse:collapse"><tbody>'+leanSubRows(o.lean)+'</tbody></table>'
+        +'</td></tr>';
+    }
+    h+=row('Macau h > SBO h AND Macau a < SBO a', bc.macSbo.c1, 'Macau leans away, SBO leans home');
+    h+=row('Macau h < SBO h AND Macau a > SBO a', bc.macSbo.c2, 'Macau leans home, SBO leans away');
+  })();
+
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:9px;color:#475569;margin-top:3px">Only matches where Macau and SBO disagree in opposite directions on home vs away. HKJC line must equal Macau line and SBO line. Bet is at HKJC odds.</div></div>';
 
   h+='<div style="font-size:9px;color:#475569;margin-top:4px">Market lean = (1/oddsH)/((1/oddsH)+(1/oddsA)), margin-neutral. Consensus = average of Macau &amp; SBO lean; the Macau section benchmarks against Macau alone. All ROI at HKJC odds, settling on the HKJC handicap line. Rows need n≥30.</div>';
 
