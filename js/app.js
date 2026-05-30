@@ -340,7 +340,7 @@ function toggleFilters(){
 
 function clearFilters(){
   $('searchInput').value='';$('catSelect').value='';$('statusSelect').value='';$('asialineSelect').value='';
-  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';$('smartSelect').value='';
+  $('dateRangeSelect').value='';$('predictSelect').value='';$('expertSelect').value='';$('marketSelect').value='';$('vigSelect').value='';$('lineMoveSelect').value='';$('hMoveSelect').value='';$('aMoveSelect').value='';$('smartSelect').value='';$('smartSelect2').value='';
   clearJCPick();
   pg=1;applyFilters();
 }
