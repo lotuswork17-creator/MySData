@@ -286,6 +286,9 @@ function applyFilters(){
     if(smf){
       var sgl=r.ASIALINE,sln=r.ASIALINELN,sh=r.ASIAH,sa=r.ASIAA;
       if(!smartPass(r, smf)) return false;
+    }
+    // Smart Money 2 (Book Rules) — runs independently of Smart Money 1
+    if(brf){
       if(!brPass(r, brf)) return false;
     }
     return true;
