@@ -50,7 +50,11 @@ var BCR_RULES = [
   { id:'R8', book:'Both', bet:'H',
     desc:'HKJC h < both, a > both AND lean > 52%',
     cond:function(r){ if(!bcrBothOk(r)) return false; var L=bcrLean(r); if(L==null) return false;
-      return r.ASIAH<r.ASIAHMAC && r.ASIAH<r.ASIAHSBO && r.ASIAA>r.ASIAAMAC && r.ASIAA>r.ASIAASBO && L>0.52; } }
+      return r.ASIAH<r.ASIAHMAC && r.ASIAH<r.ASIAHSBO && r.ASIAA>r.ASIAAMAC && r.ASIAA>r.ASIAASBO && L>0.52; } },
+  { id:'R9', book:'Mac vs SBO', bet:'H',
+    desc:'Macau h < SBO h, Macau a > SBO a AND lean > 52%',
+    cond:function(r){ if(!bcrBothOk(r)) return false; var L=bcrLean(r); if(L==null) return false;
+      return r.ASIAHMAC<r.ASIAHSBO && r.ASIAAMAC>r.ASIAASBO && L>0.52; } }
 ];
 
 // ── Compute ───────────────────────────────────────────────────────────────
