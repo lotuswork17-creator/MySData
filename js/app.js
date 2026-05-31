@@ -148,7 +148,10 @@ function brPass(r, br){
     case 'br6': return sboOk  && r.ASIAH<sh && r.ASIAA>sa && L>0.52;
     case 'br7': return bothOk && r.ASIAH>mh && r.ASIAH>sh && r.ASIAA<ma && r.ASIAA<sa;
     case 'br8': return bothOk && r.ASIAH<mh && r.ASIAH<sh && r.ASIAA>ma && r.ASIAA>sa && L>0.52;
-    case 'br9': return bothOk && mh<sh && ma>sa && L>0.52;
+    case 'br9':  return bothOk && mh>sh && ma<sa && L<0.48;
+    case 'br10': return bothOk && mh>sh && ma<sa && L>0.52;
+    case 'br11': return bothOk && mh<sh && ma>sa && L<0.48;
+    case 'br12': return bothOk && mh<sh && ma>sa && L>0.52;
   }
   return true;
 }
