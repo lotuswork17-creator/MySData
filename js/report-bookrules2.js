@@ -22,14 +22,22 @@ function br2ExpSignal(r){
   return 'tied';
 }
 
-// Reuse the 12 rule conditions but ADD the "expert signal is tied" requirement.
+// Reuse the 12 rule conditions but ADD a "crowd doesn't confirm the rule" requirement —
+// expert signal is either 'tied' (no majority) OR 'counter' (majority opposite to rule's bet).
+// These are jointly the cases where the public-line crowd is NOT validating the rule's direction,
+// which leaves the book-comparison signal cleaner and historically boosts bet-side ROI.
 var BR2_RULES = BCR_RULES.map(function(rule){
+  var opposite = rule.bet==='H' ? 'A' : 'H';
   return {
     id: rule.id,
     book: rule.book,
     bet: rule.bet,
-    desc: rule.desc + ' • experts tied',
-    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)==='tied'; }
+    desc: rule.desc + ' • experts tied or opposite',
+    cond: function(r){
+      if(!rule.cond(r)) return false;
+      var s = br2ExpSignal(r);
+      return s==='tied' || s===opposite;
+    }
   };
 });
 
@@ -130,9 +138,12 @@ function renderBookRules2(RD){
   var br = RD.bookrules2 || (RD.bookrules2 = computeBookRules2(RD.records||RD.results||[]));
   var h='';
 
-  h+='<div class="rpt-title">📚 Book Rules 2 — Rules × Tied Experts</div>';
-  h+='<div class="rpt-sub" style="margin-bottom:14px">The 12 base Book Rules with an extra filter: the 6 experts (JC Sum/SID/Mac/ON ID + Gem + GPT) must have <b>NO unique majority direction</b> ("tied" signal — votes split or ambiguous). '
-   +'This sub-population isolates matches where the public-line crowd hasn\'t confirmed one side, leaving the book-comparison signal cleaner. Empirically this boosts bet-side ROI significantly across most rules.</div>';
+  h+='<div class="rpt-title">📚 Book Rules 2 — Rules × Non-Confirming Experts</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:14px">The 12 base Book Rules with an extra filter: the 6 experts (JC Sum/SID/Mac/ON ID + Gem + GPT) must <b>NOT confirm the rule\'s direction</b>. '
+   +'Two sub-cases qualify: <b>tied</b> (no unique majority) or <b>counter-signal</b> (experts pick the opposite side from the rule). '
+   +'Cases where experts confirm the rule\'s bet (e.g. rule says H + experts pick H) are excluded — those are the noisy ones. '
+   +'Cases where experts pick D are also excluded (D-dominated samples are consistently disastrous). '
+   +'This filter isolates matches where the public-line crowd is NOT validating the rule\'s direction, leaving the book-comparison signal cleaner.</div>';
 
   function roiBadge(roi, n){
     if(roi==null) return '<span style="color:#cbd5e1">—</span>';
@@ -226,8 +237,7 @@ function renderBookRules2(RD){
         signalBar='<div style="margin-top:8px;margin-bottom:4px"><div style="font-size:11px;color:#e2e8f0;margin-bottom:3px">Expert Signal: '
           +'<span style="color:#f87171;font-weight:700">H '+es.h+'%</span> · '
           +'<span style="color:#4ade80;font-weight:700">D '+es.d+'%</span> · '
-          +'<span style="color:#60a5fa;font-weight:700">A '+es.a+'%</span> '
-          +'<span style="color:#a78bfa;font-weight:700;margin-left:6px">(tied)</span></div>'
+          +'<span style="color:#60a5fa;font-weight:700">A '+es.a+'%</span></div>'
           +'<div style="display:flex;height:10px;width:100%;border-radius:3px;overflow:hidden;background:#1e293b">'
           +(es.h>0?'<div style="width:'+es.h+'%;background:#f87171"></div>':'')
           +(es.d>0?'<div style="width:'+es.d+'%;background:#4ade80"></div>':'')
@@ -235,7 +245,7 @@ function renderBookRules2(RD){
           +'</div></div>';
       }
       var det='<div style="font-size:12px;color:#e2e8f0;padding:10px 14px">';
-      det+='<div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;margin-bottom:6px">Six Expert Picks (tied)</div>';
+      det+='<div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;margin-bottom:6px">Six Expert Picks</div>';
       det+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">'+tipBadges+'</div>'+signalBar;
       det+='<div style="margin-top:10px;font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;margin-bottom:4px">Book Odds</div>';
       det+='<div style="font-size:12px"><b>HKJC:</b> H '+r.ASIAH.toFixed(2)+' / A '+r.ASIAA.toFixed(2)+'</div>';
