@@ -22,23 +22,34 @@ function br2ExpSignal(r){
   return 'tied';
 }
 
-// Reuse the 12 rule conditions but ADD a "crowd doesn't confirm the rule" requirement —
-// expert signal is either 'tied' (no majority) OR 'counter' (majority opposite to rule's bet).
-// These are jointly the cases where the public-line crowd is NOT validating the rule's direction,
-// which leaves the book-comparison signal cleaner and historically boosts bet-side ROI.
-var BR2_RULES = BCR_RULES.map(function(rule){
+// For each base rule, generate TWO separate rules:
+//   • base + experts tied (no unique majority)
+//   • base + experts counter (majority opposite to rule's bet)
+// Both cases isolate matches where the crowd does NOT confirm the rule's bet direction,
+// but they capture different sub-populations and have distinct historical performance.
+var BR2_RULES = [];
+BCR_RULES.forEach(function(rule){
   var opposite = rule.bet==='H' ? 'A' : 'H';
-  return {
-    id: rule.id,
+  // Variant 1: tied
+  BR2_RULES.push({
+    id: rule.id+'-tied',
+    base: rule.id,
+    variant: 'tied',
     book: rule.book,
     bet: rule.bet,
-    desc: rule.desc + ' • experts tied or opposite',
-    cond: function(r){
-      if(!rule.cond(r)) return false;
-      var s = br2ExpSignal(r);
-      return s==='tied' || s===opposite;
-    }
-  };
+    desc: rule.desc + ' • experts tied (no majority)',
+    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)==='tied'; }
+  });
+  // Variant 2: counter
+  BR2_RULES.push({
+    id: rule.id+'-ctr',
+    base: rule.id,
+    variant: 'counter',
+    book: rule.book,
+    bet: rule.bet,
+    desc: rule.desc + ' • experts pick '+opposite+' (counter-signal)',
+    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)===opposite; }
+  });
 });
 
 function computeBookRules2(allRecords){
@@ -138,12 +149,11 @@ function renderBookRules2(RD){
   var br = RD.bookrules2 || (RD.bookrules2 = computeBookRules2(RD.records||RD.results||[]));
   var h='';
 
-  h+='<div class="rpt-title">📚 Book Rules 2 — Rules × Non-Confirming Experts</div>';
-  h+='<div class="rpt-sub" style="margin-bottom:14px">The 12 base Book Rules with an extra filter: the 6 experts (JC Sum/SID/Mac/ON ID + Gem + GPT) must <b>NOT confirm the rule\'s direction</b>. '
-   +'Two sub-cases qualify: <b>tied</b> (no unique majority) or <b>counter-signal</b> (experts pick the opposite side from the rule). '
-   +'Cases where experts confirm the rule\'s bet (e.g. rule says H + experts pick H) are excluded — those are the noisy ones. '
-   +'Cases where experts pick D are also excluded (D-dominated samples are consistently disastrous). '
-   +'This filter isolates matches where the public-line crowd is NOT validating the rule\'s direction, leaving the book-comparison signal cleaner.</div>';
+  h+='<div class="rpt-title">📚 Book Rules 2 — Rules × Expert Signal Variants</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:14px">Each of the 12 base Book Rules generates <b>two separate variants</b> based on the expert signal (from the 6 experts: JC Sum/SID/Mac/ON ID + Gem + GPT): '
+   +'<b>X-tied</b> (no unique majority among experts) and <b>X-ctr</b> (experts pick the opposite direction from the rule). '
+   +'These are tracked separately because they capture different sub-populations — "tied" reflects market ambiguity, "counter" reflects active disagreement between book signal and crowd. '
+   +'Cases where experts confirm the rule\'s bet or pick D are excluded.</div>';
 
   function roiBadge(roi, n){
     if(roi==null) return '<span style="color:#cbd5e1">—</span>';
@@ -164,7 +174,7 @@ function renderBookRules2(RD){
     var rule=pr.rule;
     var edge = (pr.roiBet!=null && pr.roiOther!=null) ? pr.roiBet - pr.roiOther : null;
     var verdict;
-    if(pr.roiBet==null||pr.n<20) verdict='<span style="color:#cbd5e1">— small sample</span>';
+    if(pr.roiBet==null||pr.n<15) verdict='<span style="color:#cbd5e1">— small sample</span>';
     else if(pr.roiBet>=4) verdict='<span style="color:#4ade80;font-weight:700">⭐ STRONG</span>';
     else if(pr.roiBet>=2) verdict='<span style="color:#84cc16;font-weight:700">✓ profitable</span>';
     else if(pr.roiBet>=-1) verdict='<span style="color:#fbbf24">~ near even</span>';
