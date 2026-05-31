@@ -65,6 +65,22 @@ function loadData(){
 }
 
 // Standalone smart-money condition tester (shared by filter + option greying)
+// Strict-majority-tie check: 1 vote per field across the 6 expert sources. Returns
+// true when no direction (H/D/A) has a strict majority — i.e., experts are split.
+// This is the same definition used by Book Rules 2 R{n}-tied variants, so combining
+// any front-page rule filter with "tied" reproduces those samples exactly.
+function expertTied(r){
+  var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+  var h=0,a=0,d=0;
+  for(var i=0;i<keys.length;i++){
+    var v=String(r[keys[i]]||'').toUpperCase();
+    if(v.indexOf('H')>=0) h++;
+    else if(v.indexOf('A')>=0) a++;
+    else if(v.indexOf('D')>=0||v==='X') d++;
+  }
+  return !(h>a&&h>d) && !(a>h&&a>d) && !(d>h&&d>a);
+}
+
 function smartPass(r, smf){
   if(!smf) return true;
   var sgl=r.ASIALINE, sln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
@@ -218,6 +234,7 @@ function applyFilters(){
       if(ef==='A-strong-e'){if(!e||e.a<50)return false;}
       if(ef==='A-vstrong-e'){if(!e||e.a<67)return false;}
       if(ef==='A-ultra-e'){if(!e||e.a<83)return false;}
+      if(ef==='tied'){if(!expertTied(r))return false;}
       if(ef==='H-max-weak'){if(!e||el!=='H'||e.h>54)return false;}
       if(ef==='H-max-mod'){if(!e||el!=='H'||e.h<55||e.h>59)return false;}
       if(ef==='A-max-weak'){if(!e||el!=='A'||e.a>54)return false;}
