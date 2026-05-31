@@ -5,9 +5,36 @@
 // All helper functions (bcrPnl, bcrLean, bcrExpSignal, etc.) are loaded by report-bookrules.js
 // which is included before this file in report.html.
 
-// Local helper — define our own copy so this file doesn't depend on bcrExpSignal
-// being present in report-bookrules.js (handles older versions of that file).
-function br2ExpSignal(r){
+// Two helpers using DIFFERENT signal classifications, each appropriate for its variant:
+//
+// (1) br2ExpDirection(r) — replicates front-page expertLead() EXACTLY, including the
+//     GEM/GPT weighted-vote scoring (GEMH/GPTH etc. raw counts). Used for counter-signal
+//     variants. Returns 'H' / 'D' / 'A' (or null if no expert data). Selecting any rule + 
+//     "H highest" expert filter on the front page produces the same sample set as the
+//     R{n}-ctr variants here.
+function br2ExpDirection(r){
+  function ts(v){if(!v)return null;var u=String(v).toUpperCase();
+    if(u==='H'||u==='1H'||u==='AH')return'H';
+    if(u==='D'||u==='1D'||u==='AD')return'D';
+    if(u==='A'||u==='1A'||u==='AA')return'A';
+    return null;}
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  var tt=th+td+ta;
+  if(!tt) return null;
+  // ties resolve H, D, A in order (matches helpers.js → expertLead exactly)
+  if(th>=td && th>=ta) return 'H';
+  if(td>=th && td>=ta) return 'D';
+  return 'A';
+}
+
+// (2) br2ExpTied(r) — strict-majority-tie via simple 1-vote-per-field counting across the
+//     six expert sources (JC Sum/SID/Mac/ON ID + Gem + GPT). Captures the "no clear
+//     majority" cases. This is a separate signal definition from the front-page filter
+//     and has no direct front-page equivalent — it's used here because the original
+//     "tied = boost" finding was based on this counting.
+function br2ExpTied(r){
   var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
   var h=0,a=0,d=0;
   for(var i=0;i<keys.length;i++){
@@ -16,10 +43,8 @@ function br2ExpSignal(r){
     else if(v.indexOf('A')>=0) a++;
     else if(v.indexOf('D')>=0||v==='X') d++;
   }
-  if(h>a&&h>d) return 'H';
-  if(a>h&&a>d) return 'A';
-  if(d>h&&d>a) return 'D';
-  return 'tied';
+  // returns true when no strict majority direction exists
+  return !(h>a&&h>d) && !(a>h&&a>d) && !(d>h&&d>a);
 }
 
 // For each base rule, generate TWO separate rules:
@@ -30,25 +55,25 @@ function br2ExpSignal(r){
 var BR2_RULES = [];
 BCR_RULES.forEach(function(rule){
   var opposite = rule.bet==='H' ? 'A' : 'H';
-  // Variant 1: tied
+  // Variant 1: tied (strict-majority-tie via 6-field simple counting)
   BR2_RULES.push({
     id: rule.id+'-tied',
     base: rule.id,
     variant: 'tied',
     book: rule.book,
     bet: rule.bet,
-    desc: rule.desc + ' • experts tied (no majority)',
-    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)==='tied'; }
+    desc: rule.desc + ' • experts tied (no strict majority)',
+    cond: function(r){ return rule.cond(r) && br2ExpTied(r); }
   });
-  // Variant 2: counter
+  // Variant 2: counter (matches front-page "{opposite} highest" filter exactly)
   BR2_RULES.push({
     id: rule.id+'-ctr',
     base: rule.id,
     variant: 'counter',
     book: rule.book,
     bet: rule.bet,
-    desc: rule.desc + ' • experts pick '+opposite+' (counter-signal)',
-    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)===opposite; }
+    desc: rule.desc + ' • experts pick '+opposite+' (counter — matches front-page "'+opposite+' highest")',
+    cond: function(r){ return rule.cond(r) && br2ExpDirection(r)===opposite; }
   });
 });
 
@@ -170,8 +195,9 @@ function renderBookRules2(RD){
     +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
     +'<th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
     +'</tr></thead><tbody>';
-  br.perRule.forEach(function(pr){
+  br.perRule.forEach(function(pr, ri){
     var rule=pr.rule;
+    var detId='br2_rule_'+ri;
     var edge = (pr.roiBet!=null && pr.roiOther!=null) ? pr.roiBet - pr.roiOther : null;
     var verdict;
     if(pr.roiBet==null||pr.n<15) verdict='<span style="color:#cbd5e1">— small sample</span>';
@@ -188,7 +214,7 @@ function renderBookRules2(RD){
       L50cell='<span style="color:'+l50col+';font-weight:700;font-family:var(--mono);font-size:14px">'+(pr.L50>=0?'+':'')+pr.L50.toFixed(1)+'%</span>'
         +' <span style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">n'+l50N+'</span>';
     }
-    h+='<tr><td><b>'+rule.id+'</b></td>'
+    h+='<tr style="cursor:pointer" onclick="br2Toggle(\''+detId+'\')"><td><b>'+rule.id+'</b> <span style="color:#94a3b8;font-size:11px">▾</span></td>'
       +'<td style="color:#e2e8f0">'+rule.book+'</td>'
       +'<td style="color:#e2e8f0;font-size:12px">'+rule.desc+'</td>'
       +'<td class="num"><b style="color:'+bCol+';font-size:15px">'+rule.bet+'</b></td>'
@@ -198,6 +224,36 @@ function renderBookRules2(RD){
       +'<td class="num" style="font-family:var(--mono);color:#cbd5e1;font-size:12px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
       +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+(edge==null?'—':'+'+edge.toFixed(1)+'pp')+'</td>'
       +'<td class="num">'+verdict+'</td></tr>';
+    // Expanded condition detail row
+    var eligDesc;
+    if(rule.book==='Mac')      eligDesc='HKJC odds + Macau odds present, HKJC line = Macau line';
+    else if(rule.book==='SBO') eligDesc='HKJC odds + SBO odds present, HKJC line = SBO line';
+    else                       eligDesc='HKJC + Macau + SBO odds all present, all three lines equal';
+    var baseCond = rule.desc.replace(/ • experts tied or opposite$/,'');
+    var oppSide = rule.bet==='H' ? 'A' : 'H';
+    var det='<div style="font-size:13px;color:#e2e8f0;padding:14px 22px;line-height:1.7">';
+    det+='<div style="font-weight:700;color:#fbbf24;font-size:15px;margin-bottom:10px">📋 Full Rule Condition — '+rule.id+'</div>';
+    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Scope:</b> '+rule.book+' &nbsp;·&nbsp; <b style="color:#a78bfa">Bet side:</b> <b style="color:'+bCol+';font-size:16px">'+rule.bet+'</b></div>';
+    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Eligibility:</b> '+eligDesc+'</div>';
+    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
+    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">① Book-comparison condition:</b></div>';
+    det+='<div style="margin-left:14px;font-family:var(--mono);color:#cbd5e1">'+baseCond+'</div></div>';
+    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
+    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">② Expert-signal condition:</b></div>';
+    det+='<div style="margin-left:14px;color:#cbd5e1">Experts are <b style="color:#a78bfa">tied</b> (no unique majority) OR experts pick <b style="color:'+(oppSide==='H'?'#f87171':'#60a5fa')+'">'+oppSide+'</b> (opposite of rule\'s bet)</div>';
+    det+='<div style="margin-left:14px;color:#94a3b8;font-size:11px;margin-top:3px">Excluded: experts confirm the rule\'s bet ('+(rule.bet)+'-majority), or experts pick D-majority.</div></div>';
+    det+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)"><b style="color:#fbbf24">📊 Historic Performance</b></div>';
+    det+='<div style="margin-top:6px;display:flex;gap:24px;flex-wrap:wrap;font-size:13px">';
+    det+='<div><b style="color:#a78bfa">Total matches:</b> '+pr.n+'</div>';
+    det+='<div><b style="color:#a78bfa">Bet '+rule.bet+' ROI:</b> '+(pr.roiBet==null?'—':((pr.roiBet>=0?'+':'')+pr.roiBet.toFixed(1)+'%'))+'</div>';
+    det+='<div><b style="color:#a78bfa">Other side ROI:</b> '+(pr.roiOther==null?'—':((pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%'))+'</div>';
+    det+='<div><b style="color:#a78bfa">Edge:</b> '+(edge==null?'—':((edge>=0?'+':'')+edge.toFixed(1)+'pp'))+'</div>';
+    if(pr.L50!=null) det+='<div><b style="color:#a78bfa">L50 ROI:</b> '+((pr.L50>=0?'+':'')+pr.L50.toFixed(1))+'%</div>';
+    if(pr.hcover!=null) det+='<div><b style="color:#a78bfa">H-cover%:</b> '+pr.hcover+'%</div>';
+    det+='</div>';
+    det+='<div style="margin-top:12px;font-size:11px;color:#94a3b8;font-style:italic">Note: the front-page Smart Money 2 filter applies ONLY the base book-comparison condition (①). The expert-signal layer (②) shown here is added on top in this report. Both conditions together give the ROI displayed above.</div>';
+    det+='</div>';
+    h+='<tr id="'+detId+'" style="display:none"><td colspan="10" style="background:rgba(15,23,42,0.5);padding:0">'+det+'</td></tr>';
   });
   h+='</tbody></table></div>';
   h+='<div style="font-size:11px;color:#cbd5e1;margin-top:4px">⭐ ROI ≥ +4%, ✓ ≥ +2%, ~ ≥ -1%, otherwise tilt only. Edge = Bet ROI − Other ROI.</div>';
