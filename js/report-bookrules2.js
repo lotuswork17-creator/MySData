@@ -5,6 +5,23 @@
 // All helper functions (bcrPnl, bcrLean, bcrExpSignal, etc.) are loaded by report-bookrules.js
 // which is included before this file in report.html.
 
+// Local helper — define our own copy so this file doesn't depend on bcrExpSignal
+// being present in report-bookrules.js (handles older versions of that file).
+function br2ExpSignal(r){
+  var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+  var h=0,a=0,d=0;
+  for(var i=0;i<keys.length;i++){
+    var v=String(r[keys[i]]||'').toUpperCase();
+    if(v.indexOf('H')>=0) h++;
+    else if(v.indexOf('A')>=0) a++;
+    else if(v.indexOf('D')>=0||v==='X') d++;
+  }
+  if(h>a&&h>d) return 'H';
+  if(a>h&&a>d) return 'A';
+  if(d>h&&d>a) return 'D';
+  return 'tied';
+}
+
 // Reuse the 12 rule conditions but ADD the "expert signal is tied" requirement.
 var BR2_RULES = BCR_RULES.map(function(rule){
   return {
@@ -12,7 +29,7 @@ var BR2_RULES = BCR_RULES.map(function(rule){
     book: rule.book,
     bet: rule.bet,
     desc: rule.desc + ' • experts tied',
-    cond: function(r){ return rule.cond(r) && bcrExpSignal(r)==='tied'; }
+    cond: function(r){ return rule.cond(r) && br2ExpSignal(r)==='tied'; }
   };
 });
 
