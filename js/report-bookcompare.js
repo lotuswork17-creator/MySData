@@ -108,7 +108,16 @@ function computeBookCompare(allRecords){
     //   mixed: any tie on either side, or partial mix
     var tiltH={h:0,a:0,n:0}, tiltA={h:0,a:0,n:0}, bothBetter={h:0,a:0,n:0}, bothWorse={h:0,a:0,n:0}, mixed={h:0,a:0,n:0};
     data.forEach(function(r){
-      if(!eligible(r,F,mode)) return;
+      // Per-mode eligibility: only require the books actually being compared.
+      // Macau mode → only Macau needed; SBO mode → only SBO needed; consensus → all three.
+      if(!bcNz(r,F.oh)||!bcNz(r,F.oa)) return;
+      if(mode==='macau'){
+        if(!bcNz(r,F.mh)||!bcNz(r,F.ma)||r.ASIALINE!==r.ASIALINEMA) return;
+      } else if(mode==='sbo'){
+        if(!bcNz(r,F.sh)||!bcNz(r,F.sa)||r.ASIALINE!==r.ASIALINESB) return;
+      } else {
+        if(!bcNz(r,F.mh)||!bcNz(r,F.ma)||!bcNz(r,F.sh)||!bcNz(r,F.sa)||!bcLineMatch(r)) return;
+      }
       var ph=bcPnl(r,'H',r.ASIALINE,r[F.oh],r[F.oa]);
       var pa=bcPnl(r,'A',r.ASIALINE,r[F.oh],r[F.oa]);
       var hBetter, hWorse, aBetter, aWorse;
