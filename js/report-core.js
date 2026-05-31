@@ -195,7 +195,6 @@ function computeReport(records){
     expert      : computeExpert(results),
     smart       : computeSmart(results, allHpts, allApts),
     odds        : computeOdds(results),
-    jcexpert    : computeJCExpert(results),
     ml          : computeML(results, records),
     jcrelation  : computeJCRelation(results, records),
     moverule    : computeMoveRule(results, records),
