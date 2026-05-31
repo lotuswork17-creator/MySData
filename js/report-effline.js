@@ -109,7 +109,7 @@ function renderEffLine(RD){
   var bc = RD.effline || (RD.effline = computeEffLine(RD.records||RD.results||[]));
 
   function roiC(v){ if(v==null) return '#475569'; return v>=0?'#4ade80':v>=-2?'#fbbf24':'#f87171'; }
-  function fmtR(v){ if(v==null) return '<span style="color:#475569">—</span>'; return (v>=0?'+':'')+v.toFixed(1)+'%'; }
+  function fmtR(v){ if(v==null) return '<span style="color:#cbd5e1">—</span>'; return (v>=0?'+':'')+v.toFixed(1)+'%'; }
 
   var h='';
   h+='<div class="rpt-title">📏 Effective Line Comparison</div>';
@@ -122,18 +122,18 @@ function renderEffLine(RD){
     +'</div>';
 
   // Calibration card
-  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px">'
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:15px">'
     +'<div style="font-weight:700;color:#fbbf24;margin-bottom:4px">📐 Calibration (from your data)</div>'
-    +'<div style="color:#94a3b8">'
-    +'K = <b style="color:#e2e8f0;font-family:var(--mono);font-size:14px">'+EL_K+'</b> '
-    +'<span style="color:#64748b">— empirically derived from HKJC -0.75 vs Macau -0.5 pairs (n=869): a 0.25 line shift corresponds to ~5.23pp lean shift, so K = 0.25 ÷ 0.0523 ≈ 4.78.</span></div></div>';
+    +'<div style="color:#e2e8f0">'
+    +'K = <b style="color:#e2e8f0;font-family:var(--mono);font-size:17px">'+EL_K+'</b> '
+    +'<span style="color:#e2e8f0">— empirically derived from HKJC -0.75 vs Macau -0.5 pairs (n=869): a 0.25 line shift corresponds to ~5.23pp lean shift, so K = 0.25 ÷ 0.0523 ≈ 4.78.</span></div></div>';
 
   // Coverage card
   var pct = bc.hasAllThreeOdds ? Math.round(bc.hasAllThreeLinesMatch/bc.hasAllThreeOdds*100) : 0;
   var gain = bc.hasAllThreeOdds - bc.hasAllThreeLinesMatch;
-  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px">'
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:15px">'
     +'<div style="font-weight:700;color:#4ade80;margin-bottom:4px">📊 Coverage</div>'
-    +'<div style="color:#94a3b8">'
+    +'<div style="color:#e2e8f0">'
     +'Matches with all 3 books\' odds present: <b style="color:#e2e8f0;font-family:var(--mono)">'+bc.hasAllThreeOdds+'</b><br>'
     +'…of which lines also match (old approach): <b style="color:#e2e8f0;font-family:var(--mono)">'+bc.hasAllThreeLinesMatch+'</b> (~'+pct+'%)<br>'
     +'<b style="color:#4ade80">Newly usable by effective-line approach: '+gain+' matches</b> — roughly doubles the sample for cross-book comparison.'
@@ -141,9 +141,9 @@ function renderEffLine(RD){
 
   function bucketTable(title, sub, study){
     var t='<div style="margin-bottom:22px">';
-    t+='<div class="rpt-title" style="font-size:14px;margin-bottom:2px">'+title+'</div>';
+    t+='<div class="rpt-title" style="font-size:17px;margin-bottom:2px">'+title+'</div>';
     t+='<div class="rpt-sub" style="margin-bottom:6px">'+sub+'</div>';
-    t+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
+    t+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:17px"><thead><tr>'
       +'<th>Bucket (HKJC effLine − field effLine)</th>'
       +'<th class="num">N</th>'
       +'<th class="num" style="color:#f87171">Bet H ROI</th>'
@@ -151,17 +151,17 @@ function renderEffLine(RD){
       +'<th class="num">H-Cover%</th></tr></thead><tbody>';
     study.rows.forEach(function(r){
       if(r.n<30){
-        t+='<tr style="opacity:.4"><td>'+r.label+'</td><td class="num" style="font-family:var(--mono);color:#475569">'+r.n+'</td><td colspan="3" class="num" style="color:#475569">(n<30)</td></tr>';
+        t+='<tr style="opacity:.4"><td>'+r.label+'</td><td class="num" style="font-family:var(--mono);color:#cbd5e1">'+r.n+'</td><td colspan="3" class="num" style="color:#cbd5e1">(n<30)</td></tr>';
         return;
       }
       t+='<tr><td style="color:#e2e8f0">'+r.label+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#64748b">'+r.n+'</td>'
+        +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+r.n+'</td>'
         +'<td class="num" style="font-family:var(--mono);color:'+roiC(r.betH)+'">'+fmtR(r.betH)+'</td>'
         +'<td class="num" style="font-family:var(--mono);color:'+roiC(r.betA)+'">'+fmtR(r.betA)+'</td>'
-        +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.hcover==null?'—':r.hcover+'%')+'</td></tr>';
+        +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+(r.hcover==null?'—':r.hcover+'%')+'</td></tr>';
     });
     t+='</tbody></table></div>';
-    t+='<div style="font-size:9px;color:#475569;margin-top:3px">Eligible: '+study.elig+' matches. Buckets are mutually exclusive and span the full range. Rows need n≥30 for ROI display.</div>';
+    t+='<div style="font-size:15px;color:#cbd5e1;margin-top:3px">Eligible: '+study.elig+' matches. Buckets are mutually exclusive and span the full range. Rows need n≥30 for ROI display.</div>';
     t+='</div>';
     return t;
   }
@@ -182,7 +182,7 @@ function renderEffLine(RD){
     bc.sbo
   );
 
-  h+='<div style="font-size:10px;color:#475569;margin-top:10px;padding:8px 12px;background:rgba(15,23,42,0.4);border-radius:6px;border:1px solid var(--border)">'
+  h+='<div style="font-size:16px;color:#cbd5e1;margin-top:10px;padding:8px 12px;background:rgba(15,23,42,0.4);border-radius:6px;border:1px solid var(--border)">'
     +'<b>How to read these tables:</b> "effLine ≤ −0.10 below field" means HKJC\'s effective line is at least 0.10 (line-equivalents) lower than the field — HKJC is significantly more cautious on home. Conventional Asian Handicap intuition: in such cases home odds at HKJC are relatively long (cheap to back). The bet ROIs tell you whether this opinion gap is exploitable. '
     +'<br><br>Because effective_line absorbs HKJC\'s structural line-shift (e.g. -0.5 → -0.75 substitution), books quoting different lines are now comparable in one unified space.'
     +'</div>';
