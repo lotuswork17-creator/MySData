@@ -135,10 +135,17 @@ function brPass(r, br){
   var L=(1/r.ASIAH)/((1/r.ASIAH)+(1/r.ASIAA));
   var nz=function(v){return v!=null&&v!==0;};
   var mh=r.ASIAHMAC, ma=r.ASIAAMAC, sh=r.ASIAHSBO, sa=r.ASIAASBO;
-  // Per-rule eligibility (matches report-bookrules.js exactly)
   var macOk  = nz(mh)&&nz(ma)&&r.ASIALINE===r.ASIALINEMA;
   var sboOk  = nz(sh)&&nz(sa)&&r.ASIALINE===r.ASIALINESB;
   var bothOk = macOk&&sboOk;
+  // Effective-line helpers (k=4.78 calibrated from your data). No line-match required —
+  // each book just needs its own line and odds. Returns null if data missing.
+  var EL_K=4.78;
+  function leanFn(h,a){ return (h&&a&&h>0&&a>0)?(1/h)/((1/h)+(1/a)):null; }
+  function effFn(line,L){ return (line==null||L==null)?null:(-parseFloat(line))+(L-0.5)*EL_K; }
+  var effH = effFn(r.ASIALINE, L);
+  var effM = (nz(mh)&&nz(ma)&&r.ASIALINEMA!=null) ? effFn(r.ASIALINEMA, leanFn(mh,ma)) : null;
+  var effS = (nz(sh)&&nz(sa)&&r.ASIALINESB!=null) ? effFn(r.ASIALINESB, leanFn(sh,sa)) : null;
   switch(br){
     case 'br1': return macOk  && r.ASIAH>mh && r.ASIAA<ma && L<0.52;
     case 'br2': return macOk  && r.ASIAH<mh && r.ASIAA>ma && L>0.52;
@@ -152,6 +159,13 @@ function brPass(r, br){
     case 'br10': return bothOk && mh>sh && ma<sa && L>0.52;
     case 'br11': return bothOk && mh<sh && ma>sa && L<0.48;
     case 'br12': return bothOk && mh<sh && ma>sa && L>0.52;
+    // ── Observations from Effective Line tables — no line-match required ──
+    // R13: HKJC effLine ≤ -0.10 below Macau effLine → bet H
+    case 'br13': return effH!=null && effM!=null && (effH-effM)<=-0.10;
+    // R14: HKJC effLine -0.10 to -0.05 below Macau → bet A
+    case 'br14': { if(effH==null||effM==null) return false; var d=effH-effM; return d>-0.10 && d<=-0.05; }
+    // R15: HKJC effLine within ±0.02 of SBO → bet A
+    case 'br15': return effH!=null && effS!=null && Math.abs(effH-effS)<0.02;
   }
   return true;
 }
