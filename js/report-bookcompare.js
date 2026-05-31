@@ -202,7 +202,7 @@ function computeBookCompare(allRecords){
   // Eligibility: same as other tables (all 3 books non-null, all 3 lines equal).
   function macauVsSbo(){
     function mk(){ return {h:0,a:0,n:0,hc:0,lean:[{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0},{h:0,a:0,n:0}]}; }
-    var c1=mk(), c2=mk();
+    var c1=mk(), c2=mk(), c3=mk();
     data.forEach(function(r){
       if(!eligible(r, BC_PHASES.latest, 'consensus')) return;
       var ph=bcPnl(r,'H',r.ASIALINE,r.ASIAH,r.ASIAA);
@@ -210,8 +210,9 @@ function computeBookCompare(allRecords){
       var hc=bcHCover(r,r.ASIALINE);
       var mh=r.ASIAHMAC, ma=r.ASIAAMAC, sh=r.ASIAHSBO, sa=r.ASIAASBO;
       var bin=null;
-      if(mh>sh && ma<sa) bin=c1;
-      else if(mh<sh && ma>sa) bin=c2;
+      if(mh>sh && ma<sa) bin=c1;       // C1: opposite — Macau leans Away, SBO leans Home
+      else if(mh<sh && ma>sa) bin=c2;  // C2: opposite — Macau leans Home, SBO leans Away
+      else if(mh<sh && ma<sa) bin=c3;  // C3: same direction — Macau shorter on both sides (higher vig)
       if(!bin) return;
       bin.h+=ph; bin.a+=pa; bin.hc+=hc; bin.n++;
       var lean=bcLean(r.ASIAH,r.ASIAA);
@@ -222,7 +223,7 @@ function computeBookCompare(allRecords){
     });
     function finL(arr){ return arr.map(function(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null}; }); }
     function fin(o){ return {n:o.n, roiH:o.n?Math.round(o.h/o.n*1000)/10:null, roiA:o.n?Math.round(o.a/o.n*1000)/10:null, hcover:o.n?Math.round(o.hc/o.n*100):null, lean:finL(o.lean)}; }
-    return { c1:fin(c1), c2:fin(c2) };
+    return { c1:fin(c1), c2:fin(c2), c3:fin(c3) };
   }
 
   return {
@@ -448,9 +449,9 @@ function renderBookCompare(RD){
   // ⑩ Macau vs SBO disagreement (HKJC not used in the criterion; bet still at HKJC)
   h+='<div style="border-top:2px solid var(--border);margin:22px 0 14px"></div>';
   h+='<div class="rpt-title" style="font-size:15px;color:#f97316">🆚 Macau vs SBO Comparison (bet at HKJC)</div>';
-  h+='<div class="rpt-sub" style="margin-bottom:14px">When <b>Macau and SBO disagree in opposite directions</b> on a match (one prices home shorter while the other prices home longer), what happens? HKJC is not used in the criterion here — the comparison is purely between Macau and SBO — but the bet is still placed at HKJC odds. Same handicap line required across all three books.</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:14px">How do Macau and SBO disagree (or agree) on a match? HKJC is not used in the criterion here — the comparison is purely between Macau and SBO — but the bet is still placed at HKJC odds. Same handicap line required across all three books. Includes opposite-direction (C1, C2) and same-direction (C3) cases.</div>';
   h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑩ Macau vs SBO Opposite Lean (latest odds)</div>';
+  h+='<div class="rpt-title" style="font-size:13px;margin-bottom:2px">⑩ Macau vs SBO Disagreement (latest odds)</div>';
   h+='<div class="rpt-sub" style="margin-bottom:6px">Click a row to expand the HKJC-lean breakdown.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:11px"><thead><tr>'
     +'<th>Condition</th><th class="num">N</th>'
@@ -492,6 +493,7 @@ function renderBookCompare(RD){
     }
     h+=row('Macau h > SBO h AND Macau a < SBO a', bc.macSbo.c1, 'Macau leans away, SBO leans home');
     h+=row('Macau h < SBO h AND Macau a > SBO a', bc.macSbo.c2, 'Macau leans home, SBO leans away');
+    h+=row('Macau h < SBO h AND Macau a < SBO a', bc.macSbo.c3, 'Macau shorter on both sides (higher vig)');
   })();
 
   h+='</tbody></table></div>';
