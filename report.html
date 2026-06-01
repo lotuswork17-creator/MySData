@@ -103,27 +103,6 @@ body{display:block;padding-bottom:40px}
 
 <div id="rptLoading"><div class="spinner"></div>Loading report…</div>
 
-<!-- TAB 0: LEAGUE -->
-<div class="rpt-section" id="tab0">
-  <div class="rpt-title">ROI by League</div>
-  <div class="rpt-sub">Cumulative running P&L per match (time on X axis). Top 5 leagues by match count shown.</div>
-  <div class="rpt-cards" id="leagueCards"></div>
-  <div class="chart-box">
-    <div class="chart-box-label">H Bet — Cumulative P&L by League</div>
-    <div class="chart-legend" id="lgdLeagueH"></div>
-    <canvas id="cLeagueH"></canvas>
-  </div>
-  <div class="chart-box">
-    <div class="chart-box-label">A Bet — Cumulative P&L by League</div>
-    <div class="chart-legend" id="lgdLeagueA"></div>
-    <canvas id="cLeagueA"></canvas>
-  </div>
-  <div class="rpt-table-wrap"><table class="rpt-table">
-    <thead><tr><th>League</th><th class="num">N</th><th class="num">H ROI%</th><th class="num">A ROI%</th><th>Best</th></tr></thead>
-    <tbody id="tbLeague"></tbody>
-  </table></div>
-</div>
-
 <!-- TAB 1: MONTH -->
 <div class="rpt-section" id="tab1">
   <div class="rpt-title">Overall Performance over Time</div>
@@ -275,7 +254,6 @@ body{display:block;padding-bottom:40px}
 
 <!-- JS modules: core first, then one file per tab -->
 <script src="js/report-core.js"></script>
-<script src="js/report-league.js"></script>
 <script src="js/report-month.js"></script>
 <script src="js/report-line.js"></script>
 <script src="js/report-expert.js"></script>
@@ -299,7 +277,6 @@ body{display:block;padding-bottom:40px}
 // TAB REGISTRY — add new tabs here only
 // ═══════════════════════════════════════════════
 var TABS = [
-  { label:'📊 League',        render: renderLeague },
   { label:'📅 Month',         render: renderMonth  },
   { label:'📐 Line Accuracy', render: renderLine   },
   { label:'🧠 Expert',        render: renderExpert },
@@ -324,7 +301,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===12 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===11 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -367,8 +344,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[12] = true;
-      TABS[12].render(RD);
+      drawn[11] = true;
+      TABS[11].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
