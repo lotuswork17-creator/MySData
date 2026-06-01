@@ -351,10 +351,14 @@ function renderBookRules2(RD){
     h+='<div id="lgdBr2Roi" style="font-size:12px;margin-bottom:6px"></div>';
     h+='<canvas id="cBr2Roi" style="width:100%;height:150px"></canvas>';
     setTimeout(function(){
+      // Zoom to last 100 bets (or all if fewer). MA-50 & MA-100 series also sliced
+      // to the same recent window for visual alignment.
+      var Z = 100;
+      function tail(arr, n){ return arr.length>n ? arr.slice(arr.length-n) : arr; }
       var series=[
-        {label:'Running ROI%'+fl(br.lastRoi),color:'#fb923c',pts:br.roiPts},
-        {label:'MA-50',color:'#60a5fa',pts:br.ma50.slice(50)},
-        {label:'MA-100',color:'#a78bfa',pts:br.ma100.slice(100)}
+        {label:'Running ROI%'+fl(br.lastRoi),color:'#fb923c',pts:tail(br.roiPts, Z)},
+        {label:'MA-50',color:'#60a5fa',pts:tail(br.ma50.slice(50), Z)},
+        {label:'MA-100',color:'#a78bfa',pts:tail(br.ma100.slice(100), Z)}
       ];
       if(typeof makeLegend==='function') makeLegend('lgdBr2Roi',series);
       if(typeof drawChart==='function') drawChart('cBr2Roi',series,null,150);
