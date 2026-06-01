@@ -189,7 +189,6 @@ function computeReport(records){
     allHpts     : allHpts,
     allApts     : allApts,
     results     : results,      // raw sorted results — available to all tab computes
-    league      : computeLeague(results, monthBounds),
     month       : computeMonth(results, allHpts, allApts),
     line        : computeLine(results),
     expert      : computeExpert(results),
