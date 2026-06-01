@@ -77,6 +77,14 @@ BCR_RULES.forEach(function(rule){
   });
 });
 
+// Build a sortable timestamp key from DATE (YYYY-MM-DD) + TIME (numeric, e.g. 700, 1000).
+// TIME is zero-padded to 4 digits so '0700' sorts before '1000' (raw concat sorts wrong).
+function brSortKey(r){
+  var t = r.TIME==null ? '0000' : String(r.TIME);
+  while(t.length<4) t = '0'+t;
+  return (r.DATE||'') + t;
+}
+
 function computeBookRules2(allRecords){
   var settled = allRecords.filter(function(r){
     return r.STATUS==='Result' && r.RESULTH!=null && r.ASIAH && r.ASIAA && r.ASIALINE!=null;
@@ -154,7 +162,7 @@ function computeBookRules2(allRecords){
     upcomingAlerts.push({ r:r, rules:fired, bet:fired[0].rule.bet });
   });
   upcomingAlerts.sort(function(a,b){
-    var ta=(a.r.DATE||'')+(a.r.TIME||''), tb=(b.r.DATE||'')+(b.r.TIME||'');
+    var ta=brSortKey(a.r), tb=brSortKey(b.r);
     return ta<tb?-1:ta>tb?1:0;
   });
 

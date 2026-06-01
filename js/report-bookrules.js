@@ -17,6 +17,22 @@ function bcrMacauOk(r){ return bcrNz(r,'ASIAHMAC')&&bcrNz(r,'ASIAAMAC')&&r.ASIAL
 function bcrSboOk(r){ return bcrNz(r,'ASIAHSBO')&&bcrNz(r,'ASIAASBO')&&r.ASIALINE===r.ASIALINESB; }
 function bcrBothOk(r){ return bcrMacauOk(r)&&bcrSboOk(r); }
 
+// Returns which expert vote bucket (H/D/A) is the highest, or 'tied' if no unique max.
+function bcrExpSignal(r){
+  var keys=['JCTIPSUM','JCTIPSID','TIPSIDMAC','TIPSONID','TIPSGEM','TIPSGPT'];
+  var h=0,a=0,d=0;
+  for(var i=0;i<keys.length;i++){
+    var v=String(r[keys[i]]||'').toUpperCase();
+    if(v.indexOf('H')>=0) h++;
+    else if(v.indexOf('A')>=0) a++;
+    else if(v.indexOf('D')>=0||v==='X') d++;
+  }
+  if(h>a&&h>d) return 'H';
+  if(a>h&&a>d) return 'A';
+  if(d>h&&d>a) return 'D';
+  return 'tied';
+}
+
 // ── Rule definitions ──────────────────────────────────────────────────────
 var BCR_RULES = [
   { id:'R1', book:'Mac',  bet:'A',
@@ -70,6 +86,14 @@ var BCR_RULES = [
 ];
 
 // ── Compute ───────────────────────────────────────────────────────────────
+// Build a sortable timestamp key from DATE (YYYY-MM-DD) + TIME (numeric, e.g. 700, 1000).
+// TIME is zero-padded to 4 digits so '0700' sorts before '1000' (raw concat sorts wrong).
+function brSortKey(r){
+  var t = r.TIME==null ? '0000' : String(r.TIME);
+  while(t.length<4) t = '0'+t;
+  return (r.DATE||'') + t;
+}
+
 function computeBookRules(allRecords){
   var settled=allRecords.filter(function(r){
     return r.STATUS==='Result' && r.RESULTH!=null && r.ASIAH && r.ASIAA && r.ASIALINE!=null;
@@ -90,7 +114,6 @@ function computeBookRules(allRecords){
     rows.forEach(function(r){ pH+=bcrPnl(r,'H'); pA+=bcrPnl(r,'A'); hc+=bcrHCover(r); });
     var roiBet = n? (rule.bet==='H'?pH:pA)/n*100 : null;
     var roiOther = n? (rule.bet==='H'?pA:pH)/n*100 : null;
-    // L50: last 50 chronologically, bet-side ROI
     var L50=null;
     if(n>=50){
       var last50=rows.slice(n-50);
@@ -98,11 +121,20 @@ function computeBookRules(allRecords){
       L50 = (s/50)*100;
     } else if(n>0){
       var s2=0; rows.forEach(function(r){ s2+=bcrPnl(r, rule.bet); });
-      L50 = (s2/n)*100; // fallback: all available if <50
+      L50 = (s2/n)*100;
     }
+    // Expert-signal breakdown
+    var sig = { H:{p:0,n:0}, A:{p:0,n:0}, D:{p:0,n:0}, tied:{p:0,n:0} };
+    rows.forEach(function(r){
+      var s = bcrExpSignal(r);
+      sig[s].p += bcrPnl(r, rule.bet);
+      sig[s].n++;
+    });
+    function finSig(o){ return {n:o.n, roi: o.n? Math.round(o.p/o.n*1000)/10 : null}; }
     return { rule:rule, n:n, roiBet:roiBet, roiOther:roiOther, L50:L50,
              hcover: n?Math.round(hc/n*100):null,
-             matches: rows };
+             matches: rows,
+             sig: { H:finSig(sig.H), A:finSig(sig.A), D:finSig(sig.D), tied:finSig(sig.tied) } };
   });
 
   // Strongest-rule-per-match map for combined performance
@@ -158,7 +190,7 @@ function computeBookRules(allRecords){
     upcomingAlerts.push({ r:r, rules:fired, bet:fired[0].rule.bet });
   });
   upcomingAlerts.sort(function(a,b){
-    var ta=(a.r.DATE||'')+(a.r.TIME||''), tb=(b.r.DATE||'')+(b.r.TIME||'');
+    var ta=brSortKey(a.r), tb=brSortKey(b.r);
     return ta<tb?-1:ta>tb?1:0;
   });
 
@@ -231,6 +263,42 @@ function renderBookRules(RD){
   });
   h+='</tbody></table></div>';
   h+='<div style="font-size:11px;color:#475569;margin-top:4px">Edge = Bet ROI − Other-side ROI. ✓ PROFITABLE = ≥+2%. ~ NEAR EVEN = −1% to +2%. Lower = directional tilt only.</div>';
+  h+='</div>';
+
+  // ── Rules × Expert Signal ──
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">🧠 Rules × Expert Signal</div>';
+  h+='<div class="rpt-sub" style="margin-bottom:6px">For each rule, the bet-side ROI broken down by which expert vote (among the 6 experts) is the majority. <b>H</b> = home votes highest; <b>A</b> = away votes highest; <b>D</b> = draw votes highest; <b>tied</b> = no unique majority.</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:12px"><thead><tr>'
+    +'<th>Rule</th><th class="num">Bet</th><th class="num">N (all)</th><th class="num">ROI (all)</th>'
+    +'<th class="num" style="color:#f87171">Sig H</th>'
+    +'<th class="num" style="color:#60a5fa">Sig A</th>'
+    +'<th class="num" style="color:#4ade80">Sig D</th>'
+    +'<th class="num" style="color:#a78bfa">Sig tied</th>'
+    +'</tr></thead><tbody>';
+  function sigCell(o){
+    if(!o||o.n<20) return '<span style="color:#475569;font-size:10px">'+((o&&o.n)?'n='+o.n:'—')+'</span>';
+    var c = o.roi>=4?'#4ade80':o.roi>=0?'#84cc16':o.roi>=-3?'#fbbf24':'#f87171';
+    var star = o.roi>=4?' ⭐':o.roi>=0?' ✓':'';
+    return '<div style="font-family:var(--mono);color:'+c+';font-weight:700">'+(o.roi>=0?'+':'')+o.roi.toFixed(1)+'%'+star+'</div>'
+      +'<div style="font-family:var(--mono);color:#94a3b8;font-size:9px">n='+o.n+'</div>';
+  }
+  br.perRule.forEach(function(pr){
+    var rule=pr.rule;
+    var bC = rule.bet==='H'?'#f87171':'#60a5fa';
+    var roiAll = pr.roiBet;
+    var allCol = roiAll==null?'#475569':roiAll>=2?'#4ade80':roiAll>=-1?'#fbbf24':'#f87171';
+    h+='<tr><td><b>'+rule.id+'</b> <span style="color:#94a3b8;font-size:10px">'+rule.book+'</span></td>'
+      +'<td class="num"><b style="color:'+bC+';font-size:14px">'+rule.bet+'</b></td>'
+      +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+pr.n+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:'+allCol+';font-weight:700">'+(roiAll==null?'—':(roiAll>=0?'+':'')+roiAll.toFixed(1)+'%')+'</td>'
+      +'<td class="num">'+sigCell(pr.sig.H)+'</td>'
+      +'<td class="num">'+sigCell(pr.sig.A)+'</td>'
+      +'<td class="num">'+sigCell(pr.sig.D)+'</td>'
+      +'<td class="num">'+sigCell(pr.sig.tied)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:11px;color:#cbd5e1;margin-top:6px">⭐ ROI ≥ +4%, ✓ ROI ≥ 0%. Sub-cells need n ≥ 20 for ROI display.</div>';
   h+='</div>';
 
   // ── Upcoming alerts ──
