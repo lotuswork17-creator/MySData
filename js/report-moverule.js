@@ -338,7 +338,7 @@ function renderMoveRule(RD){
     // Zoom to last 200 bets
     _mrSeries = _mrSeries.map(function(s){ var n=200; return {label:s.label, color:s.color, pts:s.pts.length>n?s.pts.slice(s.pts.length-n):s.pts}; });
     h+='<div class="chart-box" style="margin-bottom:16px">'
-      +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_mcd.skip+' bets hidden · '+_mcd.totalBets+' total)</div>'
+      +'<div class="chart-box-label">ROI% History — All Verified Rules (latest '+Math.min(200,_mcd.totalBets-_mcd.skip)+' of '+_mcd.totalBets+' bets · '+_mcd.skip+' warm-up bets excluded)</div>'
       +'<div class="chart-legend" id="lgdMrRoi"></div>'
       +'<canvas id="cMrRoi"></canvas>'
       +'</div>';

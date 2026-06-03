@@ -289,7 +289,7 @@ function renderOddsRule(RD){
   if(or.chartData && or.chartData.roiPts.length){
     var cd=or.chartData;
     h+='<div class="chart-box" style="margin-bottom:16px">'
-      +'<div class="chart-box-label">Running ROI% History (first '+cd.skip+' bets hidden · '+cd.totalBets+' total matched bets)</div>'
+      +'<div class="chart-box-label">Running ROI% History (latest '+Math.min(200,cd.totalBets-cd.skip)+' of '+cd.totalBets+' bets · '+cd.skip+' warm-up bets excluded)</div>'
       +'<div class="chart-legend" id="lgdOrRoi"></div>'
       +'<canvas id="cOrRoi"></canvas>'
       +'</div>';
