@@ -418,6 +418,8 @@ function renderJCRelation(RD){
     var _jcrSeries=[{label:'Running ROI%'+_fmtLast(_lastRoi),color:'#60a5fa',pts:_cd.roiPts}];
     if(_ma50f.some(function(v){return v!==null;}))  _jcrSeries.push({label:'MA 50'+_fmtLast(_lastMa50),  color:'#fbbf24',pts:_ma50f});
     if(_ma100f.some(function(v){return v!==null;})) _jcrSeries.push({label:'MA 100'+_fmtLast(_lastMa100),color:'#4ade80',pts:_ma100f});
+    // Zoom to last 200 bets (each series pts sliced)
+    _jcrSeries = _jcrSeries.map(function(s){ var n=200; return {label:s.label, color:s.color, pts:s.pts.length>n?s.pts.slice(s.pts.length-n):s.pts}; });
     h += '<div class="chart-box" style="margin-bottom:16px">'
       +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_cd.skip+' bets hidden · '+_cd.totalBets+' total)</div>'
       +'<div class="chart-legend" id="lgdJcrRoi"></div>'

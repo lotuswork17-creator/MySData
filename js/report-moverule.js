@@ -335,6 +335,8 @@ function renderMoveRule(RD){
     var _mrSeries=[{label:'Running ROI%'+_mrFmtL(_mrLastRoi),color:'#60a5fa',pts:_mcd.roiPts}];
     if(_mrF50.some(function(v){return v!==null;}))  _mrSeries.push({label:'MA 50'+_mrFmtL(_mrLast50),  color:'#fbbf24',pts:_mrF50});
     if(_mrF100.some(function(v){return v!==null;})) _mrSeries.push({label:'MA 100'+_mrFmtL(_mrLast100),color:'#4ade80',pts:_mrF100});
+    // Zoom to last 200 bets
+    _mrSeries = _mrSeries.map(function(s){ var n=200; return {label:s.label, color:s.color, pts:s.pts.length>n?s.pts.slice(s.pts.length-n):s.pts}; });
     h+='<div class="chart-box" style="margin-bottom:16px">'
       +'<div class="chart-box-label">ROI% History — All Verified Rules (first '+_mcd.skip+' bets hidden · '+_mcd.totalBets+' total)</div>'
       +'<div class="chart-legend" id="lgdMrRoi"></div>'

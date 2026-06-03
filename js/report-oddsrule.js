@@ -576,7 +576,9 @@ function renderOddsRule(RD){
     if(ma50f.some(function(v){return v!==null;}))  fullSeries.push({label:'MA 50'+fmtLatest(lastMa50),   color:'#fbbf24', pts:ma50f});
     if(ma100f.some(function(v){return v!==null;})) fullSeries.push({label:'MA 100'+fmtLatest(lastMa100), color:'#4ade80', pts:ma100f});
     makeLegend('lgdOrRoi', fullSeries);
-    setTimeout(function(){ drawChart('cOrRoi', fullSeries, RD.monthBounds, 150); }, 30);
+    // Zoom to last 200 bets (slice each series pts)
+    fullSeries = fullSeries.map(function(s){ var n=200; return {label:s.label, color:s.color, pts:s.pts.length>n?s.pts.slice(s.pts.length-n):s.pts}; });
+    setTimeout(function(){ drawChart('cOrRoi', fullSeries, null, 150); }, 30);
   }
 
   var _or2APb=or.pastBets.slice();
