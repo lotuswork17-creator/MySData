@@ -288,7 +288,7 @@ function renderBookRules2(RD){
       var ruleBadges=al.rules.map(function(f){
         var bgc=f.rule.bet==='H'?'rgba(248,113,113,0.15)':'rgba(96,165,250,0.15)';
         var fgc=f.rule.bet==='H'?'#f87171':'#60a5fa';
-        return '<span style="display:inline-block;padding:2px 7px;margin:1px 2px;border-radius:3px;font-size:11px;background:'+bgc+';color:'+fgc+';font-weight:700">'+f.rule.id+'</span>';
+        return '<span style="display:inline-block;padding:4px 10px;margin:2px 3px;border-radius:4px;font-size:14px;background:'+bgc+';color:'+fgc+';font-weight:700">'+f.rule.id+'</span>';
       }).join('');
       h+='<tr style="cursor:pointer" onclick="br2Toggle(\''+detId+'\')">'
         +'<td style="color:#e2e8f0;font-size:12px">'+(r.DATE||'—')+' '+(r.TIME||'')+'</td>'
