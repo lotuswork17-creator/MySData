@@ -3,14 +3,14 @@ name: TipsON Scraper
 on:
   schedule:
     - cron: '0 0 * * *'      # 00:00 UTC = 08:00 Hong Kong, daily
-  workflow_dispatch:          # allow manual run from Actions tab
+  workflow_dispatch:
 
 permissions:
-  contents: write             # ← needed so the action can commit back
+  contents: write
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repo
@@ -21,11 +21,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Chrome and Python packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-          pip install selenium requests pytz
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          install-chromedriver: true
+
+      - name: Install Python packages
+        run: pip install selenium requests pytz
 
       - name: Run scraper
         run: python TipsON-Download.py
