@@ -4,13 +4,14 @@ from datetime import datetime
 import pytz
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import requests
 
 # --- Date folder based on Hong Kong time ---
 hk_tz = pytz.timezone('Asia/Hong_Kong')
 now_hk = datetime.now(hk_tz)
-today = now_hk.strftime("img%y%m%d")   # e.g. img260630
+today = now_hk.strftime("img%y%m%d")   # e.g. img260606
 
 print(f"UTC time    : {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}")
 print(f"HK time     : {now_hk.strftime('%Y-%m-%d %H:%M')}")
@@ -18,23 +19,41 @@ print(f"Folder name : {today}")
 
 # --- Paths ---
 base_folder = "TipsON/images"
-output_folder = os.path.join(base_folder, today)   # TipsON/images/img260630
-output_txt_file = f"TipsON/{today}.txt"            # TipsON/img260630.txt
+output_folder = os.path.join(base_folder, today)   # TipsON/images/img260606
+output_txt_file = f"TipsON/{today}.txt"            # TipsON/img260606.txt
 webpage_url = "https://football.on.cc/cnt/recommend/tips.html"
 
 os.makedirs(output_folder, exist_ok=True)
 
 # --- Headless Chrome options ---
 options = Options()
-options.add_argument('--headless')
+options.add_argument('--headless=new')
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
+
+# --- Use Chrome + chromedriver paths from GitHub Actions (if set) ---
+chrome_bin = os.environ.get('CHROME_BIN')
+chromedriver_bin = os.environ.get('CHROMEDRIVER_BIN')
+
+if chrome_bin:
+    options.binary_location = chrome_bin
+
+
+def make_driver():
+    """Create a Chrome driver that works on both GitHub Actions and desktop."""
+    if chromedriver_bin:
+        service = Service(executable_path=chromedriver_bin)
+        return webdriver.Chrome(service=service, options=options)
+    else:
+        # Fallback: Selenium Manager / PATH (your desktop)
+        return webdriver.Chrome(options=options)
+
 
 def download_images():
     global count_of_download
     count_of_download = 0
 
-    driver = webdriver.Chrome(options=options)
+    driver = make_driver()
     try:
         print("Opening the browser...")
         driver.get(webpage_url)
@@ -68,4 +87,6 @@ def download_images():
         print("Closing the browser...")
         driver.quit()
 
+
+# Run the image downloader
 download_images()
