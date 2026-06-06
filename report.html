@@ -83,6 +83,12 @@ body{display:block;padding-bottom:40px}
 
 #rptLoading{text-align:center;padding:60px 20px;color:#94a3b8}
 #rptLoading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  /* Sub-tab system under the "Less Used" parent tab */
+  .lessTab { background:transparent; border:1px solid var(--border); color:#cbd5e1; padding:6px 14px; border-radius:6px 6px 0 0; cursor:pointer; font-size:13px; font-weight:500; font-family:inherit; }
+  .lessTab:hover { color:var(--accent); }
+  .lessTab.active { background:var(--surface2); color:var(--accent); border-bottom-color:var(--surface2); font-weight:700; }
+  .rpt-subsection { display:none; }
+  .rpt-subsection.active { display:block; }
 </style>
 </head>
 <body>
@@ -104,7 +110,17 @@ body{display:block;padding-bottom:40px}
 <div id="rptLoading"><div class="spinner"></div>Loading report…</div>
 
 <!-- TAB 1: MONTH -->
-<div class="rpt-section" id="tab1">
+<div class="rpt-section" id="tabLess">
+  <div class="rpt-title" style="margin-bottom:6px">📦 Less Used Reports</div>
+  <div class="rpt-sub" style="margin-bottom:10px">Five reports grouped here to keep the main tab bar focused. Click a sub-tab to view.</div>
+  <div class="lessTabBar" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:6px">
+    <button class="lessTab active" onclick="showLessSub(0)">📅 Month</button>
+    <button class="lessTab" onclick="showLessSub(1)">📐 Line Accuracy</button>
+    <button class="lessTab" onclick="showLessSub(2)">🧠 Expert</button>
+    <button class="lessTab" onclick="showLessSub(3)">⚡ Smart Money</button>
+    <button class="lessTab" onclick="showLessSub(4)">📈 Odds Analysis</button>
+  </div>
+<div class="rpt-subsection" id="tab1">
   <div class="rpt-title">Overall Performance over Time</div>
   <div class="rpt-sub">Running P&L for all H and A bets, match by match sorted by date.</div>
   <div class="rpt-cards" id="monthCards"></div>
@@ -123,7 +139,7 @@ body{display:block;padding-bottom:40px}
 </div>
 
 <!-- TAB 2: LINE -->
-<div class="rpt-section" id="tab2">
+<div class="rpt-subsection" id="tab2">
   <div class="rpt-title">📐 Line Accuracy × Expert Tips</div>
   <div class="rpt-sub">Compares HKJC, Macau and SBO line accuracy on diverged matches, broken down by each of the 4 JC expert tip providers (JC Sum, JC SID, SID Mac, ONID) and tip direction.</div>
   <div class="rpt-cards" id="lineCards"></div>
@@ -135,7 +151,7 @@ body{display:block;padding-bottom:40px}
 </div>
 
 <!-- TAB 3: EXPERT -->
-<div class="rpt-section" id="tab3">
+<div class="rpt-subsection" id="tab3">
   <div class="rpt-title">Expert Signal Accuracy</div>
   <div class="rpt-sub">One chart per expert threshold. H bet (red) vs A bet (blue) — follow or fade the experts?</div>
   <div id="expertChartsArea"></div>
@@ -145,7 +161,7 @@ body{display:block;padding-bottom:40px}
 </div>
 
 <!-- TAB 4: SMART MONEY -->
-<div class="rpt-section" id="tab4">
+<div class="rpt-subsection" id="tab4">
   <div class="rpt-title">⚡ Smart Money Signals</div>
   <div class="rpt-sub">One chart per signal — cumulative P&L over time. Red = H bet, blue = A bet.</div>
   <div id="smartChartsArea"></div>
@@ -154,8 +170,9 @@ body{display:block;padding-bottom:40px}
 
 <!-- TAB 5: LINE × EXPERT -->
 <!-- TAB 6: ODDS ANALYSIS -->
-<div class="rpt-section" id="tab6">
+<div class="rpt-subsection" id="tab6">
   <div class="rpt-title">AsiaLine × Expert Signal Analysis</div>
+</div>
   <div class="rpt-sub">Each chart = one AsiaLine × Expert Signal combination. H bet (red) vs A bet (blue). Sub-filters (Market Lean, Line Movement, Vig) appear beneath when N≥30.</div>
   <div class="odds-filter-bar">
     <span class="odds-filter-label">Show:</span>
@@ -183,13 +200,6 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderSixExpert() -->
 </div>
 
-<div class="rpt-section" id="tab9">
-  <!-- content injected by renderML() -->
-</div>
-
-<div class="rpt-section" id="tab10">
-  <!-- content injected by renderGEM() -->
-</div>
 <div class="rpt-section" id="tab11">
   <!-- content injected by renderJCRelation() -->
 </div>
@@ -268,8 +278,6 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-smart.js"></script>
 <script src="js/report-odds.js"></script>
 <script src="js/report-sixexpert.js"></script>
-<script src="js/report-ml.js"></script>
-<script src="js/report-gem.js"></script>
 <script src="js/report-jcrelation.js"></script>
 <script src="js/report-moverule.js"></script>
 <script src="js/report-oddsrule.js"></script>
@@ -285,14 +293,8 @@ body{display:block;padding-bottom:40px}
 // TAB REGISTRY — add new tabs here only
 // ═══════════════════════════════════════════════
 var TABS = [
-  { label:'📅 Month',         render: renderMonth  },
-  { label:'📐 Line Accuracy', render: renderLine   },
-  { label:'🧠 Expert',        render: renderExpert },
-  { label:'⚡ Smart Money',   render: renderSmart  },
-  { label:'📈 Odds Analysis', render: renderOdds   },
+  { label:'📦 Less Used',    render: renderLess },
   { label:'🎓 Six Expert',    render: renderSixExpert },
-  { label:'🤖 ML Model',    render: renderML },
-  { label:'⚡ GEM/GPT ML',  render: function(RD){ renderGEM(RD.results||RD); } },
   { label:'🔗 JC Relations', render: renderJCRelation },
   { label:'📡 Move Rules',   render: renderMoveRule },
   { label:'💹 Odds Rules',    render: renderOddsRule },
@@ -310,7 +312,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===11 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===5 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -329,6 +331,24 @@ function renderRoiCharts(){
     // Cache-busting param so updates to the file are picked up immediately on next open.
     f.src = ds + '?v=' + Date.now();
   }
+}
+
+// "Less Used" parent tab — manages 5 sub-reports (Month, Line, Expert, Smart, Odds)
+var _lessRendered = [false,false,false,false,false];
+var _lessRenders  = [renderMonth, renderLine, renderExpert, renderSmart, renderOdds];
+var _lessCurrent  = 0;
+function showLessSub(i){
+  _lessCurrent = i;
+  document.querySelectorAll('.lessTab').forEach(function(b,idx){ b.classList.toggle('active', idx===i); });
+  document.querySelectorAll('#tabLess .rpt-subsection').forEach(function(s,idx){ s.classList.toggle('active', idx===i); });
+  if(typeof RD!=='undefined' && RD && !_lessRendered[i]){
+    _lessRendered[i] = true;
+    setTimeout(function(){ _lessRenders[i](RD); }, 30);
+  }
+}
+function renderLess(RD){
+  // Activate the currently-selected sub-tab (default: Month) and lazy-render it
+  showLessSub(_lessCurrent);
 }
 
 function showTab(i){
@@ -365,8 +385,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[11] = true;
-      TABS[11].render(RD);
+      drawn[5] = true;
+      TABS[5].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
