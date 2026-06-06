@@ -229,6 +229,14 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderEffLine() -->
 </div>
 
+<div class="rpt-section" id="tabROI">
+  <div class="rpt-title" style="margin-bottom:8px">📋 My ROI Charts</div>
+  <div class="rpt-sub" style="margin-bottom:10px">Personal performance charts from the local HKJC statement processor. Auto-refreshes when you re-upload <code>ROI_Charts.html</code> to the repo.</div>
+  <iframe id="roiChartsFrame" data-src="ROI_Charts.html" src="about:blank"
+          style="width:100%;height:calc(100vh - 200px);min-height:800px;border:1px solid var(--border);border-radius:8px;background:#f4f6f8"></iframe>
+  <div style="font-size:11px;color:#94a3b8;margin-top:6px;font-style:italic">Note: this view is rendered in light mode (preserved from the source file).</div>
+</div>
+
 <!--
   ═══════════════════════════════════════════════
   HOW TO ADD A NEW REPORT TAB
@@ -294,6 +302,7 @@ var TABS = [
   { label:'📚 Book Rules',      render: renderBookRules },
   { label:'📚 Book Rules 2',    render: renderBookRules2 },
   { label:'📏 Effective Line', render: renderEffLine },
+  { label:'📋 My ROI Charts', render: renderRoiCharts },
 ];
 
 // Build tab bar from registry
@@ -310,6 +319,18 @@ var TABS = [
 })();
 
 // Tab switching — lazy render on first view
+// Lazy-load the ROI Charts iframe on first activation. After the src is set,
+// subsequent tab visits just re-show the already-loaded frame.
+function renderRoiCharts(){
+  var f=document.getElementById('roiChartsFrame');
+  if(!f) return;
+  var ds=f.getAttribute('data-src');
+  if(ds && f.src==='about:blank' || (f.src && f.src.indexOf('about:blank')>=0)){
+    // Cache-busting param so updates to the file are picked up immediately on next open.
+    f.src = ds + '?v=' + Date.now();
+  }
+}
+
 function showTab(i){
   document.querySelectorAll('.rpt-tab').forEach(function(t,idx){ t.classList.toggle('active', idx===i); });
   document.querySelectorAll('.rpt-section').forEach(function(s,idx){ s.classList.toggle('active', idx===i); });
