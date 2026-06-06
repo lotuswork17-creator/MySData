@@ -2,8 +2,11 @@ name: TipsON Scraper
 
 on:
   schedule:
-    - cron: '0 8 * * *'   # runs every day at 8am UTC
-  workflow_dispatch:        # allows manual trigger
+    - cron: '0 0 * * *'      # 00:00 UTC = 08:00 Hong Kong, daily
+  workflow_dispatch:          # allow manual run from Actions tab
+
+permissions:
+  contents: write             # ← needed so the action can commit back
 
 jobs:
   scrape:
@@ -11,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -22,14 +25,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
-          pip install selenium requests
+          pip install selenium requests pytz
 
       - name: Run scraper
         run: python TipsON-Download.py
 
-      - name: Save results to repo
+      - name: Commit results
         run: |
-          git config user.email "bot@bot.com"
-          git config user.name "DataBot"
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
           git add TipsON/
-          git commit -m "Update TipsON $(date)" && git push
+          git diff --staged --quiet || git commit -m "Update TipsON $(date +'%Y-%m-%d')"
+          git push
