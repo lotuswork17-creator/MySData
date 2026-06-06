@@ -2,7 +2,7 @@ name: TipsON Scraper
 
 on:
   schedule:
-    - cron: '0 0 * * *'      # 00:00 UTC = 08:00 Hong Kong, daily
+    - cron: '0 0 * * *'      # 00:00 UTC = 08:00 Hong Kong
   workflow_dispatch:
 
 permissions:
@@ -21,15 +21,20 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Chrome
+      - name: Install Chrome + matching chromedriver
+        id: setup-chrome
         uses: browser-actions/setup-chrome@v1
         with:
+          chrome-version: stable
           install-chromedriver: true
 
       - name: Install Python packages
         run: pip install selenium requests pytz
 
       - name: Run scraper
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROMEDRIVER_BIN: ${{ steps.setup-chrome.outputs.chromedriver-path }}
         run: python TipsON-Download.py
 
       - name: Commit results
