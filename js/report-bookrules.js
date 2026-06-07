@@ -114,7 +114,7 @@ function computeBookRules(allRecords){
     rows.forEach(function(r){ pH+=bcrPnl(r,'H'); pA+=bcrPnl(r,'A'); hc+=bcrHCover(r); });
     var roiBet = n? (rule.bet==='H'?pH:pA)/n*100 : null;
     var roiOther = n? (rule.bet==='H'?pA:pH)/n*100 : null;
-    var L50=null;
+    var L50=null, L100=null;
     if(n>=50){
       var last50=rows.slice(n-50);
       var s=0; last50.forEach(function(r){ s+=bcrPnl(r, rule.bet); });
@@ -122,6 +122,14 @@ function computeBookRules(allRecords){
     } else if(n>0){
       var s2=0; rows.forEach(function(r){ s2+=bcrPnl(r, rule.bet); });
       L50 = (s2/n)*100;
+    }
+    if(n>=100){
+      var last100=rows.slice(n-100);
+      var s100=0; last100.forEach(function(r){ s100+=bcrPnl(r, rule.bet); });
+      L100 = (s100/100)*100;
+    } else if(n>0){
+      var s2b=0; rows.forEach(function(r){ s2b+=bcrPnl(r, rule.bet); });
+      L100 = (s2b/n)*100;
     }
     // Expert-signal breakdown
     var sig = { H:{p:0,n:0}, A:{p:0,n:0}, D:{p:0,n:0}, tied:{p:0,n:0} };
@@ -131,7 +139,7 @@ function computeBookRules(allRecords){
       sig[s].n++;
     });
     function finSig(o){ return {n:o.n, roi: o.n? Math.round(o.p/o.n*1000)/10 : null}; }
-    return { rule:rule, n:n, roiBet:roiBet, roiOther:roiOther, L50:L50,
+    return { rule:rule, n:n, roiBet:roiBet, roiOther:roiOther, L50:L50, L100:L100,
              hcover: n?Math.round(hc/n*100):null,
              matches: rows,
              sig: { H:finSig(sig.H), A:finSig(sig.A), D:finSig(sig.D), tied:finSig(sig.tied) } };
@@ -229,7 +237,7 @@ function renderBookRules(RD){
   h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📋 Rule Reference</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:13px"><thead><tr>'
     +'<th>Rule</th><th>Book Scope</th><th>Condition</th><th class="num">Bet</th>'
-    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
+    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#facc15">L100 ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
     +'<th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
     +'</tr></thead><tbody>';
   br.perRule.forEach(function(pr){
@@ -241,6 +249,15 @@ function renderBookRules(RD){
     else if(pr.roiBet>=-1) verdict = '<span style="color:#fbbf24">~ NEAR EVEN</span>';
     else verdict = '<span style="color:#f87171">~ tilt only</span>';
     var bCol = rule.bet==='H'?'#f87171':'#60a5fa';
+    // L100 cell — same style as L50, slightly more saturated yellow
+    var L100cell;
+    if(pr.L100==null) L100cell = '<span style="color:#475569">—</span>';
+    else {
+      var l100col = pr.L100>=0?'#4ade80':pr.L100>=-2?'#facc15':'#f87171';
+      var l100N = pr.n>=100?'100':pr.n;
+      L100cell = '<span style="color:'+l100col+';font-weight:700;font-family:var(--mono)">'+(pr.L100>=0?'+':'')+pr.L100.toFixed(1)+'%</span>'
+        +' <span style="color:#94a3b8;font-size:10px;font-family:var(--mono)">n'+l100N+'</span>';
+    }
     // L50 cell coloured by sign
     var L50cell;
     if(pr.L50==null) L50cell = '<span style="color:#475569">—</span>';
@@ -256,6 +273,7 @@ function renderBookRules(RD){
       +'<td class="num"><b style="color:'+bCol+';font-size:15px">'+rule.bet+'</b></td>'
       +'<td class="num" style="font-family:var(--mono);color:#64748b">'+pr.n+'</td>'
       +'<td class="num">'+roiBadge(pr.roiBet, pr.n)+'</td>'
+      +'<td class="num">'+L100cell+'</td>'
       +'<td class="num">'+L50cell+'</td>'
       +'<td class="num" style="font-family:var(--mono);color:#64748b;font-size:12px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
       +'<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(edge==null?'—':'+'+edge.toFixed(1)+'pp')+'</td>'
