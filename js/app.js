@@ -430,26 +430,26 @@ function renderJCPickFilter(){
     { v:'A3plus',  label:'A≥3',       desc:'3+ experts tip A (D/H allowed)' },
   ];
   var countRow = '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #1e293b">'
-    +'<div style="font-size:9px;color:#64748b;font-family:monospace;margin-bottom:4px">COUNT PRESETS (pure signal — no mixed picks):</div>'
+    +'<div style="font-size:9px;color:#e2e8f0;font-family:monospace;margin-bottom:4px">COUNT PRESETS (pure signal — no mixed picks):</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:4px">'
     + countPresets.map(function(p){
         var on = jcCountMode===p.v;
         var col = p.v[0]==='H'?'#f87171':'#60a5fa';
         return '<button onclick="setJCCount(\''+p.v+'\')" title="'+p.desc+'" style="'
           +'padding:3px 10px;border-radius:4px;border:1px solid '+(on?col:'#1e293b')+';'
-          +'background:'+(on?col+'22':'#0f172a')+';color:'+(on?col:'#64748b')+';'
+          +'background:'+(on?col+'22':'#0f172a')+';color:'+(on?col:'#cbd5e1')+';'
           +'font-size:10px;font-weight:700;cursor:pointer;font-family:monospace">'+p.label+'</button>';
       }).join('')
     +'</div></div>';
 
   // Mode toggle row (only relevant when using individual picks below)
   var modeRow = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-    +'<span style="font-size:9px;color:#64748b;font-family:monospace;min-width:36px">Logic:</span>'
+    +'<span style="font-size:9px;color:#e2e8f0;font-family:monospace;min-width:36px">Logic:</span>'
     +['AND','OR'].map(function(m){
       var on = jcPickMode===m;
-      return '<button onclick="setJCMode(\''+m+'\')" style="padding:1px 8px;border-radius:3px;border:1px solid '+(on?'#60a5fa':'#1e293b')+';background:'+(on?'#60a5fa22':'#0f172a')+';color:'+(on?'#60a5fa':'#64748b')+';font-size:10px;font-weight:700;cursor:pointer;font-family:monospace">'+m+'</button>';
+      return '<button onclick="setJCMode(\''+m+'\')" style="padding:1px 8px;border-radius:3px;border:1px solid '+(on?'#60a5fa':'#1e293b')+';background:'+(on?'#60a5fa22':'#0f172a')+';color:'+(on?'#60a5fa':'#cbd5e1')+';font-size:10px;font-weight:700;cursor:pointer;font-family:monospace">'+m+'</button>';
     }).join('')
-    +'<span style="font-size:9px;color:#475569;margin-left:4px">'+(jcPickMode==='AND'?'All selected must match':'Any selected matches')+'</span>'
+    +'<span style="font-size:9px;color:#cbd5e1;margin-left:4px">'+(jcPickMode==='AND'?'All selected must match':'Any selected matches')+'</span>'
     +'</div>';
 
   // One row per expert
@@ -458,14 +458,14 @@ function renderJCPickFilter(){
     var btnStyle = function(tip){
       var on = sel===tip;
       var tipColor = tip==='H'?'#f87171':tip==='D'?'#a78bfa':'#60a5fa';
-      return 'padding:2px 10px;border-radius:4px;border:1px solid '+(on?tipColor:'#1e293b')+';background:'+(on?tipColor+'22':'#0f172a')+';color:'+(on?tipColor:'#475569')+';font-size:11px;font-weight:700;cursor:pointer;font-family:monospace';
+      return 'padding:2px 10px;border-radius:4px;border:1px solid '+(on?tipColor:'#1e293b')+';background:'+(on?tipColor+'22':'#0f172a')+';color:'+(on?tipColor:'#cbd5e1')+';font-size:11px;font-weight:700;cursor:pointer;font-family:monospace';
     };
     return '<div style="display:flex;align-items:center;gap:6px">'
       +'<span style="font-size:10px;font-weight:700;min-width:52px;color:'+e.color+';font-family:monospace">'+e.label+'</span>'
       +JC_TIPS.map(function(tip){
         return '<button onclick="toggleJCPick(\''+e.key+'\',\''+tip+'\')" style="'+btnStyle(tip)+'">'+tip+'</button>';
       }).join('')
-      +(sel?'<button onclick="toggleJCPick(\''+e.key+'\',null)" style="padding:2px 6px;border-radius:3px;border:1px solid #1e293b;background:#0f172a;color:#475569;font-size:9px;cursor:pointer">&#x2715;</button>':'')
+      +(sel?'<button onclick="toggleJCPick(\''+e.key+'\',null)" style="padding:2px 6px;border-radius:3px;border:1px solid #1e293b;background:#0f172a;color:#cbd5e1;font-size:9px;cursor:pointer">&#x2715;</button>':'')
       +'</div>';
   }).join('');
 
@@ -513,9 +513,36 @@ function applyJCPickFilter(r){
     return null;
   }
 
+  // For Gem/GPT, derive the pick from the raw count fields (GEMH/GEMD/GEMA, GPTH/GPTD/GPTA)
+  // since the TIPSGEM/TIPSGPT string fields are sparse (mostly empty). If the AI gave
+  // no votes at all, fall back to the string field.
+  function pick(key){
+    if(key==='TIPSGEM'){
+      var h=r.GEMH||0, d=r.GEMD||0, a=r.GEMA||0;
+      if(h||d||a){
+        if(h>d && h>a) return 'H';
+        if(a>h && a>d) return 'A';
+        if(d>h && d>a) return 'D';
+        return null; // tied — no clear pick
+      }
+      return ts(r.TIPSGEM);
+    }
+    if(key==='TIPSGPT'){
+      var h2=r.GPTH||0, d2=r.GPTD||0, a2=r.GPTA||0;
+      if(h2||d2||a2){
+        if(h2>d2 && h2>a2) return 'H';
+        if(a2>h2 && a2>d2) return 'A';
+        if(d2>h2 && d2>a2) return 'D';
+        return null;
+      }
+      return ts(r.TIPSGPT);
+    }
+    return ts(r[key]);
+  }
+
   // Count-based preset filter
   if(jcCountMode){
-    var tips = JC_EXPERTS.map(function(e){ return ts(r[e.key]); });
+    var tips = JC_EXPERTS.map(function(e){ return pick(e.key); });
     var nH = tips.filter(function(t){return t==='H';}).length;
     var nD = tips.filter(function(t){return t==='D';}).length;
     var nA = tips.filter(function(t){return t==='A';}).length;
@@ -531,8 +558,8 @@ function applyJCPickFilter(r){
   if(!active.length) return true;
 
   if(jcPickMode==='AND'){
-    return active.every(function(e){ return ts(r[e.key])===jcPickState[e.key]; });
+    return active.every(function(e){ return pick(e.key)===jcPickState[e.key]; });
   } else {
-    return active.some(function(e){ return ts(r[e.key])===jcPickState[e.key]; });
+    return active.some(function(e){ return pick(e.key)===jcPickState[e.key]; });
   }
 }
