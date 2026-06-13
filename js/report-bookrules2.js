@@ -203,87 +203,6 @@ function renderBookRules2(RD){
       + ' <span style="color:#cbd5e1;font-size:12px;font-family:var(--mono)">n'+n+'</span>';
   }
 
-  // Rule Reference table
-  h+='<div style="margin-bottom:18px">';
-  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📋 Rule Reference</div>';
-  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:13px"><thead><tr>'
-    +'<th>Rule</th><th>Book</th><th>Condition</th><th class="num">Bet</th>'
-    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#facc15">L100 ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
-    +'<th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
-    +'</tr></thead><tbody>';
-  br.perRule.forEach(function(pr, ri){
-    var rule=pr.rule;
-    var detId='br2_rule_'+ri;
-    var edge = (pr.roiBet!=null && pr.roiOther!=null) ? pr.roiBet - pr.roiOther : null;
-    var verdict;
-    if(pr.roiBet==null||pr.n<15) verdict='<span style="color:#cbd5e1">— small sample</span>';
-    else if(pr.roiBet>=4) verdict='<span style="color:#4ade80;font-weight:700">⭐ STRONG</span>';
-    else if(pr.roiBet>=2) verdict='<span style="color:#84cc16;font-weight:700">✓ profitable</span>';
-    else if(pr.roiBet>=-1) verdict='<span style="color:#fbbf24">~ near even</span>';
-    else verdict='<span style="color:#f87171">tilt only</span>';
-    var bCol=rule.bet==='H'?'#f87171':'#60a5fa';
-    var L100cell;
-    if(pr.L100==null) L100cell='<span style="color:#cbd5e1">—</span>';
-    else {
-      var l100col=pr.L100>=0?'#4ade80':pr.L100>=-2?'#facc15':'#f87171';
-      var l100N=pr.n>=100?'100':pr.n;
-      L100cell='<span style="color:'+l100col+';font-weight:700;font-family:var(--mono);font-size:14px">'+(pr.L100>=0?'+':'')+pr.L100.toFixed(1)+'%</span>'
-        +' <span style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">n'+l100N+'</span>';
-    }
-    var L50cell;
-    if(pr.L50==null) L50cell='<span style="color:#cbd5e1">—</span>';
-    else {
-      var l50col=pr.L50>=0?'#4ade80':pr.L50>=-2?'#fbbf24':'#f87171';
-      var l50N=pr.n>=50?'50':pr.n;
-      L50cell='<span style="color:'+l50col+';font-weight:700;font-family:var(--mono);font-size:14px">'+(pr.L50>=0?'+':'')+pr.L50.toFixed(1)+'%</span>'
-        +' <span style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">n'+l50N+'</span>';
-    }
-    h+='<tr style="cursor:pointer" onclick="br2Toggle(\''+detId+'\')"><td><b>'+rule.id+'</b> <span style="color:#94a3b8;font-size:11px">▾</span></td>'
-      +'<td style="color:#e2e8f0">'+rule.book+'</td>'
-      +'<td style="color:#e2e8f0;font-size:12px">'+rule.desc+'</td>'
-      +'<td class="num"><b style="color:'+bCol+';font-size:15px">'+rule.bet+'</b></td>'
-      +'<td class="num" style="font-family:var(--mono);color:#cbd5e1">'+pr.n+'</td>'
-      +'<td class="num">'+roiBadge(pr.roiBet, pr.n)+'</td>'
-      +'<td class="num">'+L100cell+'</td>'
-      +'<td class="num">'+L50cell+'</td>'
-      +'<td class="num" style="font-family:var(--mono);color:#cbd5e1;font-size:12px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
-      +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+(edge==null?'—':'+'+edge.toFixed(1)+'pp')+'</td>'
-      +'<td class="num">'+verdict+'</td></tr>';
-    // Expanded condition detail row
-    var eligDesc;
-    if(rule.book==='Mac')      eligDesc='HKJC odds + Macau odds present, HKJC line = Macau line';
-    else if(rule.book==='SBO') eligDesc='HKJC odds + SBO odds present, HKJC line = SBO line';
-    else                       eligDesc='HKJC + Macau + SBO odds all present, all three lines equal';
-    var baseCond = rule.desc.replace(/ • experts tied or opposite$/,'');
-    var oppSide = rule.bet==='H' ? 'A' : 'H';
-    var det='<div style="font-size:13px;color:#e2e8f0;padding:14px 22px;line-height:1.7">';
-    det+='<div style="font-weight:700;color:#fbbf24;font-size:15px;margin-bottom:10px">📋 Full Rule Condition — '+rule.id+'</div>';
-    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Scope:</b> '+rule.book+' &nbsp;·&nbsp; <b style="color:#a78bfa">Bet side:</b> <b style="color:'+bCol+';font-size:16px">'+rule.bet+'</b></div>';
-    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Eligibility:</b> '+eligDesc+'</div>';
-    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
-    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">① Book-comparison condition:</b></div>';
-    det+='<div style="margin-left:14px;font-family:var(--mono);color:#cbd5e1">'+baseCond+'</div></div>';
-    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
-    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">② Expert-signal condition:</b></div>';
-    det+='<div style="margin-left:14px;color:#cbd5e1">Experts are <b style="color:#a78bfa">tied</b> (no unique majority) OR experts pick <b style="color:'+(oppSide==='H'?'#f87171':'#60a5fa')+'">'+oppSide+'</b> (opposite of rule\'s bet)</div>';
-    det+='<div style="margin-left:14px;color:#94a3b8;font-size:11px;margin-top:3px">Excluded: experts confirm the rule\'s bet ('+(rule.bet)+'-majority), or experts pick D-majority.</div></div>';
-    det+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)"><b style="color:#fbbf24">📊 Historic Performance</b></div>';
-    det+='<div style="margin-top:6px;display:flex;gap:24px;flex-wrap:wrap;font-size:13px">';
-    det+='<div><b style="color:#a78bfa">Total matches:</b> '+pr.n+'</div>';
-    det+='<div><b style="color:#a78bfa">Bet '+rule.bet+' ROI:</b> '+(pr.roiBet==null?'—':((pr.roiBet>=0?'+':'')+pr.roiBet.toFixed(1)+'%'))+'</div>';
-    det+='<div><b style="color:#a78bfa">Other side ROI:</b> '+(pr.roiOther==null?'—':((pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%'))+'</div>';
-    det+='<div><b style="color:#a78bfa">Edge:</b> '+(edge==null?'—':((edge>=0?'+':'')+edge.toFixed(1)+'pp'))+'</div>';
-    if(pr.L50!=null) det+='<div><b style="color:#a78bfa">L50 ROI:</b> '+((pr.L50>=0?'+':'')+pr.L50.toFixed(1))+'%</div>';
-    if(pr.hcover!=null) det+='<div><b style="color:#a78bfa">H-cover%:</b> '+pr.hcover+'%</div>';
-    det+='</div>';
-    det+='<div style="margin-top:12px;font-size:11px;color:#94a3b8;font-style:italic">Note: the front-page Smart Money 2 filter applies ONLY the base book-comparison condition (①). The expert-signal layer (②) shown here is added on top in this report. Both conditions together give the ROI displayed above.</div>';
-    det+='</div>';
-    h+='<tr id="'+detId+'" style="display:none"><td colspan="11" style="background:rgba(15,23,42,0.5);padding:0">'+det+'</td></tr>';
-  });
-  h+='</tbody></table></div>';
-  h+='<div style="font-size:11px;color:#cbd5e1;margin-top:4px">⭐ ROI ≥ +4%, ✓ ≥ +2%, ~ ≥ -1%, otherwise tilt only. Edge = Bet ROI − Other ROI.</div>';
-  h+='</div>';
-
   // Upcoming alerts
   h+='<div style="margin-bottom:18px">';
   h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">🎯 Upcoming Matches — Rule Alerts</div>';
@@ -381,6 +300,87 @@ function renderBookRules2(RD){
       if(typeof drawChart==='function') drawChart('cBr2Roi',series,null,150);
     },40);
   }
+  h+='</div>';
+
+  // Rule Reference table
+  h+='<div style="margin-bottom:18px">';
+  h+='<div class="rpt-title" style="margin-bottom:4px;font-size:16px">📋 Rule Reference</div>';
+  h+='<div class="rpt-table-wrap"><table class="rpt-table" style="font-size:13px"><thead><tr>'
+    +'<th>Rule</th><th>Book</th><th>Condition</th><th class="num">Bet</th>'
+    +'<th class="num">N</th><th class="num">Bet ROI</th><th class="num" style="color:#facc15">L100 ROI</th><th class="num" style="color:#fbbf24">L50 ROI</th>'
+    +'<th class="num">Other ROI</th><th class="num">Edge</th><th class="num">Verdict</th>'
+    +'</tr></thead><tbody>';
+  br.perRule.forEach(function(pr, ri){
+    var rule=pr.rule;
+    var detId='br2_rule_'+ri;
+    var edge = (pr.roiBet!=null && pr.roiOther!=null) ? pr.roiBet - pr.roiOther : null;
+    var verdict;
+    if(pr.roiBet==null||pr.n<15) verdict='<span style="color:#cbd5e1">— small sample</span>';
+    else if(pr.roiBet>=4) verdict='<span style="color:#4ade80;font-weight:700">⭐ STRONG</span>';
+    else if(pr.roiBet>=2) verdict='<span style="color:#84cc16;font-weight:700">✓ profitable</span>';
+    else if(pr.roiBet>=-1) verdict='<span style="color:#fbbf24">~ near even</span>';
+    else verdict='<span style="color:#f87171">tilt only</span>';
+    var bCol=rule.bet==='H'?'#f87171':'#60a5fa';
+    var L100cell;
+    if(pr.L100==null) L100cell='<span style="color:#cbd5e1">—</span>';
+    else {
+      var l100col=pr.L100>=0?'#4ade80':pr.L100>=-2?'#facc15':'#f87171';
+      var l100N=pr.n>=100?'100':pr.n;
+      L100cell='<span style="color:'+l100col+';font-weight:700;font-family:var(--mono);font-size:14px">'+(pr.L100>=0?'+':'')+pr.L100.toFixed(1)+'%</span>'
+        +' <span style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">n'+l100N+'</span>';
+    }
+    var L50cell;
+    if(pr.L50==null) L50cell='<span style="color:#cbd5e1">—</span>';
+    else {
+      var l50col=pr.L50>=0?'#4ade80':pr.L50>=-2?'#fbbf24':'#f87171';
+      var l50N=pr.n>=50?'50':pr.n;
+      L50cell='<span style="color:'+l50col+';font-weight:700;font-family:var(--mono);font-size:14px">'+(pr.L50>=0?'+':'')+pr.L50.toFixed(1)+'%</span>'
+        +' <span style="color:#cbd5e1;font-size:11px;font-family:var(--mono)">n'+l50N+'</span>';
+    }
+    h+='<tr style="cursor:pointer" onclick="br2Toggle(\''+detId+'\')"><td><b>'+rule.id+'</b> <span style="color:#94a3b8;font-size:11px">▾</span></td>'
+      +'<td style="color:#e2e8f0">'+rule.book+'</td>'
+      +'<td style="color:#e2e8f0;font-size:12px">'+rule.desc+'</td>'
+      +'<td class="num"><b style="color:'+bCol+';font-size:15px">'+rule.bet+'</b></td>'
+      +'<td class="num" style="font-family:var(--mono);color:#cbd5e1">'+pr.n+'</td>'
+      +'<td class="num">'+roiBadge(pr.roiBet, pr.n)+'</td>'
+      +'<td class="num">'+L100cell+'</td>'
+      +'<td class="num">'+L50cell+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#cbd5e1;font-size:12px">'+(pr.roiOther==null?'—':(pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%')+'</td>'
+      +'<td class="num" style="font-family:var(--mono);color:#e2e8f0">'+(edge==null?'—':'+'+edge.toFixed(1)+'pp')+'</td>'
+      +'<td class="num">'+verdict+'</td></tr>';
+    // Expanded condition detail row
+    var eligDesc;
+    if(rule.book==='Mac')      eligDesc='HKJC odds + Macau odds present, HKJC line = Macau line';
+    else if(rule.book==='SBO') eligDesc='HKJC odds + SBO odds present, HKJC line = SBO line';
+    else                       eligDesc='HKJC + Macau + SBO odds all present, all three lines equal';
+    var baseCond = rule.desc.replace(/ • experts tied or opposite$/,'');
+    var oppSide = rule.bet==='H' ? 'A' : 'H';
+    var det='<div style="font-size:13px;color:#e2e8f0;padding:14px 22px;line-height:1.7">';
+    det+='<div style="font-weight:700;color:#fbbf24;font-size:15px;margin-bottom:10px">📋 Full Rule Condition — '+rule.id+'</div>';
+    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Scope:</b> '+rule.book+' &nbsp;·&nbsp; <b style="color:#a78bfa">Bet side:</b> <b style="color:'+bCol+';font-size:16px">'+rule.bet+'</b></div>';
+    det+='<div style="margin-bottom:6px"><b style="color:#a78bfa">Eligibility:</b> '+eligDesc+'</div>';
+    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
+    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">① Book-comparison condition:</b></div>';
+    det+='<div style="margin-left:14px;font-family:var(--mono);color:#cbd5e1">'+baseCond+'</div></div>';
+    det+='<div style="margin:10px 0;padding:8px 12px;background:rgba(15,23,42,0.6);border-left:3px solid #fbbf24;border-radius:4px">';
+    det+='<div style="margin-bottom:4px"><b style="color:#fbbf24">② Expert-signal condition:</b></div>';
+    det+='<div style="margin-left:14px;color:#cbd5e1">Experts are <b style="color:#a78bfa">tied</b> (no unique majority) OR experts pick <b style="color:'+(oppSide==='H'?'#f87171':'#60a5fa')+'">'+oppSide+'</b> (opposite of rule\'s bet)</div>';
+    det+='<div style="margin-left:14px;color:#94a3b8;font-size:11px;margin-top:3px">Excluded: experts confirm the rule\'s bet ('+(rule.bet)+'-majority), or experts pick D-majority.</div></div>';
+    det+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)"><b style="color:#fbbf24">📊 Historic Performance</b></div>';
+    det+='<div style="margin-top:6px;display:flex;gap:24px;flex-wrap:wrap;font-size:13px">';
+    det+='<div><b style="color:#a78bfa">Total matches:</b> '+pr.n+'</div>';
+    det+='<div><b style="color:#a78bfa">Bet '+rule.bet+' ROI:</b> '+(pr.roiBet==null?'—':((pr.roiBet>=0?'+':'')+pr.roiBet.toFixed(1)+'%'))+'</div>';
+    det+='<div><b style="color:#a78bfa">Other side ROI:</b> '+(pr.roiOther==null?'—':((pr.roiOther>=0?'+':'')+pr.roiOther.toFixed(1)+'%'))+'</div>';
+    det+='<div><b style="color:#a78bfa">Edge:</b> '+(edge==null?'—':((edge>=0?'+':'')+edge.toFixed(1)+'pp'))+'</div>';
+    if(pr.L50!=null) det+='<div><b style="color:#a78bfa">L50 ROI:</b> '+((pr.L50>=0?'+':'')+pr.L50.toFixed(1))+'%</div>';
+    if(pr.hcover!=null) det+='<div><b style="color:#a78bfa">H-cover%:</b> '+pr.hcover+'%</div>';
+    det+='</div>';
+    det+='<div style="margin-top:12px;font-size:11px;color:#94a3b8;font-style:italic">Note: the front-page Smart Money 2 filter applies ONLY the base book-comparison condition (①). The expert-signal layer (②) shown here is added on top in this report. Both conditions together give the ROI displayed above.</div>';
+    det+='</div>';
+    h+='<tr id="'+detId+'" style="display:none"><td colspan="11" style="background:rgba(15,23,42,0.5);padding:0">'+det+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:11px;color:#cbd5e1;margin-top:4px">⭐ ROI ≥ +4%, ✓ ≥ +2%, ~ ≥ -1%, otherwise tilt only. Edge = Bet ROI − Other ROI.</div>';
   h+='</div>';
 
   // Past bets
