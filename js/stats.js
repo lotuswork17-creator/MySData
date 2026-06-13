@@ -83,7 +83,38 @@ function renderBetCalc(data){
   // ── Single panel, shared Y-axis ROI chart
   var wrap=document.querySelector('.bc-chart-wrap');
   wrap.style.height='auto';
-  wrap.innerHTML='<canvas id="betChart" style="display:block;width:100%"></canvas>';
+
+  var hLast = hRoiPts[hRoiPts.length-1];
+  var aLast = aRoiPts[aRoiPts.length-1];
+  var hMaLast = hMa50[hMa50.length-1];
+  var aMaLast = aMa50[aMa50.length-1];
+  function _pct(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; }
+  function _col(v){ return v>=0 ? '#4ade80' : '#f87171'; }
+
+  wrap.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;gap:18px;font-size:13px;margin-bottom:10px;padding:10px 14px;background:rgba(15,23,42,0.5);border:1px solid var(--border);border-radius:6px">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="display:inline-block;width:18px;height:3px;background:#f87171;border-radius:1px"></span>'
+        +'<b style="color:#f87171">H ROI</b>'
+        +'<span style="color:'+_col(hLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(hLast)+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="display:inline-block;width:18px;height:2px;border-top:2px dotted #f87171"></span>'
+        +'<b style="color:#f87171;opacity:.85">H MA-50</b>'
+        +'<span style="color:'+_col(hMaLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(hMaLast)+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="display:inline-block;width:18px;height:3px;background:#60a5fa;border-radius:1px"></span>'
+        +'<b style="color:#60a5fa">A ROI</b>'
+        +'<span style="color:'+_col(aLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(aLast)+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="display:inline-block;width:18px;height:2px;border-top:2px dotted #60a5fa"></span>'
+        +'<b style="color:#60a5fa;opacity:.85">A MA-50</b>'
+        +'<span style="color:'+_col(aMaLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(aMaLast)+'</span>'
+      +'</div>'
+    +'</div>'
+    +'<canvas id="betChart" style="display:block;width:100%"></canvas>';
 
   var hFinal = hRoiPts[hRoiPts.length-1];
   var aFinal = aRoiPts[aRoiPts.length-1];
@@ -182,18 +213,9 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total, hMaP
   drawSeries(hPts,'#f87171', false);
   drawSeries(aPts,'#60a5fa', false);
 
-  // End labels (nudge apart if overlapping)
-  var hLastY=yy(hPts[hPts.length-1]);
-  var aLastY=yy(aPts[aPts.length-1]);
-  if(Math.abs(hLastY-aLastY)<12){ hLastY-=6; aLastY+=6; }
-  ctx.font='bold 9px IBM Plex Mono'; ctx.textBaseline='middle'; ctx.textAlign='right';
-  ctx.fillStyle=hPts[hPts.length-1]>=0?'#4ade80':'#f87171';
-  ctx.fillText('H '+hLabel, padL+cw-2, hLastY-6);
-  ctx.fillStyle=aPts[aPts.length-1]>=0?'#4ade80':'#60a5fa';
-  ctx.fillText('A '+aLabel, padL+cw-2, aLastY+6);
-
-  // Axis label (brightened from grey to slate so it's readable on dark bg)
-  ctx.font='8px IBM Plex Mono'; ctx.fillStyle='#cbd5e1'; ctx.textAlign='left';
+  // Axis label (brightened from grey to slate so it's readable on dark bg).
+  // The four ROI values are now shown in the labels row above the chart.
+  ctx.font='9px IBM Plex Mono'; ctx.fillStyle='#cbd5e1'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText('Running ROI% (solid) + MA-50 (dotted) — last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets', padL+2, H-4);
 }
 
