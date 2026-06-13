@@ -31,7 +31,7 @@ function renderBetCalc(data){
   // Sort by date ascending for chart
   var sorted=results.slice().sort(function(a,b){return(a.DATE||'') < (b.DATE||'')?-1:1;});
 
-  var hPnl=0,aPnl=0,hRunning=[],aRunning=[];
+  var hPnl=0,aPnl=0,hRunning=[],aRunning=[],hPnls=[],aPnls=[];
   sorted.forEach(function(r){
     var outcome=asiaOutcome(r);
     var oh=useOpening ? r.ASIAHLN : r.ASIAH;
@@ -43,6 +43,7 @@ function renderBetCalc(data){
     else if(outcome==='lh'){hp=-0.5;ap=(oa-1)*0.5;}
     else if(outcome==='lw'){hp=-1;ap=oa-1;}
     hPnl+=hp;aPnl+=ap;
+    hPnls.push(hp);aPnls.push(ap);
     hRunning.push(Math.round(hPnl*100)/100);
     aRunning.push(Math.round(aPnl*100)/100);
   });
@@ -63,13 +64,20 @@ function renderBetCalc(data){
   $('bc-a-pnl').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl)+'</span>';
   $('bc-a-roi').innerHTML='<span class="'+cls(aPnl)+'">'+fmt(aPnl/n*100)+'%</span>';
 
-  // Last 100 points of the overall running ROI (Y-axis auto-zoomed to the range)
+  // Last 100 points of overall running ROI, plus a 50-bet moving-average ROI for each side.
   var WINDOW = 100;
+  var MA_WIN = 50;
   var start = Math.max(0, sorted.length - WINDOW);
-  var hRoiPts = [], aRoiPts = [];
+  var hRoiPts = [], aRoiPts = [], hMa50 = [], aMa50 = [];
   for(var i = start; i < sorted.length; i++){
     hRoiPts.push(Math.round(hRunning[i] / (i+1) * 10000) / 100);
     aRoiPts.push(Math.round(aRunning[i] / (i+1) * 10000) / 100);
+    // MA-50: mean PnL of the last 50 bets up to position i, expressed as ROI%
+    var maStart = Math.max(0, i - MA_WIN + 1);
+    var hSum = 0, aSum = 0, cnt = 0;
+    for(var j = maStart; j <= i; j++){ hSum += hPnls[j]; aSum += aPnls[j]; cnt++; }
+    hMa50.push(Math.round(hSum / cnt * 10000) / 100);
+    aMa50.push(Math.round(aSum / cnt * 10000) / 100);
   }
 
   // ── Single panel, shared Y-axis ROI chart
@@ -81,10 +89,10 @@ function renderBetCalc(data){
   var aFinal = aRoiPts[aRoiPts.length-1];
   var hWinLabel = (hFinal>=0?'+':'')+hFinal.toFixed(1)+'%';
   var aWinLabel = (aFinal>=0?'+':'')+aFinal.toFixed(1)+'%';
-  drawRoiPanel('betChart', hRoiPts, aRoiPts, hWinLabel, aWinLabel, WINDOW, sorted.length);
+  drawRoiPanel('betChart', hRoiPts, aRoiPts, hWinLabel, aWinLabel, WINDOW, sorted.length, hMa50, aMa50);
 }
 
-function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
+function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total, hMaPts, aMaPts){
   var canvas=document.getElementById(canvasId);
   if(!canvas) return;
   var ctx=canvas.getContext('2d');
@@ -99,8 +107,10 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
   var padL=36, padR=8, padT=8, padB=16;
   var cw=w-padL-padR, ch=H-padT-padB;
 
-  // Single shared scale across both series
+  // Single shared scale across both series (and MA series if provided)
   var allV=hPts.concat(aPts);
+  if(hMaPts && hMaPts.length) allV=allV.concat(hMaPts);
+  if(aMaPts && aMaPts.length) allV=allV.concat(aMaPts);
   var dataMn=Math.min.apply(null,allV), dataMx=Math.max.apply(null,allV);
   var pad=(dataMx-dataMn)*0.15||0.1;  // 15% padding each side
   var mn=dataMn-pad;
@@ -127,41 +137,50 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
   ctx.beginPath(); ctx.moveTo(padL,zy); ctx.lineTo(padL+cw,zy); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Draw series with fill
-  function drawSeries(pts, col){
+  // Draw series — primary (solid + filled) or MA-50 (dotted, no fill, no end-dot)
+  function drawSeries(pts, col, isMA){
     if(!pts.length) return;
-    var ri=parseInt(col.slice(1,3),16),gi=parseInt(col.slice(3,5),16),bi=parseInt(col.slice(5,7),16);
-    var lastV=pts[pts.length-1];
+    if(!isMA){
+      var ri=parseInt(col.slice(1,3),16),gi=parseInt(col.slice(3,5),16),bi=parseInt(col.slice(5,7),16);
+      var lastV=pts[pts.length-1];
 
-    // Gradient fill between line and zero
-    var grad=ctx.createLinearGradient(0,padT,0,padT+ch);
-    if(lastV>=0){
-      grad.addColorStop(0,'rgba('+ri+','+gi+','+bi+',0.15)');
-      grad.addColorStop(1,'rgba('+ri+','+gi+','+bi+',0.01)');
-    } else {
-      grad.addColorStop(0,'rgba('+ri+','+gi+','+bi+',0.01)');
-      grad.addColorStop(1,'rgba('+ri+','+gi+','+bi+',0.15)');
+      // Gradient fill between line and zero (primary series only)
+      var grad=ctx.createLinearGradient(0,padT,0,padT+ch);
+      if(lastV>=0){
+        grad.addColorStop(0,'rgba('+ri+','+gi+','+bi+',0.15)');
+        grad.addColorStop(1,'rgba('+ri+','+gi+','+bi+',0.01)');
+      } else {
+        grad.addColorStop(0,'rgba('+ri+','+gi+','+bi+',0.01)');
+        grad.addColorStop(1,'rgba('+ri+','+gi+','+bi+',0.15)');
+      }
+      ctx.beginPath();
+      pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),yy(v)):ctx.lineTo(xx(i,pts.length),yy(v));});
+      ctx.lineTo(xx(pts.length-1,pts.length),zy);
+      ctx.lineTo(xx(0,pts.length),zy);
+      ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
     }
-    ctx.beginPath();
-    pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),yy(v)):ctx.lineTo(xx(i,pts.length),yy(v));});
-    ctx.lineTo(xx(pts.length-1,pts.length),zy);
-    ctx.lineTo(xx(0,pts.length),zy);
-    ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
 
-    // Line
-    ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.lineJoin='round';
+    // Line — solid for primary, dotted for MA-50
+    ctx.strokeStyle=col; ctx.lineWidth=isMA?1.2:1.8; ctx.lineJoin='round';
+    ctx.setLineDash(isMA?[3,3]:[]);
     ctx.beginPath();
     pts.forEach(function(v,i){i===0?ctx.moveTo(xx(i,pts.length),yy(v)):ctx.lineTo(xx(i,pts.length),yy(v));});
     ctx.stroke();
+    ctx.setLineDash([]);
 
-    // End dot
-    var ex=xx(pts.length-1,pts.length), ey=yy(lastV);
-    ctx.beginPath(); ctx.arc(ex,ey,2.5,0,Math.PI*2);
-    ctx.fillStyle=col; ctx.fill();
+    if(!isMA){
+      // End dot on primary series only
+      var ex=xx(pts.length-1,pts.length), ey=yy(pts[pts.length-1]);
+      ctx.beginPath(); ctx.arc(ex,ey,2.5,0,Math.PI*2);
+      ctx.fillStyle=col; ctx.fill();
+    }
   }
 
-  drawSeries(hPts,'#f87171');
-  drawSeries(aPts,'#60a5fa');
+  // Draw MA-50 underneath the primary lines so the primary lines stay on top
+  if(hMaPts && hMaPts.length) drawSeries(hMaPts,'#f87171', true);
+  if(aMaPts && aMaPts.length) drawSeries(aMaPts,'#60a5fa', true);
+  drawSeries(hPts,'#f87171', false);
+  drawSeries(aPts,'#60a5fa', false);
 
   // End labels (nudge apart if overlapping)
   var hLastY=yy(hPts[hPts.length-1]);
@@ -173,9 +192,9 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total){
   ctx.fillStyle=aPts[aPts.length-1]>=0?'#4ade80':'#60a5fa';
   ctx.fillText('A '+aLabel, padL+cw-2, aLastY+6);
 
-  // Axis label
-  ctx.font='7px IBM Plex Mono'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
-  ctx.fillText('Running ROI% (all records, last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' shown)', padL+2, H-4);
+  // Axis label (brightened from grey to slate so it's readable on dark bg)
+  ctx.font='8px IBM Plex Mono'; ctx.fillStyle='#cbd5e1'; ctx.textAlign='left';
+  ctx.fillText('Running ROI% (solid) + MA-50 (dotted) — last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets', padL+2, H-4);
 }
 
 function renderAsiaStats(data){
