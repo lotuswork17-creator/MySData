@@ -507,38 +507,15 @@ function applyJCPickFilter(r){
   function ts(v){
     if(!v) return null;
     var u=String(v).trim().toUpperCase();
-    if(u==='H'||u==='1H') return 'H';
+    if(u==='H'||u==='1H'||u==='FH') return 'H';
     if(u==='D'||u==='1D') return 'D';
-    if(u==='A'||u==='1A') return 'A';
-    return null;
+    if(u==='A'||u==='1A'||u==='FA') return 'A';
+    return null;  // B/1B, S/1S, CS, CB etc. are not directional picks
   }
 
-  // For Gem/GPT, derive the pick from the raw count fields (GEMH/GEMD/GEMA, GPTH/GPTD/GPTA)
-  // since the TIPSGEM/TIPSGPT string fields are sparse (mostly empty). If the AI gave
-  // no votes at all, fall back to the string field.
-  function pick(key){
-    if(key==='TIPSGEM'){
-      var h=r.GEMH||0, d=r.GEMD||0, a=r.GEMA||0;
-      if(h||d||a){
-        if(h>d && h>a) return 'H';
-        if(a>h && a>d) return 'A';
-        if(d>h && d>a) return 'D';
-        return null; // tied — no clear pick
-      }
-      return ts(r.TIPSGEM);
-    }
-    if(key==='TIPSGPT'){
-      var h2=r.GPTH||0, d2=r.GPTD||0, a2=r.GPTA||0;
-      if(h2||d2||a2){
-        if(h2>d2 && h2>a2) return 'H';
-        if(a2>h2 && a2>d2) return 'A';
-        if(d2>h2 && d2>a2) return 'D';
-        return null;
-      }
-      return ts(r.TIPSGPT);
-    }
-    return ts(r[key]);
-  }
+  // Every expert (including Gem/GPT) uses its own resolved string pick. The GEM*/GPT*
+  // raw count fields are NOT used.
+  function pick(key){ return ts(r[key]); }
 
   // Count-based preset filter
   if(jcCountMode){
