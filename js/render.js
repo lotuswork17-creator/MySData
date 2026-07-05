@@ -1,6 +1,67 @@
 // 💀 indicator: HKJC offers the best (highest) price on a side vs both Macau & SBO.
 // Per the Book Compare study, the best-priced side tends to UNDERperform — i.e. fade it.
 // Requires Macau & SBO present and all three lines equal (valid comparison).
+// Head-to-head (H2H) strip: Recent meetings + past-1-year meetings between the
+// two teams, from the HOME team's perspective (H = home team won, D = draw, A = away won).
+// Rendered as count chips + a proportional segment bar in the standard H/D/A colours.
+// Rows with no data are hidden entirely.
+// Compact single-line H2H for the desktop Match cell: Rec 4-3-1 · 1Yr 1-1-1
+// Numbers coloured by side (H red / D green / A blue). Hidden when no data.
+// Gem/GPT vote-count cell: two stacked mini-rows with brand-colour labels
+// (Gem = yellow, GPT = pink) so each number's source is instantly clear.
+function gemGptCell(gem, gpt){
+  if(gem==null && gpt==null) return '<span style="color:var(--muted)">\u2014</span>';
+  return '<div style="line-height:1.5;font-size:12px;font-family:var(--mono)">'
+    +'<div><span style="color:#fbbf24;font-size:9px;font-weight:400">G</span> <span style="color:#fde68a;font-weight:700">'+(gem!=null?gem:'\u2014')+'</span></div>'
+    +'<div><span style="color:#e879f9;font-size:9px;font-weight:400">P</span> <span style="color:#f5d0fe;font-weight:700">'+(gpt!=null?gpt:'\u2014')+'</span></div>'
+    +'</div>';
+}
+
+function h2hInline(r){
+  function seg(label,h,d,a){
+    h=h||0;d=d||0;a=a||0;
+    if(!(h+d+a)) return '';
+    return '<span style="margin-right:8px"><span style="color:var(--muted)">'+label+' </span>'
+      +'<span style="color:#f87171;font-weight:700">'+h+'</span><span style="color:var(--muted)">-</span>'
+      +'<span style="color:#4ade80;font-weight:700">'+d+'</span><span style="color:var(--muted)">-</span>'
+      +'<span style="color:#60a5fa;font-weight:700">'+a+'</span></span>';
+  }
+  var rec=seg('Rec', r.RECENTH, r.RECENTD, r.RECENTA);
+  var yr =seg('1Yr', r.REC1YRH, r.REC1YRD, r.REC1YRA);
+  if(!rec && !yr) return '';
+  return '<div style="font-size:10px;font-family:var(--mono);margin-top:2px">'+rec+yr+'</div>';
+}
+
+function h2hStrip(r){
+  function row(label, h, d, a){
+    h=h||0; d=d||0; a=a||0;
+    var tot=h+d+a;
+    if(!tot) return '';
+    var bar='<div style="height:10px;border-radius:3px;background:var(--border);display:flex;overflow:hidden;flex:1;min-width:60px">'
+      +(h?'<div style="width:'+(h/tot*100)+'%;background:#f87171"></div>':'')
+      +(d?'<div style="width:'+(d/tot*100)+'%;background:#4ade80"></div>':'')
+      +(a?'<div style="width:'+(a/tot*100)+'%;background:#60a5fa"></div>':'')
+      +'</div>';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
+      +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:52px">'+label+'</span>'
+      +'<span style="font-size:11px;font-family:var(--mono);font-weight:700;min-width:64px">'
+        +'<span style="color:#f87171">'+h+'</span><span style="color:var(--muted)"> - </span>'
+        +'<span style="color:#4ade80">'+d+'</span><span style="color:var(--muted)"> - </span>'
+        +'<span style="color:#60a5fa">'+a+'</span>'
+      +'</span>'
+      +bar
+      +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">'+tot+' games</span>'
+      +'</div>';
+  }
+  var recent=row('Recent', r.RECENTH, r.RECENTD, r.RECENTA);
+  var oneYr =row('1-Year', r.REC1YRH, r.REC1YRD, r.REC1YRA);
+  if(!recent && !oneYr) return '';
+  return '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'
+    +'<div style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px">H2H Record <span style="opacity:.7">(home view: W-D-L)</span></div>'
+    +recent+oneYr
+    +'</div>';
+}
+
 function hkjcBestPriceSkull(r, side){
   var hk  = side==='H' ? r.ASIAH    : r.ASIAA;
   var mac = side==='H' ? r.ASIAHMAC : r.ASIAAMAC;
@@ -87,9 +148,15 @@ function renderTable(){
         +' <span style="color:#fbbf24">Gem:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)
         +' <span style="color:#e879f9">GPT:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)
         +'</div>'
-        +'<div style="display:flex;gap:10px;margin-top:4px;font-family:var(--mono);font-size:10px;color:#94a3b8">'
-        +'<span>Gem: '+(r.GEMH!=null?r.GEMH:'\u2014')+' / '+(r.GEMD!=null?r.GEMD:'\u2014')+' / '+(r.GEMA!=null?r.GEMA:'\u2014')+'</span>'
-        +'<span style="margin-left:8px">Gpt: '+(r.GPTH!=null?r.GPTH:'\u2014')+' / '+(r.GPTD!=null?r.GPTD:'\u2014')+' / '+(r.GPTA!=null?r.GPTA:'\u2014')+'</span>'
+        +'<div style="display:flex;gap:14px;margin-top:4px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">'
+        +'<span><span style="color:#fbbf24;font-weight:700">Gem</span> '
+          +'<span style="color:#f87171;font-weight:700">H'+(r.GEMH!=null?r.GEMH:'\u2014')+'</span> '
+          +'<span style="color:#4ade80;font-weight:700">D'+(r.GEMD!=null?r.GEMD:'\u2014')+'</span> '
+          +'<span style="color:#60a5fa;font-weight:700">A'+(r.GEMA!=null?r.GEMA:'\u2014')+'</span></span>'
+        +'<span><span style="color:#e879f9;font-weight:700">GPT</span> '
+          +'<span style="color:#f87171;font-weight:700">H'+(r.GPTH!=null?r.GPTH:'\u2014')+'</span> '
+          +'<span style="color:#4ade80;font-weight:700">D'+(r.GPTD!=null?r.GPTD:'\u2014')+'</span> '
+          +'<span style="color:#60a5fa;font-weight:700">A'+(r.GPTA!=null?r.GPTA:'\u2014')+'</span></span>'
         +'</div>'
         +(r.PREDICTH||r.PREDICTD||r.PREDICTA?'<div style="margin-top:8px">'
           +(lowConfidence(r)?'<div style="font-size:9px;color:var(--warn);opacity:.8;font-family:var(--mono);margin-bottom:4px">⚠ Low confidence</div>':'')
@@ -126,6 +193,7 @@ function renderTable(){
                 +'</div>')
             +'</div>';
         })()
+        +h2hStrip(r)
         +'</td></tr>';
     }).join('');
   } else {
@@ -157,7 +225,7 @@ function renderTable(){
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td><div style="color:#94a3b8">'+esc(r.DATE||'—')+'</div><div style="color:#e2e8f0;font-size:11px;font-weight:600">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
-        +'<td class="tcell" style="white-space:normal;max-width:180px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span><span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span>'+vigSymbol(r)+'</td>'
+        +'<td class="tcell" style="white-space:normal;max-width:180px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span><span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span>'+vigSymbol(r)+h2hInline(r)+'</td>'
         +'<td>'+(function(){
           var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
           var e=expertScore(r);
@@ -220,9 +288,9 @@ function renderTable(){
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)+'</td>'
-        +'<td class="oc" style="text-align:center"><span style="color:#4ade80">'+(r.GEMH!=null?r.GEMH:'\u2014')+'</span> / <span style="color:#e879f9">'+(r.GPTH!=null?r.GPTH:'\u2014')+'</span></td>'
-        +'<td class="oc" style="text-align:center"><span style="color:#4ade80">'+(r.GEMD!=null?r.GEMD:'\u2014')+'</span> / <span style="color:#e879f9">'+(r.GPTD!=null?r.GPTD:'\u2014')+'</span></td>'
-        +'<td class="oc" style="text-align:center"><span style="color:#4ade80">'+(r.GEMA!=null?r.GEMA:'\u2014')+'</span> / <span style="color:#e879f9">'+(r.GPTA!=null?r.GPTA:'\u2014')+'</span></td>'
+        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMH,r.GPTH)+'</td>'
+        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMD,r.GPTD)+'</td>'
+        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMA,r.GPTA)+'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
