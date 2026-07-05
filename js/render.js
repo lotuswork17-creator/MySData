@@ -7,14 +7,50 @@
 // Rows with no data are hidden entirely.
 // Compact single-line H2H for the desktop Match cell: Rec 4-3-1 · 1Yr 1-1-1
 // Numbers coloured by side (H red / D green / A blue). Hidden when no data.
-// Gem/GPT vote-count cell: two stacked mini-rows with brand-colour labels
-// (Gem = yellow, GPT = pink) so each number's source is instantly clear.
-function gemGptCell(gem, gpt){
-  if(gem==null && gpt==null) return '<span style="color:var(--muted)">\u2014</span>';
-  return '<div style="line-height:1.5;font-size:12px;font-family:var(--mono)">'
-    +'<div><span style="color:#fbbf24;font-size:9px;font-weight:400">G</span> <span style="color:#fde68a;font-weight:700">'+(gem!=null?gem:'\u2014')+'</span></div>'
-    +'<div><span style="color:#e879f9;font-size:9px;font-weight:400">P</span> <span style="color:#f5d0fe;font-weight:700">'+(gpt!=null?gpt:'\u2014')+'</span></div>'
-    +'</div>';
+// AI vote-count cell: Gem + GPT as two mini segmented bars (H red / D green / A blue)
+// with the counts printed on the segments — same style as the H2H bars.
+function aiVotesMobile(r){
+  function bar(label,labelCol,h,d,a){
+    h=h||0;d=d||0;a=a||0;
+    var tot=h+d+a;
+    if(!tot) return '';
+    function seg(n,col){
+      if(!n) return '';
+      return '<div style="flex:'+n+' 1 0;min-width:16px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:11px;font-family:var(--mono)">'+n+'</div>';
+    }
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
+      +'<span style="color:'+labelCol+';font-size:10px;font-weight:700;font-family:var(--mono);min-width:28px">'+label+'</span>'
+      +'<div style="height:14px;border-radius:4px;display:flex;overflow:hidden;flex:1;max-width:180px;background:var(--border)">'
+        +seg(h,'#f87171')+seg(d,'#4ade80')+seg(a,'#60a5fa')
+      +'</div>'
+      +'</div>';
+  }
+  var g=bar('Gem','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
+  var p=bar('GPT','#e879f9', r.GPTH, r.GPTD, r.GPTA);
+  if(!g && !p) return '';
+  return '<div style="margin-top:4px">'+g+p+'</div>';
+}
+
+function aiVotesCell(r){
+  function bar(label,labelCol,h,d,a){
+    h=h||0;d=d||0;a=a||0;
+    var tot=h+d+a;
+    if(!tot) return '';
+    function seg(n,col){
+      if(!n) return '';
+      return '<div style="flex:'+n+' 1 0;min-width:13px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
+    }
+    return '<div style="display:flex;align-items:center;gap:4px;margin:1px 0">'
+      +'<span style="color:'+labelCol+';font-size:9px;font-weight:700;min-width:12px">'+label+'</span>'
+      +'<div style="height:12px;border-radius:3px;display:flex;overflow:hidden;width:78px;background:var(--border)">'
+        +seg(h,'#f87171')+seg(d,'#4ade80')+seg(a,'#60a5fa')
+      +'</div>'
+      +'</div>';
+  }
+  var g=bar('G','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
+  var p=bar('P','#e879f9', r.GPTH, r.GPTD, r.GPTA);
+  if(!g && !p) return '<span style="color:var(--muted)">\u2014</span>';
+  return '<div style="font-family:var(--mono);display:inline-block;text-align:left">'+g+p+'</div>';
 }
 
 function h2hInline(r){
@@ -151,16 +187,7 @@ function renderTable(){
         +' <span style="color:#fbbf24">Gem:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)
         +' <span style="color:#e879f9">GPT:</span> '+(function(v){if(!v)return'<span style="color:var(--muted)">—</span>';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)
         +'</div>'
-        +'<div style="display:flex;gap:14px;margin-top:4px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">'
-        +'<span><span style="color:#fbbf24;font-weight:700">Gem</span> '
-          +'<span style="color:#f87171;font-weight:700">H'+(r.GEMH!=null?r.GEMH:'\u2014')+'</span> '
-          +'<span style="color:#4ade80;font-weight:700">D'+(r.GEMD!=null?r.GEMD:'\u2014')+'</span> '
-          +'<span style="color:#60a5fa;font-weight:700">A'+(r.GEMA!=null?r.GEMA:'\u2014')+'</span></span>'
-        +'<span><span style="color:#e879f9;font-weight:700">GPT</span> '
-          +'<span style="color:#f87171;font-weight:700">H'+(r.GPTH!=null?r.GPTH:'\u2014')+'</span> '
-          +'<span style="color:#4ade80;font-weight:700">D'+(r.GPTD!=null?r.GPTD:'\u2014')+'</span> '
-          +'<span style="color:#60a5fa;font-weight:700">A'+(r.GPTA!=null?r.GPTA:'\u2014')+'</span></span>'
-        +'</div>'
+        +aiVotesMobile(r)
         +(r.PREDICTH||r.PREDICTD||r.PREDICTA?'<div style="margin-top:8px">'
           +(lowConfidence(r)?'<div style="font-size:9px;color:var(--warn);opacity:.8;font-family:var(--mono);margin-bottom:4px">⚠ Low confidence</div>':'')
           +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-bottom:3px'+(lowConfidence(r)?';opacity:.5':'')+'">'
@@ -291,9 +318,7 @@ function renderTable(){
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSONID)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGEM)+'</td>'
         +'<td class="oc">'+(function(v){if(!v)return'—';var c=v.includes('H')?'#f87171':v.includes('D')?'#4ade80':v.includes('A')?'#60a5fa':'var(--text)';return'<span style="color:'+c+';font-weight:700">'+v+'</span>';})(r.TIPSGPT)+'</td>'
-        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMH,r.GPTH)+'</td>'
-        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMD,r.GPTD)+'</td>'
-        +'<td class="oc" style="text-align:center">'+gemGptCell(r.GEMA,r.GPTA)+'</td>'
+        +'<td class="oc" style="text-align:center">'+aiVotesCell(r)+'</td>'
         +'<td>'+scoreHtml+'</td>'
         +'<td><span class="status-badge '+sc+'">'+sl+'</span></td>'
         +'</tr>';
