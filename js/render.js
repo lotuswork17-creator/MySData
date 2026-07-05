@@ -18,18 +18,25 @@ function gemGptCell(gem, gpt){
 }
 
 function h2hInline(r){
-  function seg(label,h,d,a){
+  function bar(label,h,d,a){
     h=h||0;d=d||0;a=a||0;
-    if(!(h+d+a)) return '';
-    return '<span style="margin-right:8px"><span style="color:var(--muted)">'+label+' </span>'
-      +'<span style="color:#f87171;font-weight:700">'+h+'</span><span style="color:var(--muted)">-</span>'
-      +'<span style="color:#4ade80;font-weight:700">'+d+'</span><span style="color:var(--muted)">-</span>'
-      +'<span style="color:#60a5fa;font-weight:700">'+a+'</span></span>';
+    var tot=h+d+a;
+    if(!tot) return '';
+    function seg(n,col){
+      if(!n) return '';
+      return '<div style="flex:'+n+' 1 0;min-width:13px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
+    }
+    return '<div style="display:flex;align-items:center;gap:4px;margin-top:2px">'
+      +'<span style="color:var(--muted);font-size:9px;min-width:22px">'+label+'</span>'
+      +'<div style="height:12px;border-radius:3px;display:flex;overflow:hidden;width:90px;background:var(--border)">'
+        +seg(h,'#f87171')+seg(d,'#4ade80')+seg(a,'#60a5fa')
+      +'</div>'
+      +'</div>';
   }
-  var rec=seg('Rec', r.RECENTH, r.RECENTD, r.RECENTA);
-  var yr =seg('1Yr', r.REC1YRH, r.REC1YRD, r.REC1YRA);
+  var rec=bar('Rec', r.RECENTH, r.RECENTD, r.RECENTA);
+  var yr =bar('1Yr', r.REC1YRH, r.REC1YRD, r.REC1YRA);
   if(!rec && !yr) return '';
-  return '<div style="font-size:10px;font-family:var(--mono);margin-top:2px">'+rec+yr+'</div>';
+  return '<div style="font-family:var(--mono)">'+rec+yr+'</div>';
 }
 
 function h2hStrip(r){
@@ -37,23 +44,19 @@ function h2hStrip(r){
     h=h||0; d=d||0; a=a||0;
     var tot=h+d+a;
     if(!tot) return '';
-    var bar='<div style="height:10px;border-radius:3px;background:var(--border);display:flex;overflow:hidden;flex:1;min-width:60px">'
-      +(h?'<div style="width:'+(h/tot*100)+'%;background:#f87171"></div>':'')
-      +(d?'<div style="width:'+(d/tot*100)+'%;background:#4ade80"></div>':'')
-      +(a?'<div style="width:'+(a/tot*100)+'%;background:#60a5fa"></div>':'')
-      +'</div>';
-    return '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
-      +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:52px">'+label+'</span>'
-      +'<span style="font-size:11px;font-family:var(--mono);font-weight:700;min-width:64px">'
-        +'<span style="color:#f87171">'+h+'</span><span style="color:var(--muted)"> - </span>'
-        +'<span style="color:#4ade80">'+d+'</span><span style="color:var(--muted)"> - </span>'
-        +'<span style="color:#60a5fa">'+a+'</span>'
-      +'</span>'
-      +bar
-      +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">'+tot+' games</span>'
+    function seg(n,col){
+      if(!n) return '';
+      return '<div style="flex:'+n+' 1 0;min-width:16px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:11px;font-family:var(--mono)">'+n+'</div>';
+    }
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:4px">'
+      +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:88px">'+label+'</span>'
+      +'<div style="height:16px;border-radius:4px;background:var(--border);display:flex;overflow:hidden;flex:1">'
+        +seg(h,'#f87171')+seg(d,'#4ade80')+seg(a,'#60a5fa')
+      +'</div>'
+      +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono);min-width:52px;text-align:right">'+tot+' games</span>'
       +'</div>';
   }
-  var recent=row('Recent', r.RECENTH, r.RECENTD, r.RECENTA);
+  var recent=row('Recent (last 8)', r.RECENTH, r.RECENTD, r.RECENTA);
   var oneYr =row('1-Year', r.REC1YRH, r.REC1YRD, r.REC1YRA);
   if(!recent && !oneYr) return '';
   return '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'
