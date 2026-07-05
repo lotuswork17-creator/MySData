@@ -25,7 +25,7 @@ function aiVotesMobile(r){
       +'</div>'
       +'</div>';
   }
-  var g=bar('Gem','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
+  var g=bar('GEM','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
   var p=bar('GPT','#e879f9', r.GPTH, r.GPTD, r.GPTA);
   if(!g && !p) return '';
   return '<div style="margin-top:4px">'+g+p+'</div>';
@@ -41,14 +41,14 @@ function aiVotesCell(r){
       return '<div style="flex:'+n+' 1 0;min-width:13px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
     }
     return '<div style="display:flex;align-items:center;gap:4px;margin:1px 0">'
-      +'<span style="color:'+labelCol+';font-size:9px;font-weight:700;min-width:12px">'+label+'</span>'
+      +'<span style="color:'+labelCol+';font-size:9px;font-weight:700;min-width:24px">'+label+'</span>'
       +'<div style="height:12px;border-radius:3px;display:flex;overflow:hidden;width:78px;background:var(--border)">'
         +seg(h,'#f87171')+seg(d,'#4ade80')+seg(a,'#60a5fa')
       +'</div>'
       +'</div>';
   }
-  var g=bar('G','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
-  var p=bar('P','#e879f9', r.GPTH, r.GPTD, r.GPTA);
+  var g=bar('GEM','#fbbf24', r.GEMH, r.GEMD, r.GEMA);
+  var p=bar('GPT','#e879f9', r.GPTH, r.GPTD, r.GPTA);
   if(!g && !p) return '<span style="color:var(--muted)">\u2014</span>';
   return '<div style="font-family:var(--mono);display:inline-block;text-align:left">'+g+p+'</div>';
 }
