@@ -9,9 +9,8 @@
 // Numbers coloured by side (H red / D green / A blue). Hidden when no data.
 // AI vote-count cell: Gem + GPT as two mini segmented bars (H red / D green / A blue)
 // with the counts printed on the segments — same style as the H2H bars.
-// 3-month team form (W-D-L) as a tiny inline segmented bar: W green / D amber / L red.
-// Deliberately different colours from the H2H bars (which use home/draw/away semantics):
-// form is from the TEAM'S OWN perspective, so green=win / amber=draw / red=loss.
+// 3-month team form (W-D-L) as a tiny inline segmented bar.
+// Uses the SAME colour language as all other bars on the page: W red / D green / L blue.
 function formBarInline(w,d,l){
   w=w||0; d=d||0; l=l||0;
   var tot=w+d+l;
@@ -21,7 +20,7 @@ function formBarInline(w,d,l){
     return '<div style="flex:'+n+' 1 0;min-width:12px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
   }
   return '<span style="display:inline-flex;height:12px;border-radius:3px;overflow:hidden;width:60px;background:var(--border);vertical-align:middle;margin-left:5px;font-family:var(--mono)">'
-    +seg(w,'#4ade80')+seg(d,'#fbbf24')+seg(l,'#f87171')
+    +seg(w,'#f87171')+seg(d,'#4ade80')+seg(l,'#60a5fa')
     +'</span>';
 }
 
@@ -38,7 +37,7 @@ function formStripMobile(r){
     return '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
       +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:88px">'+label+'</span>'
       +'<div style="height:14px;border-radius:4px;display:flex;overflow:hidden;flex:1;max-width:180px;background:var(--border)">'
-        +seg(w,'#4ade80')+seg(d,'#fbbf24')+seg(l,'#f87171')
+        +seg(w,'#f87171')+seg(d,'#4ade80')+seg(l,'#60a5fa')
       +'</div>'
       +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">'+tot+' games</span>'
       +'</div>';
