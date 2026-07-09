@@ -99,7 +99,7 @@ function renderBetCalc(data){
         +'<span style="color:'+_col(hLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(hLast)+'</span>'
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="display:inline-block;width:18px;height:2px;border-top:2px dotted #f87171"></span>'
+        +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;opacity:.7"></span>'
         +'<b style="color:#f87171;opacity:.85">H MA-50</b>'
         +'<span style="color:'+_col(hMaLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(hMaLast)+'</span>'
       +'</div>'
@@ -109,7 +109,7 @@ function renderBetCalc(data){
         +'<span style="color:'+_col(aLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(aLast)+'</span>'
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="display:inline-block;width:18px;height:2px;border-top:2px dotted #60a5fa"></span>'
+        +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#60a5fa;opacity:.7"></span>'
         +'<b style="color:#60a5fa;opacity:.85">A MA-50</b>'
         +'<span style="color:'+_col(aMaLast)+';font-weight:700;font-family:var(--mono);font-size:15px">'+_pct(aMaLast)+'</span>'
       +'</div>'
@@ -138,10 +138,8 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total, hMaP
   var padL=36, padR=8, padT=8, padB=16;
   var cw=w-padL-padR, ch=H-padT-padB;
 
-  // Single shared scale across both series (and MA series if provided)
+  // Single shared scale across both primary series (MA series no longer plotted)
   var allV=hPts.concat(aPts);
-  if(hMaPts && hMaPts.length) allV=allV.concat(hMaPts);
-  if(aMaPts && aMaPts.length) allV=allV.concat(aMaPts);
   var dataMn=Math.min.apply(null,allV), dataMx=Math.max.apply(null,allV);
   var pad=(dataMx-dataMn)*0.15||0.1;  // 15% padding each side
   var mn=dataMn-pad;
@@ -207,16 +205,15 @@ function drawRoiPanel(canvasId, hPts, aPts, hLabel, aLabel, winSize, total, hMaP
     }
   }
 
-  // Draw MA-50 underneath the primary lines so the primary lines stay on top
-  if(hMaPts && hMaPts.length) drawSeries(hMaPts,'#f87171', true);
-  if(aMaPts && aMaPts.length) drawSeries(aMaPts,'#60a5fa', true);
+  // MA-50 lines are intentionally NOT drawn on the chart (the MA-50 figures are still
+  // shown in the labels row above). Only the primary running-ROI lines are plotted.
   drawSeries(hPts,'#f87171', false);
   drawSeries(aPts,'#60a5fa', false);
 
   // Axis label (brightened from grey to slate so it's readable on dark bg).
   // The four ROI values are now shown in the labels row above the chart.
   ctx.font='9px IBM Plex Mono'; ctx.fillStyle='#cbd5e1'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-  ctx.fillText('Running ROI% (solid) + MA-50 (dotted) — last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets', padL+2, H-4);
+  ctx.fillText('Running ROI% — last '+(winSize||hPts.length)+' of '+(total||hPts.length)+' bets', padL+2, H-4);
 }
 
 function renderAsiaStats(data){
