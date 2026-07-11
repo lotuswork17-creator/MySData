@@ -25,45 +25,7 @@ function formBarUnder(w,d,l){
     +'</span>';
 }
 
-function formBarInline(w,d,l){
-  w=w||0; d=d||0; l=l||0;
-  var tot=w+d+l;
-  if(!tot) return '';
-  function seg(n,col){
-    if(!n) return '';
-    return '<div style="flex:'+n+' 1 0;min-width:12px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
-  }
-  return '<span style="display:inline-flex;height:12px;border-radius:3px;overflow:hidden;width:60px;background:var(--border);vertical-align:middle;margin-left:5px;font-family:var(--mono)">'
-    +seg(w,'#f87171')+seg(d,'#4ade80')+seg(l,'#60a5fa')
-    +'</span>';
-}
 
-// Mobile: labelled 3M form rows for the card strip
-function formStripMobile(r){
-  function row(label, w, d, l){
-    w=w||0; d=d||0; l=l||0;
-    var tot=w+d+l;
-    if(!tot) return '';
-    function seg(n,col){
-      if(!n) return '';
-      return '<div style="flex:'+n+' 1 0;min-width:16px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:11px;font-family:var(--mono)">'+n+'</div>';
-    }
-    return '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
-      +'<span style="font-size:10px;color:var(--muted);font-family:var(--mono);min-width:88px">'+label+'</span>'
-      +'<div style="height:14px;border-radius:4px;display:flex;overflow:hidden;flex:1;max-width:180px;background:var(--border)">'
-        +seg(w,'#f87171')+seg(d,'#4ade80')+seg(l,'#60a5fa')
-      +'</div>'
-      +'<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">'+tot+' games</span>'
-      +'</div>';
-  }
-  var home=row('3M Home', r.REC3MHH, r.REC3MHD, r.REC3MHA);
-  var away=row('3M Away', r.REC3MAH, r.REC3MAD, r.REC3MAA);
-  if(!home && !away) return '';
-  return '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'
-    +'<div style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px">3M Team Form <span style="opacity:.7">(W-D-L, last 3 months)</span></div>'
-    +home+away
-    +'</div>';
-}
 
 function aiVotesMobile(r){
   function bar(label,labelCol,h,d,a){
@@ -323,7 +285,14 @@ function renderTable(){
       return '<tr onclick="openDetail('+gi+')" '+(selIdx===gi?'class="selected"':'')+'>'
         +'<td><div style="color:#94a3b8">'+esc(r.DATE||'—')+'</div><div style="color:#e2e8f0;font-size:11px;font-weight:600">'+(r.TIME?fmtTime(r.TIME):'')+'</div></td>'
         +'<td class="ccell" title="'+esc(r.CATEGORY||'')+'" style="'+leagueCellStyle+'">'+hl(esc(r.CATEGORY||'—'),s)+'</td>'
-        +'<td class="tcell" style="white-space:normal;max-width:220px"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span>'+formBarInline(r.REC3MHH,r.REC3MHD,r.REC3MHA)+'<span style="color:var(--muted);font-size:10px;margin:0 5px">vs</span><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span>'+formBarInline(r.REC3MAH,r.REC3MAD,r.REC3MAA)+vigSymbol(r)+h2hInline(r)+'</td>'
+        +'<td class="tcell" style="white-space:normal;max-width:220px">'
+          +'<div style="display:flex;align-items:flex-start;flex-wrap:wrap">'
+            +'<span style="display:inline-flex;flex-direction:column;align-items:flex-start"><span style="font-weight:600">'+hl(esc(r.TEAMH||'—'),s)+'</span>'+formBarUnder(r.REC3MHH,r.REC3MHD,r.REC3MHA)+'</span>'
+            +'<span style="color:var(--muted);font-size:10px;margin:0 5px;align-self:flex-start">vs</span>'
+            +'<span style="display:inline-flex;flex-direction:column;align-items:flex-start"><span style="font-weight:600">'+hl(esc(r.TEAMA||'—'),s)+'</span>'+formBarUnder(r.REC3MAH,r.REC3MAD,r.REC3MAA)+'</span>'
+            +'<span style="margin-left:4px">'+vigSymbol(r)+'</span>'
+          +'</div>'
+          +h2hInline(r)+'</td>'
         +'<td>'+(function(){
           var ph=r.PREDICTH||0,pd=r.PREDICTD||0,pa=r.PREDICTA||0;
           var e=expertScore(r);
