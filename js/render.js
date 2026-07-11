@@ -11,6 +11,20 @@
 // with the counts printed on the segments — same style as the H2H bars.
 // 3-month team form (W-D-L) as a tiny inline segmented bar.
 // Uses the SAME colour language as all other bars on the page: W red / D green / L blue.
+// Form bar placed directly UNDER a team name (mobile card) — position implies ownership.
+function formBarUnder(w,d,l){
+  w=w||0; d=d||0; l=l||0;
+  var tot=w+d+l;
+  if(!tot) return '';
+  function seg(n,col){
+    if(!n) return '';
+    return '<div style="flex:'+n+' 1 0;min-width:12px;background:'+col+';display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:9px">'+n+'</div>';
+  }
+  return '<span style="display:inline-flex;height:11px;border-radius:3px;overflow:hidden;width:64px;background:var(--border);margin-top:2px;font-family:var(--mono);font-weight:400">'
+    +seg(w,'#f87171')+seg(d,'#4ade80')+seg(l,'#60a5fa')
+    +'</span>';
+}
+
 function formBarInline(w,d,l){
   w=w||0; d=d||0; l=l||0;
   var tot=w+d+l;
@@ -193,7 +207,19 @@ function renderTable(){
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div style="flex:1;margin-right:70px">'
         +'<div style="font-size:11px;font-family:var(--mono);margin-bottom:3px"><span style="color:#94a3b8">'+esc(r.DATE||'')+'</span>'+(time?'<span style="color:#e2e8f0;font-weight:600;margin-left:5px">'+time+'</span>':'')+'</div>'
-        +'<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:2px">'+'<span style="'+catStyle+'margin-bottom:0;flex-shrink:0">'+hl(esc(r.CATEGORY||''),s)+'</span>'+'<span style="font-size:13px;font-weight:700;color:var(--text);line-height:1.4">'+hl(esc(r.TEAMH||'?'),s)+'<span style="color:var(--muted);font-weight:400;font-size:11px;margin:0 5px">vs</span>'+hl(esc(r.TEAMA||'?'),s)+' '+vigSymbol(r)+'</span>'+'</div>'
+        +'<div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:2px">'+'<span style="'+catStyle+'margin-bottom:0;flex-shrink:0">'+hl(esc(r.CATEGORY||''),s)+'</span>'
+        +'<span style="display:inline-flex;align-items:flex-start;gap:0;font-size:13px;font-weight:700;color:var(--text);line-height:1.4">'
+          +'<span style="display:inline-flex;flex-direction:column;align-items:flex-start">'
+            +'<span>'+hl(esc(r.TEAMH||'?'),s)+'</span>'
+            +formBarUnder(r.REC3MHH,r.REC3MHD,r.REC3MHA)
+          +'</span>'
+          +'<span style="color:var(--muted);font-weight:400;font-size:11px;margin:0 6px">vs</span>'
+          +'<span style="display:inline-flex;flex-direction:column;align-items:flex-start">'
+            +'<span>'+hl(esc(r.TEAMA||'?'),s)+'</span>'
+            +formBarUnder(r.REC3MAH,r.REC3MAD,r.REC3MAA)
+          +'</span>'
+          +'<span style="margin-left:4px">'+vigSymbol(r)+'</span>'
+        +'</span>'+'</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
         +'<span class="status-badge '+sc+'">'+sl+'</span>'
@@ -265,7 +291,7 @@ function renderTable(){
                 +'</div>')
             +'</div>';
         })()
-        +h2hStrip(r)+formStripMobile(r)
+        +h2hStrip(r)
         +'</td></tr>';
     }).join('');
   } else {
