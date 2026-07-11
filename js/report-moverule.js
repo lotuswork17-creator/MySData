@@ -1,6 +1,7 @@
 // ── report-moverule.js — Market Movement Rule Analysis ──
 // Rules based on expert tips × line movement × odds movement (opening→latest)
-// All rules verified on train (75%) and test (25%) temporal splits.
+// Train/test (75%/25% temporal split) is recomputed live on current data;
+// rules whose live train/test are no longer both positive are flagged PROB (on probation).
 
 // ── Helpers ──
 function mrLean(r){
@@ -181,7 +182,7 @@ function computeMoveRule(results, allRecords){
       r.ASIALINE!=null && r.ASIAH && r.ASIAA &&
       r.ASIAHLN && r.ASIAHLN>0 && r.ASIAALN && r.ASIAALN>0 && r.ASIALINELN!=null;
   });
-  data.sort(function(a,b){ return (a.DATE||'')>(b.DATE||'')?1:-1; });
+  data.sort(function(a,b){ var dc=(a.DATE||'').localeCompare(b.DATE||''); return dc!==0?dc:(a.TIME||0)-(b.TIME||0); });
 
   var n = data.length;
   var splitIdx = Math.floor(n * 0.75);
@@ -198,9 +199,6 @@ function computeMoveRule(results, allRecords){
   // Compute live stats per rule
   var ruleSignals = MR_RULES.map(function(rule){
     var key = rule.exp+'|'+rule.tip_dir+'|'+(rule.lm||'*')+'|'+(rule.hom||'*')+'|'+(rule.aom||'*')+'|'+rule.bet;
-    var all   = data.filter(function(r){ return matchRule(r,rule); });
-    var train = all.filter(function(r,i){ return all.indexOf(r) < splitIdx; });
-    // better: use index in data
     var allIdx = [];
     data.forEach(function(r,i){ if(matchRule(r,rule)) allIdx.push({r:r,i:i}); });
     var trainGrp = allIdx.filter(function(x){ return x.i < splitIdx; }).map(function(x){ return x.r; });
@@ -216,6 +214,7 @@ function computeMoveRule(results, allRecords){
       rule: rule, ruleKey: key,
       n: allIdx.length,
       roi: roiAll, train: roiTrain, test: roiTest,
+      valid: roiTrain>0 && roiTest>0,
     };
   });
 
@@ -226,6 +225,15 @@ function computeMoveRule(results, allRecords){
   });
   upcoming.sort(function(a,b){ return (a.DATE||'').localeCompare(b.DATE||'')||(a.TIME||0)-(b.TIME||0); });
 
+  // Fired-rule ordering: live-valid rules first, then by live overall ROI
+  function mrSortFired(fired){
+    fired.sort(function(a,b){
+      if(a.valid!==b.valid) return a.valid?-1:1;
+      return b.roi-a.roi;
+    });
+    return fired;
+  }
+
   var upcomingAlerts = [];
   upcoming.forEach(function(r){
     var fired = [];
@@ -233,6 +241,7 @@ function computeMoveRule(results, allRecords){
       if(matchRule(r, rs.rule)) fired.push(rs);
     });
     if(fired.length){
+      mrSortFired(fired);
       var _mrConflict=fired.some(function(rs){return rs.rule.bet!==fired[0].rule.bet;});
       upcomingAlerts.push({r:r, fired:fired, lean:mrLean(r), conflict:_mrConflict});
     }
@@ -248,6 +257,7 @@ function computeMoveRule(results, allRecords){
     var fired = [];
     ruleSignals.forEach(function(rs){ if(matchRule(r,rs.rule)) fired.push(rs); });
     if(!fired.length) return;
+    mrSortFired(fired);
     var pnl = mrPnl(r);
     if(!pnl) return;
     var adj = Math.round(((parseFloat(r.RESULTH)||0)-(parseFloat(r.RESULTA)||0)+(parseFloat(r.ASIALINE)||0))*4)/4;
@@ -280,10 +290,11 @@ function computeMoveRule(results, allRecords){
   // ── ROI history chart data ──
   var _mrSkip=300;
   var _mrBets=[];
-  data.slice().sort(function(a,b){return(a.DATE||'')>(b.DATE||'')?1:-1;}).forEach(function(r){
+  data.slice().sort(function(a,b){var dc=(a.DATE||'').localeCompare(b.DATE||'');return dc!==0?dc:(a.TIME||0)-(b.TIME||0);}).forEach(function(r){
     var fired=[];
     ruleSignals.forEach(function(rs){if(matchRule(r,rs.rule))fired.push(rs);});
     if(!fired.length)return;
+    mrSortFired(fired);
     var p=mrPnl(r); if(!p)return;
     var bet=fired[0].rule.bet, v=bet==='H'?p.h:p.a;
     if(v!==null)_mrBets.push(v);
@@ -319,7 +330,7 @@ function renderMoveRule(RD){
   h+='<div class="rpt-title">📡 Market Movement Rule Analysis</div>';
   h+='<div class="rpt-sub">Rules discovered from expert tips × opening→latest odds movements (line, H odds, A odds). '
     +'H odds <b style="color:#f87171">shortening</b> = market backing Home. H odds <b style="color:#60a5fa">drifting</b> = market fading Home. '
-    +'All rules verified on train (75%) and test (25%) temporal splits. Requires opening odds data (ASIAHLN/ASIAALN).</div>';
+    +'Train (75%) / test (25%) splits are recomputed live on current data; rules failing live validation are flagged PROB. Requires opening odds data (ASIAHLN/ASIAALN).</div>';
   h+='<div style="font-size:10px;color:#64748b;margin-bottom:14px">Dataset with opening odds: <b style="color:#e2e8f0">'+mr.nRecords+'</b> records</div>';
 
   // ── SECTION 1: Upcoming alerts ──
@@ -412,7 +423,8 @@ function renderMoveRule(RD){
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+_oddsArrow(r.ASIAA,r.ASIAALN)+'</td>';
       h+='<td class="num"><b style="font-size:14px;color:'+betCol+'">'+rule.bet+'</b></td>';
       h+='<td class="num"><span style="color:'+typeCol+';font-size:11px;font-weight:700">'+typeLabel+'</span></td>';
-      h+='<td style="font-size:10px;color:#e2e8f0;max-width:200px">'+rule.label+multiMark+'</td>';
+      var _mrProb=topRS.valid?'':' <span style="color:#f87171;font-size:8px;font-weight:700;border:1px solid #f87171;border-radius:3px;padding:0 3px;white-space:nowrap" title="Live test ROI \u2264 0 on current data \u2014 rule on probation">PROB</span>';
+      h+='<td style="font-size:10px;color:#e2e8f0;max-width:200px">'+rule.label+multiMark+_mrProb+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#64748b">'+topRS.n+'</td>';
       h+='<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(topRS.roi>=0?'+':'')+topRS.roi.toFixed(1)+'%</td>';
       h+='<td class="num">'+p20str+'</td>';
@@ -509,21 +521,28 @@ function renderMoveRule(RD){
 
   // ── SECTION 2: Rule summary table ──
   h+='<div style="margin-bottom:20px;border-top:2px solid var(--border);padding-top:14px">';
-  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">✅ All Verified Movement Rules (train + test both positive)</div>';
-  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">Sorted by overall ROI. <span style="color:#fbbf24">COUNTER = bet against the expert tip direction</span>. <span style="color:#4ade80">WITH = follow the expert</span>. Movement thresholds: ±3% for odds (short/drift), any change for line.</div>';
+  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">✅ Movement Rules — live train/test status</div>';
+  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">Valid rules first, then by overall ROI. Train/test recomputed on current data every load; <span style="color:#f87171">PROB</span> = live train/test no longer both positive. <span style="color:#fbbf24">COUNTER = bet against the expert tip direction</span>. <span style="color:#4ade80">WITH = follow the expert</span>. Movement thresholds: ±3% for odds (short/drift), any change for line.</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>';
   h+='<th>Rule</th><th class="num">Type</th><th class="num">Bet</th><th class="num">n</th>';
-  h+='<th class="num">ROI (all)</th><th class="num">Train</th><th class="num">Test</th>';
+  h+='<th class="num">ROI (all)</th><th class="num">Train</th><th class="num">Test</th><th class="num">Status</th>';
   h+='</tr></thead><tbody>';
 
-  mr.ruleSignals.slice().sort(function(a,b){ return b.roi-a.roi; }).forEach(function(rs){
+  mr.ruleSignals.slice().sort(function(a,b){
+    if(a.valid!==b.valid) return a.valid?-1:1;
+    return b.roi-a.roi;
+  }).forEach(function(rs){
     var rule=rs.rule;
     var typeCol=rule.type==='COUNTER'?'#fbbf24':'#4ade80';
     var betCol=rule.bet==='H'?'#f87171':'#60a5fa';
     var roiCol=rs.roi>=10?'#4ade80':rs.roi>=5?'#a3e635':rs.roi>=0?'#fbbf24':'#f87171';
     var trCol=rs.train>=0?'#4ade80':'#f87171';
     var teCol=rs.test>=0?'#4ade80':'#f87171';
-    h+='<tr>';
+    var rowStyle=rs.valid?'':' style="opacity:0.55"';
+    var statusHtml=rs.valid
+      ?'<span style="color:#4ade80;font-size:9px;font-weight:700">VALID</span>'
+      :'<span style="color:#f87171;font-size:9px;font-weight:700;border:1px solid #f87171;border-radius:3px;padding:0 3px" title="Live train/test no longer both positive">PROB</span>';
+    h+='<tr'+rowStyle+'>';
     h+='<td><span style="color:#e2e8f0;font-size:11px;font-weight:600">'+rule.label+'</span>'
       +'<br><span style="color:#475569;font-size:9px">'+rule.desc+'</span></td>';
     h+='<td class="num"><span style="color:'+typeCol+';font-size:10px;font-weight:700">'+rule.type+'</span></td>';
@@ -532,6 +551,7 @@ function renderMoveRule(RD){
     h+='<td class="num" style="font-family:var(--mono);font-weight:700;color:'+roiCol+'">'+(rs.roi>=0?'+':'')+rs.roi.toFixed(1)+'%</td>';
     h+='<td class="num" style="font-family:var(--mono);color:'+trCol+'">'+(rs.train>=0?'+':'')+rs.train.toFixed(1)+'%</td>';
     h+='<td class="num" style="font-family:var(--mono);color:'+teCol+'">'+(rs.test>=0?'+':'')+rs.test.toFixed(1)+'%</td>';
+    h+='<td class="num">'+statusHtml+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
