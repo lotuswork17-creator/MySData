@@ -239,6 +239,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderEffLine() -->
 </div>
 
+<div class="rpt-section" id="tabH2H">
+  <!-- content injected by renderH2HRule() -->
+</div>
+
 <div class="rpt-section" id="tabROI">
   <div class="rpt-title" style="margin-bottom:8px">📋 My ROI Charts</div>
   <div class="rpt-sub" style="margin-bottom:10px">Personal performance charts from the local HKJC statement processor. Auto-refreshes when you re-upload <code>ROI_Charts.html</code> to the repo.</div>
@@ -287,6 +291,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-bookrules.js"></script>
 <script src="js/report-bookrules2.js"></script>
 <script src="js/report-effline.js"></script>
+<script src="js/report-h2hrule.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -304,6 +309,7 @@ var TABS = [
   { label:'📚 Book Rules',      render: renderBookRules },
   { label:'📚 Book Rules 2',    render: renderBookRules2 },
   { label:'📏 Effective Line', render: renderEffLine },
+  { label:'⚔️ H2H/Line Rules', render: renderH2HRule },
   { label:'📋 My ROI Charts', render: renderRoiCharts },
 ];
 
