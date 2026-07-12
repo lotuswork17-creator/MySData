@@ -135,7 +135,7 @@ function computeH2HRule(results, records){
   return { ruleSignals:ruleSignals, upcomingAlerts:upcomingAlerts, pastBets:pastBets,
            nRecords:data.length, splitIdx:splitIdx, splitDate:splitIdx<data.length?data[splitIdx].DATE:'',
            totalBets:combined.length, roiAllBets:roiOf(combined),
-           roiL50:lastRoi(50), roiL100:lastRoi(100) };
+           roiL50:lastRoi(50), roiL100:lastRoi(100), roiL200:lastRoi(200) };
 }
 
 function renderH2HRule(RD){
@@ -167,8 +167,6 @@ function renderH2HRule(RD){
   var rc=hr.roiAllBets>=0?'#4ade80':'#f87171';
   h+=badge('Total bets (dedup)', hr.totalBets, '#e2e8f0');
   h+=badge('ROI all bets', (hr.roiAllBets>=0?'+':'')+hr.roiAllBets+'%', rc);
-  if(hr.roiL50!=null)  h+=badge('ROI last 50',  (hr.roiL50>=0?'+':'')+hr.roiL50+'%',  hr.roiL50>=0?'#4ade80':'#f87171');
-  if(hr.roiL100!=null) h+=badge('ROI last 100', (hr.roiL100>=0?'+':'')+hr.roiL100+'%', hr.roiL100>=0?'#4ade80':'#f87171');
   h+=badge('Train/test split', hr.splitDate, '#94a3b8');
   h+='</div>';
 
@@ -219,9 +217,11 @@ function renderH2HRule(RD){
       var ex=al.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(al.fired.length-1)+'</span>':'';
       var t=r.TIME, ts=t?String(t).padStart(4,'0'):'', tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
       var h2h=(r.RECENTH!=null&&r.RECENTD!=null&&r.RECENTA!=null)?r.RECENTH+'-'+r.RECENTD+'-'+r.RECENTA:'\u2014';
+      var hCol=top.rule.bet==='H'?'#f87171':'#94a3b8', aCol=top.rule.bet==='A'?'#60a5fa':'#94a3b8';
+      var hWt=top.rule.bet==='H'?'700':'400', aWt=top.rule.bet==='A'?'700':'400';
       h+='<tr>';
       h+='<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(r.DATE||'').slice(5)+(tm?' '+tm:'')+'</td>';
-      h+='<td><span style="color:#e2e8f0;font-size:10px;white-space:nowrap">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+      h+='<td><span style="font-size:10px;white-space:nowrap"><span style="color:'+hCol+';font-weight:'+hWt+'">'+r.TEAMH+'</span> <span style="color:#475569">vs</span> <span style="color:'+aCol+';font-weight:'+aWt+'">'+r.TEAMA+'</span></span></td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>=0?'+':'')+r.ASIALINE+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH||'\u2014')+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA||'\u2014')+'</td>';
@@ -234,7 +234,14 @@ function renderH2HRule(RD){
   }
 
   // past bets
-  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin:16px 0 6px 0">\uD83D\uDCDC Past Bets \u2014 Last '+hr.pastBets.length+' (newest first)</div>';
+  function capRoi(lab,v){
+    if(v==null) return '';
+    var c=v>=0?'#4ade80':'#f87171';
+    return '<span style="font-weight:400;color:#64748b;font-size:10px;margin-left:10px">'+lab
+      +' <span style="font-family:var(--mono);font-weight:700;color:'+c+'">'+(v>=0?'+':'')+v+'%</span></span>';
+  }
+  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin:16px 0 6px 0">\uD83D\uDCDC Past Bets \u2014 Last '+hr.pastBets.length+' (newest first)'
+    +capRoi('L50 ROI',hr.roiL50)+capRoi('L100 ROI',hr.roiL100)+capRoi('L200 ROI',hr.roiL200)+'</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>';
   h+='<th>Date</th><th>Match</th><th class="num">Line</th><th class="num">H</th><th class="num">A</th>';
   h+='<th class="num">Score</th><th class="num">Bet</th><th>Rule</th><th>Outcome</th><th class="num">Hit</th><th class="num">P&amp;L</th></tr></thead><tbody>';
@@ -252,9 +259,11 @@ function renderH2HRule(RD){
     var pc=pb.pnl>0?'#4ade80':pb.pnl<0?'#f87171':'#94a3b8';
     var t=r.TIME, ts=t?String(t).padStart(4,'0'):'', tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
     var ex=pb.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(pb.fired.length-1)+'</span>':'';
+    var hCol=bet==='H'?'#f87171':'#94a3b8', aCol=bet==='A'?'#60a5fa':'#94a3b8';
+    var hWt=bet==='H'?'700':'400', aWt=bet==='A'?'700':'400';
     h+='<tr>';
     h+='<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(r.DATE||'').slice(5)+(tm?' '+tm:'')+'</td>';
-    h+='<td style="max-width:120px;overflow:hidden"><span style="color:#e2e8f0;font-size:10px;white-space:nowrap">'+r.TEAMH+' <span style="color:#475569">vs</span> '+r.TEAMA+'</span></td>';
+    h+='<td style="max-width:120px;overflow:hidden"><span style="font-size:10px;white-space:nowrap"><span style="color:'+hCol+';font-weight:'+hWt+'">'+r.TEAMH+'</span> <span style="color:#475569">vs</span> <span style="color:'+aCol+';font-weight:'+aWt+'">'+r.TEAMA+'</span></span></td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>=0?'+':'')+r.ASIALINE+'</td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH||'\u2014')+'</td>';
     h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA||'\u2014')+'</td>';
