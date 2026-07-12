@@ -13,7 +13,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .hstats{display:flex;gap:5px;flex-wrap:wrap}
 .hstat{padding:3px 8px;border-radius:5px;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;white-space:nowrap}
 .hstat b{color:var(--text)}
-.updated{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.updated{font-size:11px;color:#cbd5e1;font-family:var(--mono);white-space:nowrap}
 
 /* FILTERS */
 .filter-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
