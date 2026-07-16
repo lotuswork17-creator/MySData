@@ -18,13 +18,13 @@ function hrH2HShare(r){
 
 var HR_RULES=[
   { id:'hr1', bet:'A', type:'COUNTER',
-    label:'H2H home dominance \u226570% (\u22653 meetings) \u2192 Bet A',
-    desc:'Home team won \u226570% of the last (\u22648) head-to-head meetings, minimum 3 meetings. Public overbets the historically dominant home side.',
-    match:function(r){ var s=hrH2HShare(r); return !!(s && s.n>=3 && s.share>=0.7); } },
+    label:'H2H home dominance \u226570% (\u22652 meetings) \u2192 Bet A',
+    desc:'Home team won \u226570% of the last (\u22648) head-to-head meetings, minimum 2 meetings. Public overbets the historically dominant home side.',
+    match:function(r){ var s=hrH2HShare(r); return !!(s && s.n>=2 && s.share>=0.7); } },
   { id:'hr3', bet:'A', type:'COUNTER',
-    label:'H2H home dominance \u226565% (\u22653 meetings) \u2192 Bet A',
+    label:'H2H home dominance \u226565% (\u22652 meetings) \u2192 Bet A',
     desc:'Looser variant of the 70% rule, tracked side-by-side. Adds the share = 2/3 band (e.g. 2-1-0, 4-2-0 records).',
-    match:function(r){ var s=hrH2HShare(r); return !!(s && s.n>=3 && s.share>=0.65); } },
+    match:function(r){ var s=hrH2HShare(r); return !!(s && s.n>=2 && s.share>=0.65); } },
   { id:'hr2', bet:'A', type:'COUNTER',
     label:'Deep home favourite (line \u2264 \u22121) \u2192 Bet A',
     desc:'Home team gives a full goal or more. Heavy home favourites cover only ~43% \u2014 the away side holds the value.',
