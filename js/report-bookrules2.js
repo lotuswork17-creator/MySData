@@ -127,7 +127,7 @@ function computeBookRules2(allRecords){
   function rulesForMatch(r){
     var fired=[];
     BR2_RULES.forEach(function(rule,i){
-      if(rule.cond(r)) fired.push({rule:rule, idx:i, roi:perRule[i].roiBet||0});
+      if(rule.cond(r)) fired.push({rule:rule, idx:i, roi:perRule[i].roiBet||0, n:perRule[i].n});
     });
     return fired;
   }
@@ -226,7 +226,8 @@ function renderBookRules2(RD){
         var fgc=f.rule.bet==='H'?'#f87171':'#60a5fa';
         var roi=f.roi;
         var roiCol=roi>=0?'#4ade80':'#fca5a5';
-        var roiTxt=(roi==null)?'':' <span style="color:'+roiCol+';font-size:12px;font-family:var(--mono)">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>';
+        var roiTxt=(roi==null)?'':' <span style="color:'+roiCol+';font-size:12px;font-family:var(--mono)">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</span>'
+          +(f.n!=null?' <span style="color:#cbd5e1;font-size:10px;font-family:var(--mono)">n'+f.n+'</span>':'');
         return '<span style="display:inline-block;padding:4px 10px;margin:2px 3px;border-radius:4px;font-size:14px;background:'+bgc+';color:'+fgc+';font-weight:700">'+f.rule.id+roiTxt+'</span>';
       }).join('');
       h+='<tr style="cursor:pointer" onclick="br2Toggle(\''+detId+'\')">'
@@ -265,7 +266,7 @@ function renderBookRules2(RD){
       if(bcrNz(r,'ASIAHMAC')) det+='<div style="font-size:12px"><b>Macau:</b> H '+r.ASIAHMAC.toFixed(2)+' / A '+r.ASIAAMAC.toFixed(2)+'</div>';
       if(bcrNz(r,'ASIAHSBO')) det+='<div style="font-size:12px"><b>SBO:</b> H '+r.ASIAHSBO.toFixed(2)+' / A '+r.ASIAASBO.toFixed(2)+'</div>';
       det+='<div style="margin-top:10px;font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;margin-bottom:4px">Rules Fired</div>';
-      al.rules.forEach(function(f){ det+='<div style="margin-left:8px;font-size:12px">• <b>'+f.rule.id+'</b>: '+f.rule.desc+' → bet <b>'+f.rule.bet+'</b> (historic '+f.roi.toFixed(1)+'%)</div>'; });
+      al.rules.forEach(function(f){ det+='<div style="margin-left:8px;font-size:12px">• <b>'+f.rule.id+'</b>: '+f.rule.desc+' → bet <b>'+f.rule.bet+'</b> (historic '+(f.roi>=0?'+':'')+f.roi.toFixed(1)+'%, n='+(f.n!=null?f.n:'—')+')</div>'; });
       det+='</div>';
       h+='<tr id="'+detId+'" style="display:none"><td colspan="7" style="background:rgba(15,23,42,0.5);padding:0">'+det+'</td></tr>';
     });
