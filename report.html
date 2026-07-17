@@ -204,6 +204,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderConsLine() -->
 </div>
 
+<div class="rpt-section" id="tabH2H">
+  <!-- content injected by renderH2HRule() -->
+</div>
+
 <div class="rpt-section" id="tab11">
   <!-- content injected by renderJCRelation() -->
 </div>
@@ -283,6 +287,7 @@ body{display:block;padding-bottom:40px}
 <script src="js/report-odds.js"></script>
 <script src="js/report-sixexpert.js"></script>
 <script src="js/report-consline.js"></script>
+<script src="js/report-h2hrule.js"></script>
 <script src="js/report-jcrelation.js"></script>
 <script src="js/report-moverule.js"></script>
 <script src="js/report-oddsrule.js"></script>
@@ -301,6 +306,7 @@ var TABS = [
   { label:'📦 Less Used',    render: renderLess },
   { label:'🎓 Six Expert',    render: renderSixExpert },
   { label:'🧭 Consensus×Line', render: renderConsLine },
+  { label:'🤝 H2H Rules',      render: renderH2HRule },
   { label:'🔗 JC Relations', render: renderJCRelation },
   { label:'📡 Move Rules',   render: renderMoveRule },
   { label:'💹 Odds Rules',    render: renderOddsRule },
@@ -318,7 +324,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===6 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===7 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -391,8 +397,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[6] = true;
-      TABS[6].render(RD);
+      drawn[7] = true;
+      TABS[7].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
