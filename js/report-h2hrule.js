@@ -218,20 +218,23 @@ function renderH2HRule(RD){
     hr.upcomingAlerts.forEach(function(al){
       var r=al.r, top=al.fired[0];
       var prob=top.valid?'':' <span style="color:#f87171;font-size:8px;font-weight:700;border:1px solid #f87171;border-radius:3px;padding:0 3px">PROB</span>';
-      var ex=al.fired.length>1?' <span style="color:#fbbf24;font-size:9px">+'+(al.fired.length-1)+'</span>':'';
+      var ex=al.fired.length>1?' <span style="color:#fbbf24;font-size:11px">+'+(al.fired.length-1)+'</span>':'';
       var t=r.TIME, ts=t?String(t).padStart(4,'0'):'', tm=ts?ts.slice(0,2)+':'+ts.slice(2):'';
       var h2h=(r.RECENTH!=null&&r.RECENTD!=null&&r.RECENTA!=null)?r.RECENTH+'-'+r.RECENTD+'-'+r.RECENTA:'\u2014';
       var hCol=top.rule.bet==='H'?'#f87171':'#94a3b8', aCol=top.rule.bet==='A'?'#60a5fa':'#94a3b8';
       var hWt=top.rule.bet==='H'?'700':'400', aWt=top.rule.bet==='A'?'700':'400';
       h+='<tr>';
-      h+='<td style="font-family:var(--mono);font-size:10px;color:#e2e8f0;white-space:nowrap">'+(r.DATE||'').slice(5)+(tm?' '+tm:'')+'</td>';
-      h+='<td><span style="font-size:10px;white-space:nowrap"><span style="color:'+hCol+';font-weight:'+hWt+'">'+r.TEAMH+'</span> <span style="color:#475569">vs</span> <span style="color:'+aCol+';font-weight:'+aWt+'">'+r.TEAMA+'</span></span></td>';
+      h+='<td style="font-family:var(--mono);font-size:12px;color:#e2e8f0;white-space:nowrap">'+(r.DATE||'').slice(5)+(tm?' '+tm:'')+'</td>';
+      h+='<td><span style="font-size:13px;white-space:nowrap"><span style="color:'+hCol+';font-weight:'+hWt+'">'+r.TEAMH+'</span> <span style="color:#94a3b8">vs</span> <span style="color:'+aCol+';font-weight:'+aWt+'">'+r.TEAMA+'</span></span></td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIALINE>=0?'+':'')+r.ASIALINE+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAH||'\u2014')+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+(r.ASIAA||'\u2014')+'</td>';
       h+='<td class="num" style="font-family:var(--mono);color:#94a3b8">'+h2h+'</td>';
       h+='<td class="num"><b style="color:'+(top.rule.bet==='H'?'#f87171':'#60a5fa')+'">'+top.rule.bet+'</b></td>';
-      h+='<td style="font-size:10px;color:#e2e8f0;max-width:220px">'+top.rule.label+ex+prob+'</td>';
+      var roiCol2=(top.roi!=null&&top.roi>=0)?'#4ade80':'#fca5a5';
+      var roiTxt2=(top.roi==null)?'':' <span style="color:'+roiCol2+';font-family:var(--mono);font-size:12px;font-weight:700">'+(top.roi>=0?'+':'')+top.roi.toFixed(1)+'%</span>'
+        +(top.n!=null?' <span style="color:#cbd5e1;font-family:var(--mono);font-size:11px">n'+top.n+'</span>':'');
+      h+='<td style="font-size:12px;color:#e2e8f0;max-width:260px">'+top.rule.label+roiTxt2+ex+prob+'</td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';

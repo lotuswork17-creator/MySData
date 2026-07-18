@@ -339,10 +339,10 @@ function renderSixExpert(RD){
       }
       var ruleLines=al.fired.map(function(rule){
         var st=(se.ruleStats&&se.ruleStats[rule.id])||{};
-        return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#fb923c22;border:1px solid #fb923c55;color:#fb923c;white-space:nowrap">'+rule.id+'</span> '
-          +'<span style="font-size:9px;color:#94a3b8">'+rule.label+'</span> '
-          +'<span style="font-size:9px;font-family:var(--mono);color:#4ade80">+'+rule.roi.toFixed(1)+'%</span>'
-          +(st.n!=null?' <span style="font-size:9px;font-family:var(--mono);color:#cbd5e1">n'+st.n+'</span>':'');
+        return '<span style="font-size:12px;padding:2px 7px;border-radius:3px;background:#fb923c22;border:1px solid #fb923c55;color:#fb923c;white-space:nowrap;font-weight:700">'+rule.id+'</span> '
+          +'<span style="font-size:12px;color:#cbd5e1">'+rule.label+'</span> '
+          +'<span style="font-size:12px;font-family:var(--mono);color:#4ade80;font-weight:700">+'+rule.roi.toFixed(1)+'%</span>'
+          +(st.n!=null?' <span style="font-size:11px;font-family:var(--mono);color:#cbd5e1">n'+st.n+'</span>':'');
       }).join('<br>');
       var dd=(r.DATE||'').slice(5),t=r.TIME,ts2=t?String(t).padStart(4,'0'):'',tm=ts2?ts2.slice(0,2)+':'+ts2.slice(2):'';
       h+='<tr style="cursor:pointer" onclick="var e=document.getElementById(\''+detId+'\');e.style.display=e.style.display===\'none\'?\'table-row\':\'none\'">';

@@ -54,7 +54,7 @@ function computeConsLine(allRecords){
   // Combined portfolio: any rule fires → bet by the highest-ROI rule that fired
   function firedRules(r){
     var f=[];
-    CL_RULES.forEach(function(rule,i){ if(rule.cond(r)) f.push({rule:rule, roi:perRule[i].roiBet||0}); });
+    CL_RULES.forEach(function(rule,i){ if(rule.cond(r)) f.push({rule:rule, roi:perRule[i].roiBet||0, n:perRule[i].n}); });
     f.sort(function(a,b){ return (b.roi||-99)-(a.roi||-99); });
     return f;
   }
@@ -125,7 +125,8 @@ function renderConsLine(RD){
         var bg=f.rule.bet==='H'?'rgba(248,113,113,0.15)':'rgba(96,165,250,0.15)';
         var fg=f.rule.bet==='H'?'#f87171':'#60a5fa';
         var rc=(f.roi!=null&&f.roi>=0)?'#4ade80':'#fca5a5';
-        var rt=(f.roi==null)?'':' <span style="color:'+rc+';font-size:12px;font-family:var(--mono)">'+(f.roi>=0?'+':'')+f.roi.toFixed(1)+'%</span>';
+        var rt=(f.roi==null)?'':' <span style="color:'+rc+';font-size:12px;font-family:var(--mono)">'+(f.roi>=0?'+':'')+f.roi.toFixed(1)+'%</span>'
+          +(f.n!=null?' <span style="color:#cbd5e1;font-size:10px;font-family:var(--mono)">n'+f.n+'</span>':'');
         return '<span style="display:inline-block;padding:4px 10px;margin:2px 3px;border-radius:4px;font-size:14px;background:'+bg+';color:'+fg+';font-weight:700">'+f.rule.id+rt+'</span>';
       }).join('');
       h+='<tr style="cursor:pointer" onclick="clToggle(\''+detId+'\')">'
@@ -239,7 +240,8 @@ function renderConsLine(RD){
       var teamA=b.bet==='A'?'<b style="color:#60a5fa">'+(r.TEAMA||'')+'</b>':(r.TEAMA||'');
       var rids=b.rules.map(function(f){
         var rc=(f.roi!=null&&f.roi>=0)?'#4ade80':'#fca5a5';
-        var rt=(f.roi==null)?'':' <span style="color:'+rc+';font-family:var(--mono);font-size:10px">'+(f.roi>=0?'+':'')+f.roi.toFixed(1)+'%</span>';
+        var rt=(f.roi==null)?'':' <span style="color:'+rc+';font-family:var(--mono);font-size:10px">'+(f.roi>=0?'+':'')+f.roi.toFixed(1)+'%</span>'
+          +(f.n!=null?' <span style="color:#cbd5e1;font-family:var(--mono);font-size:9px">n'+f.n+'</span>':'');
         return '<span style="white-space:nowrap">'+f.rule.id+rt+'</span>';
       }).join(', ');
       var l=parseFloat(r.ASIALINE)||0;
