@@ -124,6 +124,17 @@ function computeSixExpert(allRecords){
     pastBets.push({r:r, fired:fired, bet:bet, pnl:sePnl(r,bet), outcome:outcome, votes:seVotes(r)});
   });
 
+  // Live per-rule stats over ALL settled data (for upcoming badge n display)
+  var ruleStats={};
+  SIXEXP_RULES.forEach(function(rule){
+    var tot=0,n=0;
+    data.forEach(function(r){
+      if(!seRuleFires(r,rule)) return;
+      tot+=sePnl(r,rule.bet); n++;
+    });
+    ruleStats[rule.id]={n:n, roi:n?Math.round(tot/n*1000)/10:null};
+  });
+
   // ROI history chart (chronological, skip first 50)
   var chrono=pastBets.slice().reverse();
   var chartPts=[],chartMa50=[],chartMa100=[],cum=0,allP=[];
@@ -278,7 +289,7 @@ function computeSixExpert(allRecords){
   });
   comboPockets.sort(function(a,b){return b.roi-a.roi;});
 
-  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, upcomingAlerts:upcomingAlerts, pastBets:pastBets, seChart:seChart, totalData:data.length,
+  return { experts:experts, pockets:pockets, consensusRows:consensusRows, comboDims:comboDims, comboPockets:comboPockets, upcomingAlerts:upcomingAlerts, pastBets:pastBets, seChart:seChart, ruleStats:ruleStats, totalData:data.length,
            hasAI: data.some(function(r){return seTipDir(r.TIPSGEM)||seTipDir(r.TIPSGPT);}) };
 }
 
@@ -327,9 +338,11 @@ function renderSixExpert(RD){
         return s;
       }
       var ruleLines=al.fired.map(function(rule){
+        var st=(se.ruleStats&&se.ruleStats[rule.id])||{};
         return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#fb923c22;border:1px solid #fb923c55;color:#fb923c;white-space:nowrap">'+rule.id+'</span> '
           +'<span style="font-size:9px;color:#94a3b8">'+rule.label+'</span> '
-          +'<span style="font-size:9px;font-family:var(--mono);color:#4ade80">+'+rule.roi.toFixed(1)+'%</span>';
+          +'<span style="font-size:9px;font-family:var(--mono);color:#4ade80">+'+rule.roi.toFixed(1)+'%</span>'
+          +(st.n!=null?' <span style="font-size:9px;font-family:var(--mono);color:#cbd5e1">n'+st.n+'</span>':'');
       }).join('<br>');
       var dd=(r.DATE||'').slice(5),t=r.TIME,ts2=t?String(t).padStart(4,'0'):'',tm=ts2?ts2.slice(0,2)+':'+ts2.slice(2):'';
       h+='<tr style="cursor:pointer" onclick="var e=document.getElementById(\''+detId+'\');e.style.display=e.style.display===\'none\'?\'table-row\':\'none\'">';
