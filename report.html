@@ -208,6 +208,10 @@ body{display:block;padding-bottom:40px}
   <!-- content injected by renderH2HRule() -->
 </div>
 
+<div class="rpt-section" id="tabDF">
+  <!-- content injected by renderDeepFav() -->
+</div>
+
 <div class="rpt-section" id="tab11">
   <!-- content injected by renderJCRelation() -->
 </div>
@@ -307,6 +311,7 @@ var TABS = [
   { label:'🎓 Six Expert',    render: renderSixExpert },
   { label:'🧭 Consensus×Line', render: renderConsLine },
   { label:'🤝 H2H Rules',      render: renderH2HRule },
+  { label:'🏰 Deep Home Fav',  render: renderDeepFav },
   { label:'🔗 JC Relations', render: renderJCRelation },
   { label:'📡 Move Rules',   render: renderMoveRule },
   { label:'💹 Odds Rules',    render: renderOddsRule },
@@ -324,7 +329,7 @@ var TABS = [
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===7 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===8 ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -397,8 +402,8 @@ function loadReport(){
       }
       document.getElementById('rptLoading').style.display = 'none';
       document.getElementById('tab14').classList.add('active');
-      drawn[7] = true;
-      TABS[7].render(RD);
+      drawn[8] = true;
+      TABS[8].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
