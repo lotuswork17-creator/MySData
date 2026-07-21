@@ -25,7 +25,11 @@ var HR_RULES=[
     label:'H2H home dominance \u226565% (\u22652 meetings) \u2192 Bet A',
     desc:'Looser variant of the 70% rule, tracked side-by-side. Adds the share = 2/3 band (e.g. 2-1-0, 4-2-0 records).',
     match:function(r){ var s=hrH2HShare(r); return !!(s && s.n>=2 && s.share>=0.65); } },
-  { id:'hr2', bet:'A', type:'COUNTER',
+];
+
+// Deep-favourite rule — line-based, not H2H-based, so it lives on its own tab.
+var DF_RULES=[
+  { id:'df1', bet:'A', type:'COUNTER',
     label:'Deep home favourite (line \u2264 \u22121) \u2192 Bet A',
     desc:'Home team gives a full goal or more. Heavy home favourites cover only ~43% \u2014 the away side holds the value.',
     match:function(r){ return r.ASIALINE!=null && r.ASIALINE<=-1; } },
@@ -43,7 +47,8 @@ function hrPnl(r){
   return {h:-0.5, a:(oa-1)*0.5, adj:adj};
 }
 
-function computeH2HRule(results, records){
+function computeH2HRule(results, records, rules){
+  rules = rules || HR_RULES;
   var data=(records||results).filter(function(r){
     return r.STATUS==='Result' && r.RESULTH!=null && r.RESULTA!=null &&
            r.ASIALINE!=null && r.ASIAH>0 && r.ASIAA>0;
@@ -60,7 +65,7 @@ function computeH2HRule(results, records){
     return Math.round(s/vals.length*1000)/10;
   }
 
-  var ruleSignals=HR_RULES.map(function(rule){
+  var ruleSignals=rules.map(function(rule){
     var allV=[], trV=[], teV=[];
     data.forEach(function(r,i){
       if(!rule.match(r)) return;
@@ -145,21 +150,37 @@ function computeH2HRule(results, records){
 function renderH2HRule(RD){
   var el=document.getElementById('tabH2H');
   if(!el) return;
-  if(!RD.h2hrule){
-    if(typeof computeH2HRule==='function'&&RD.results){
-      RD.h2hrule=computeH2HRule(RD.results, RD.records||RD.results);
-    } else {
-      el.innerHTML='<div style="padding:24px;color:#f87171">Error: computeH2HRule not available.</div>';
-      return;
-    }
+  if(!RD.h2hrule && typeof computeH2HRule==='function' && RD.results){
+    RD.h2hrule=computeH2HRule(RD.results, RD.records||RD.results, HR_RULES);
   }
-  var hr=RD.h2hrule;
+  if(!RD.h2hrule){ el.innerHTML='<div style="padding:24px;color:#f87171">Error: computeH2HRule not available.</div>'; return; }
+  hrRenderReport(el, RD.h2hrule,
+    '\u2694\uFE0F H2H Rules (Provisional)',
+    'Static pre-match "fade the H2H-dominant home team" rules from the H2H/form study. '
+    +'No odds movement involved \u2014 the signal is the rebuilt head-to-head record between the two teams. '
+    +'Train (75%) / test (25%) recomputed live. <b style="color:#fbbf24">PROVISIONAL</b>: rules pass train/test '
+    +'but their confidence intervals still straddle zero \u2014 weaker evidence than the Move Rules. Watch Last-20/40.');
+}
+
+function renderDeepFav(RD){
+  var el=document.getElementById('tabDF');
+  if(!el) return;
+  if(!RD.deepfav && typeof computeH2HRule==='function' && RD.results){
+    RD.deepfav=computeH2HRule(RD.results, RD.records||RD.results, DF_RULES);
+  }
+  if(!RD.deepfav){ el.innerHTML='<div style="padding:24px;color:#f87171">Error: computeH2HRule not available.</div>'; return; }
+  hrRenderReport(el, RD.deepfav,
+    '\uD83C\uDFF0 Deep Home Favourite (Provisional)',
+    'Line-based "fade the heavy home favourite" rule: when the home team gives a full goal or more (Asia line \u2264 \u22121), '
+    +'heavy favourites cover only ~43% and the away side holds the value. Separated from the H2H tab because the signal is the '
+    +'handicap line itself, not the head-to-head record. Train (75%) / test (25%) recomputed live. '
+    +'<b style="color:#fbbf24">PROVISIONAL</b>: passes train/test but the confidence interval still straddles zero.');
+}
+
+function hrRenderReport(el, hr, titleTxt, subHtml){
   var h='';
-  h+='<div class="rpt-title">\u2694\uFE0F H2H / Line Rules (Provisional)</div>';
-  h+='<div class="rpt-sub">Static pre-match "fade the strong home team" rules from the H2H/form study. '
-    +'No odds movement involved \u2014 signals are the rebuilt head-to-head record and the Asia line itself. '
-    +'Train (75%) / test (25%) recomputed live. <b style="color:#fbbf24">PROVISIONAL</b>: both rules pass train/test '
-    +'but their confidence intervals still straddle zero \u2014 weaker evidence than the Move Rules. Watch Last-20/40.</div>';
+  h+='<div class="rpt-title">'+titleTxt+'</div>';
+  h+='<div class="rpt-sub">'+subHtml+'</div>';
 
   // summary badges
   h+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 14px 0">';
