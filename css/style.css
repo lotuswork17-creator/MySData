@@ -99,18 +99,18 @@ canvas#betChart{width:100%;height:110px}
 
 /* DESKTOP TABLE */
 @media(min-width:600px){
-  table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
-  thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:2px solid var(--border);background:var(--surface);font-family:var(--sans);transition:color .15s}
-  thead th:hover{color:var(--text)}
-  thead th.sort-asc,thead th.sort-desc{color:var(--accent2)}
-  thead th .si{font-size:9px;margin-left:2px;opacity:.3}
-  thead th.sort-asc .si,thead th.sort-desc .si{opacity:1}
-  tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
-  tbody tr:hover{background:var(--surface2)}
-  tbody tr.selected{background:#1a2640;border-left:3px solid var(--accent2)}
-  td{padding:8px 10px;white-space:nowrap;overflow:hidden;max-width:150px;text-overflow:ellipsis;color:#c0c8d8;font-family:var(--mono);font-size:11px}
-  td.tcell{font-family:var(--sans);font-size:12px;color:var(--text);font-weight:500}
-  td.ccell{font-family:var(--sans);font-size:11px;color:var(--muted)}
+  #mainTable{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+  #mainTable thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:2px solid var(--border);background:var(--surface);font-family:var(--sans);transition:color .15s}
+  #mainTable thead th:hover{color:var(--text)}
+  #mainTable thead th.sort-asc,#mainTable thead th.sort-desc{color:var(--accent2)}
+  #mainTable thead th .si{font-size:9px;margin-left:2px;opacity:.3}
+  #mainTable thead th.sort-asc .si,#mainTable thead th.sort-desc .si{opacity:1}
+  #mainTable tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+  #mainTable tbody tr:hover{background:var(--surface2)}
+  #mainTable tbody tr.selected{background:#1a2640;border-left:3px solid var(--accent2)}
+  #mainTable td{padding:8px 10px;white-space:nowrap;overflow:hidden;max-width:150px;text-overflow:ellipsis;color:#c0c8d8;font-family:var(--mono);font-size:11px}
+  #mainTable td.tcell{font-family:var(--sans);font-size:12px;color:var(--text);font-weight:500}
+  #mainTable td.ccell{font-family:var(--sans);font-size:11px;color:var(--muted)}
   .oc{color:#94a3b8}
 }
 
@@ -146,14 +146,13 @@ canvas#betChart{width:100%;height:110px}
   .filter-toggle-secondary{padding:5px 10px;font-size:11px;border-radius:6px;white-space:nowrap}
   .btn-clear{padding:5px 10px;font-size:11px;min-height:auto;align-self:auto}
 
-  /* Table cards */
-  table,thead,tbody,tr,th,td{display:block;width:100%}
-  table.ot,table.ot thead,table.ot tbody,table.ot tr,table.ot th,table.ot td{display:revert;width:auto}
-  thead{display:none}
-  tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 10px;padding:12px;cursor:pointer;position:relative}
-  tbody tr:active{background:var(--surface2)}
-  tbody tr.selected{border-color:var(--accent2);background:#1a2640}
-  td{padding:0;border:none;white-space:normal;max-width:100%;overflow:visible}
+  /* Table cards (viewer match table only — report tables keep their normal layout) */
+  #mainTable,#mainTable thead,#mainTable tbody,#mainTable tr,#mainTable th,#mainTable td{display:block;width:100%}
+  #mainTable thead{display:none}
+  #mainTable tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 10px;padding:12px;cursor:pointer;position:relative}
+  #mainTable tbody tr:active{background:var(--surface2)}
+  #mainTable tbody tr.selected{border-color:var(--accent2);background:#1a2640}
+  #mainTable td{padding:0;border:none;white-space:normal;max-width:100%;overflow:visible}
 
   /* Pagination */
   .pagination{flex-wrap:wrap;justify-content:center;padding:10px 8px;gap:6px;position:sticky;bottom:0;background:var(--surface);z-index:10;border-top:1px solid var(--border)}
