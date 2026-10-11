@@ -4,6 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>TipsCompare — Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap"/>
 <link rel="stylesheet" href="css/style.css"/>
 <style>
 html,body{overflow:auto;height:auto}
@@ -44,6 +47,9 @@ body{display:block;padding-bottom:40px}
 .rpt-table tr:last-child td{border-bottom:none}
 .rpt-table tr:hover td{background:var(--surface2)}
 .rpt-table .num{text-align:right}
+/* Nested tables inside expandable report rows (e.g. Book Compare lean breakdown) */
+.rpt-table table td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--mono)}
+.rpt-table table tr:last-child td{border-bottom:none}
 
 .sm-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .sm-card{background:var(--surface2);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:12px 14px}
@@ -168,11 +174,9 @@ body{display:block;padding-bottom:40px}
   <div class="sm-grid" id="smartGrid"></div>
 </div>
 
-<!-- TAB 5: LINE × EXPERT -->
 <!-- TAB 6: ODDS ANALYSIS -->
 <div class="rpt-subsection" id="tab6">
   <div class="rpt-title">AsiaLine × Expert Signal Analysis</div>
-</div>
   <div class="rpt-sub">Each chart = one AsiaLine × Expert Signal combination. H bet (red) vs A bet (blue). Sub-filters (Market Lean, Line Movement, Vig) appear beneath when N≥30.</div>
   <div class="odds-filter-bar">
     <span class="odds-filter-label">Show:</span>
@@ -180,7 +184,7 @@ body{display:block;padding-bottom:40px}
     <button class="odds-btn"        data-mode="n80"    onclick="oddsSetFilter('n80')">N≥80</button>
     <button class="odds-btn"        data-mode="n80_h"  onclick="oddsSetFilter('n80_h')">N≥80 · H pref</button>
     <button class="odds-btn"        data-mode="n80_a"  onclick="oddsSetFilter('n80_a')">N≥80 · A pref</button>
-    <button class="odds-btn"        data-mode="n80_any"onclick="oddsSetFilter('n80_any')">N≥80 · Either pref</button>
+    <button class="odds-btn"        data-mode="n80_any" onclick="oddsSetFilter('n80_any')">N≥80 · Either pref</button>
     <span class="odds-filter-hint" id="oddsFilterHint"></span>
   </div>
   <div id="oddsChartsArea"></div>
@@ -194,7 +198,7 @@ body{display:block;padding-bottom:40px}
     <tbody id="tbOdds"></tbody>
   </table></div>
 </div>
-
+</div><!-- /tabLess -->
 
 <div class="rpt-section" id="tab8">
   <!-- content injected by renderSixExpert() -->
@@ -279,8 +283,6 @@ body{display:block;padding-bottom:40px}
        { label:'🔖 My Tab', render: renderMyTab },
   ═══════════════════════════════════════════════
 -->
-
-<!-- JS modules: core first, then one file per tab -->
 
 <!-- JS modules: core first, then one file per tab -->
 <script src="js/report-core.js"></script>
