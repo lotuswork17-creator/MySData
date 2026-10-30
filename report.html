@@ -85,6 +85,7 @@ body{display:block;padding-bottom:40px}
 .odds-btn.active{background:var(--accent2);border-color:var(--accent2);color:#0f172a}
 .odds-filter-hint{font-size:10px;color:#64748b;font-family:var(--mono);margin-left:4px}
 .odds-small{opacity:0.45}  /* dimmed when sig-only mode */
+.odds-group-label{font-size:11px;font-weight:700;color:#cbd5e1;margin:10px 0 6px;padding-left:4px;letter-spacing:.03em}
 .odds-sub-label{font-size:9px;font-weight:600;color:#64748b;margin:6px 0 3px;padding-left:10px;letter-spacing:.04em}
 
 #rptLoading{text-align:center;padding:60px 20px;color:#94a3b8}
@@ -326,12 +327,15 @@ var TABS = [
   { label:'📋 My ROI Charts', render: renderRoiCharts },
 ];
 
+// Tab shown on first load (index into TABS). Change here only.
+var DEFAULT_TAB = 8; // 🔀 Combined
+
 // Build tab bar from registry
 (function(){
   var bar = document.getElementById('rptTabBar');
   TABS.forEach(function(t, i){
     var el = document.createElement('div');
-    el.className = 'rpt-tab' + (i===8 ? ' active' : '');
+    el.className = 'rpt-tab' + (i===DEFAULT_TAB ? ' active' : '');
     el.textContent = t.label;
     el.onclick = function(){ showTab(i); };
     bar.appendChild(el);
@@ -346,7 +350,7 @@ function renderRoiCharts(){
   var f=document.getElementById('roiChartsFrame');
   if(!f) return;
   var ds=f.getAttribute('data-src');
-  if(ds && f.src==='about:blank' || (f.src && f.src.indexOf('about:blank')>=0)){
+  if(ds && (!f.src || f.src.indexOf('about:blank')>=0)){
     // Cache-busting param so updates to the file are picked up immediately on next open.
     f.src = ds + '?v=' + Date.now();
   }
@@ -398,14 +402,15 @@ function loadReport(){
           + '<b>⚠️ Compute error:</b> ' + err.message
           + '<br><pre style="margin-top:8px;white-space:pre-wrap;color:#94a3b8">' + (err.stack||'') + '</pre></div>';
         document.getElementById('rptLoading').innerHTML = msg;
-        document.getElementById('tab14').innerHTML = msg;
-        document.getElementById('tab14').classList.add('active');
+        var defSec = document.querySelectorAll('.rpt-section')[DEFAULT_TAB];
+        defSec.innerHTML = msg;
+        defSec.classList.add('active');
         return;
       }
       document.getElementById('rptLoading').style.display = 'none';
-      document.getElementById('tab14').classList.add('active');
-      drawn[8] = true;
-      TABS[8].render(RD);
+      document.querySelectorAll('.rpt-section')[DEFAULT_TAB].classList.add('active');
+      drawn[DEFAULT_TAB] = true;
+      TABS[DEFAULT_TAB].render(RD);
     })
     .catch(function(e){
       document.getElementById('rptLoading').innerHTML =
