@@ -191,7 +191,11 @@ function computeOddsRule(results, allRecords){
     ruleSignals.forEach(function(rs){
       if(testRule(r, rs.rule)) fired.push(rs);
     });
-    if(fired.length) upcomingAlerts.push({r:r, fired:fired});
+    if(fired.length){
+      fired.sort(function(a,b){ return (b.roi||-99)-(a.roi||-99); });
+      var _orConflict=fired.some(function(rs){return rs.rule.bet!==fired[0].rule.bet;});
+      upcomingAlerts.push({r:r, fired:fired, conflict:_orConflict});
+    }
   });
 
   // Past bets (newest first, up to 100)
@@ -205,6 +209,7 @@ function computeOddsRule(results, allRecords){
       if(testRule(r, rs.rule)) fired.push(rs);
     });
     if(!fired.length) return;
+    fired.sort(function(a,b){ return (b.roi||-99)-(a.roi||-99); });
     var m=adjM(r);
     var outcome=m>0.25?'HW':m===0.25?'HH':m===0?'P':m===-0.25?'AH':'AW';
     var pnl={h:pnlH(r),a:pnlA(r)};
@@ -426,7 +431,7 @@ function renderOddsRule(RD){
 
   // ── Rule summary table ──
   h+='<div style="margin-bottom:20px;border-top:2px solid var(--border);padding-top:14px">';
-  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">✅ All 19 Verified Odds Advantage Rules</div>';
+  h+='<div class="rpt-sub" style="font-weight:700;color:#cbd5e1;margin-bottom:6px">✅ All '+or.ruleSignals.length+' Verified Odds Advantage Rules</div>';
   h+='<div class="rpt-table-wrap"><table class="rpt-table"><thead><tr>'
     +'<th>Rule</th><th class="num">Type</th><th class="num">Bet</th><th class="num">Pool</th>'
     +'<th class="num">n</th><th class="num">ROI</th><th class="num">Train</th><th class="num">Test</th>'

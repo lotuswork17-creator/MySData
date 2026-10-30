@@ -18,9 +18,9 @@ function br2ExpDirection(r){
     if(u==='D'||u==='1D'||u==='AD')return'D';
     if(u==='A'||u==='1A'||u==='AA')return'A';
     return null;}
-  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
-  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
-  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(ts(r.TIPSGEM)==='H'?1:0)+(ts(r.TIPSGPT)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(ts(r.TIPSGEM)==='D'?1:0)+(ts(r.TIPSGPT)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(ts(r.TIPSGEM)==='A'?1:0)+(ts(r.TIPSGPT)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
   var tt=th+td+ta;
   if(!tt) return null;
   // ties resolve H, D, A in order (matches helpers.js → expertLead exactly)
@@ -96,7 +96,7 @@ function computeBookRules2(allRecords){
   var perRule = BR2_RULES.map(function(rule){
     var rows = settled.filter(rule.cond);
     rows.sort(function(a,b){
-      var ta=(a.DATE||'')+(a.TIME||''), tb=(b.DATE||'')+(b.TIME||'');
+      var ta=brSortKey(a), tb=brSortKey(b);
       return ta<tb?-1:ta>tb?1:0;
     });
     var pH=0,pA=0,hc=0,n=rows.length;
@@ -140,7 +140,7 @@ function computeBookRules2(allRecords){
     var best=fired[0].rule;
     combined.push({ r:r, rules:fired, bet:best.bet,
       pnl: bcrPnl(r, best.bet),
-      ts:(r.DATE||'')+' '+(r.TIME||'') });
+      ts:brSortKey(r) });
   });
   combined.sort(function(a,b){ return a.ts<b.ts?-1:a.ts>b.ts?1:0; });
 

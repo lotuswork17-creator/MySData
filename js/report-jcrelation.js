@@ -26,13 +26,12 @@ function jcrPnl(r){
   var line = parseFloat(r.ASIALINE)||0;
   var oh = parseFloat(r.ASIAH)||0, oa = parseFloat(r.ASIAA)||0;
   if(!oh || !oa) return null;
-  var adj = gh - ga + line;
+  var adj = Math.round((gh - ga + line)*4)/4;   // same quarter-rounding as hrPnl/mrPnl
   if(Math.abs(adj) < 0.01) return { h:0, a:0 };
-  if(adj > 0.5)  return { h: oh-1, a: -1 };
-  if(adj > 0.01) return { h: (oh-1)/2, a: -0.5 };
-  if(adj < -0.5) return { h: -1, a: oa-1 };
-  if(adj < -0.01)return { h: -0.5, a: (oa-1)/2 };
-  return { h:0, a:0 };
+  if(adj > 0.25)  return { h: oh-1, a: -1 };       // ±0.5 and beyond = full win/loss
+  if(adj > 0)     return { h: (oh-1)/2, a: -0.5 };
+  if(adj < -0.25) return { h: -1, a: oa-1 };
+  return { h: -0.5, a: (oa-1)/2 };
 }
 
 // ── computeJCRelation(results) ──
@@ -287,7 +286,8 @@ function computeJCRelation(results, allRecords){
     });
     if(fired.length){
       var lk = jcrLean(r);
-      upcomingAlerts.push({ r: r, rules: fired, lean: lk });
+      var _jcrConflict = fired.some(function(x){ return x.bet!==fired[0].bet; });
+      upcomingAlerts.push({ r: r, rules: fired, lean: lk, conflict: _jcrConflict });
     }
   });
 
@@ -313,7 +313,8 @@ function computeJCRelation(results, allRecords){
     if(!pnl) return;
     var adj2 = Math.round(((parseFloat(r.RESULTH)||0) - (parseFloat(r.RESULTA)||0) + (parseFloat(r.ASIALINE)||0)) * 4) / 4;
     var outcome = adj2 > 0.25 ? 'HW' : adj2 === 0.25 ? 'HH' : adj2 === 0 ? 'P' : adj2 === -0.25 ? 'AH' : 'AW';
-    pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome });
+    var _jcrPbConflict = fired.some(function(x){ return x.bet!==fired[0].bet; });
+    pastBets.push({ r: r, rules: fired, pnl: pnl, outcome: outcome, conflict: _jcrPbConflict });
   });
 
   // ── Per-rule last-20 and last-40 ROI maps — scan full data array newest-first per rule ──

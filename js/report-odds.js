@@ -87,9 +87,9 @@ var oddsSubFilters = [
     fn: function(r){ var v=vigPct(r); return v!==null&&v<5; } },
   { key:'vig_hi', group:'Vig',           label:'High Vig (>8%)',
     fn: function(r){ var v=vigPct(r); return v!==null&&v>8; } },
-  { key:'drift_h',group:'Odds Drift',    label:'H odds shortened',
+  { key:'drift_h',group:'Odds Drift',    label:'H odds drifted',
     fn: function(r){ var d=hOddsDelta(r); return d!==null&&d>0.05; } },
-  { key:'drift_a',group:'Odds Drift',    label:'H odds drifted',
+  { key:'drift_a',group:'Odds Drift',    label:'H odds shortened',
     fn: function(r){ var d=hOddsDelta(r); return d!==null&&d<-0.05; } },
 ];
 

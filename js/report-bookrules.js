@@ -107,7 +107,7 @@ function computeBookRules(allRecords){
     var rows=settled.filter(rule.cond);
     // chronological order for L50
     rows.sort(function(a,b){
-      var ta=(a.DATE||'')+(a.TIME||''), tb=(b.DATE||'')+(b.TIME||'');
+      var ta=brSortKey(a), tb=brSortKey(b);
       return ta<tb?-1:ta>tb?1:0;
     });
     var pH=0,pA=0,hc=0,n=rows.length;
@@ -166,7 +166,7 @@ function computeBookRules(allRecords){
     combined.push({ r:r, rules:fired, bet:best.bet,
       pnl: bcrPnl(r, best.bet),
       otherPnl: bcrPnl(r, best.bet==='H'?'A':'H'),
-      ts:(r.DATE||'')+' '+(r.TIME||'') });
+      ts:brSortKey(r) });
   });
   combined.sort(function(a,b){ return a.ts<b.ts?-1:a.ts>b.ts?1:0; });
 

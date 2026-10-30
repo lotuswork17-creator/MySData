@@ -9,9 +9,10 @@ function expertScore(r){
     if(u==='D'||u==='1D'||u==='AD')return'D';
     if(u==='A'||u==='1A'||u==='AA')return'A';
     return null;}
-  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
-  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
-  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
+  // Must stay identical to helpers.js expertScore (front page): 6 string tips + GEM/GPT vote counts.
+  var th=(ts(r.JCTIPSUM)==='H'?1:0)+(ts(r.JCTIPSID)==='H'?1:0)+(ts(r.TIPSIDMAC)==='H'?1:0)+(ts(r.TIPSONID)==='H'?1:0)+(ts(r.TIPSGEM)==='H'?1:0)+(ts(r.TIPSGPT)==='H'?1:0)+(r.GEMH||0)+(r.GPTH||0);
+  var td=(ts(r.JCTIPSUM)==='D'?1:0)+(ts(r.JCTIPSID)==='D'?1:0)+(ts(r.TIPSIDMAC)==='D'?1:0)+(ts(r.TIPSONID)==='D'?1:0)+(ts(r.TIPSGEM)==='D'?1:0)+(ts(r.TIPSGPT)==='D'?1:0)+(r.GEMD||0)+(r.GPTD||0);
+  var ta=(ts(r.JCTIPSUM)==='A'?1:0)+(ts(r.JCTIPSID)==='A'?1:0)+(ts(r.TIPSIDMAC)==='A'?1:0)+(ts(r.TIPSONID)==='A'?1:0)+(ts(r.TIPSGEM)==='A'?1:0)+(ts(r.TIPSGPT)==='A'?1:0)+(r.GEMA||0)+(r.GPTA||0);
   var tt=th+td+ta; if(!tt) return null;
   return{h:Math.round(th*100/tt),d:Math.round(td*100/tt),a:Math.round(ta*100/tt)};
 }
@@ -149,7 +150,8 @@ function makeLegend(elId, series){
 // ── Smart Money filter ──
 function smFilter(r, key){
   var gl=r.ASIALINE, ln=r.ASIALINELN, sh=r.ASIAH, sa=r.ASIAA;
-  var sld = gl!=null&&ln!=null ? Math.round((gl-ln)*100)/100 : null;
+  var hasOpen = r.ASIAHLN>0 && r.ASIAALN>0; // same rule as viewer smartPass: ASIALINELN=0 alone can mean 'missing'
+  var sld = gl!=null&&ln!=null&&hasOpen ? Math.round((gl-ln)*100)/100 : null;
   var e   = expertScore(r);
   var sv  = sh&&sa&&sh>0&&sa>0 ? (1/sh+1/sa-1)*100 : null;
   if(key==='sm1') return sld!==null&&sld>0&&e&&e.h>=67;
